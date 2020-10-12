@@ -48,8 +48,8 @@ TEST_F(TestRadosScanTask, Execute) {
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
 
-  rados_options->SetRadosInterface(mock_rados_interface);
-  rados_options->SetIoCtxInterface(mock_ioctx_interface);
+  rados_options->rados_interface_ = mock_rados_interface;
+  rados_options->io_ctx_interface_ = mock_ioctx_interface;
 
   std::shared_ptr<RadosScanTask> task = std::make_shared<RadosScanTask>(
     options_, ctx_, std::move(object), std::move(rados_options)
@@ -73,9 +73,8 @@ TEST_F(TestRadosFragment, Scan) {
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
 
-  rados_options->SetRadosInterface(mock_rados_interface);
-  rados_options->SetIoCtxInterface(mock_ioctx_interface);
-
+  rados_options->rados_interface_ = mock_rados_interface;
+  rados_options->io_ctx_interface_ = mock_ioctx_interface;
 
   RadosFragment fragment(schema_, object, rados_options);
 
@@ -102,9 +101,9 @@ TEST_F(TestRadosDataset, GetFragments) {
   
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
-
-  rados_options->SetRadosInterface(mock_rados_interface);
-  rados_options->SetIoCtxInterface(mock_ioctx_interface);
+  
+  rados_options->rados_interface_ = mock_rados_interface;
+  rados_options->io_ctx_interface_ = mock_ioctx_interface;
 
   auto dataset = std::make_shared<RadosDataset>(schema_, object_vector, rados_options);
 
@@ -124,8 +123,8 @@ TEST_F(TestRadosDataset, ConnectAndShutdown) {
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
 
-  rados_options->SetRadosInterface(mock_rados_interface);
-  rados_options->SetIoCtxInterface(mock_ioctx_interface);
+  rados_options->rados_interface_ = mock_rados_interface;
+  rados_options->io_ctx_interface_ = mock_ioctx_interface;
 
   auto dataset =  std::make_shared<RadosDataset>(schema_, object_vector, rados_options);
 
