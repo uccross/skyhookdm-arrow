@@ -74,28 +74,6 @@ struct ARROW_DS_EXPORT RadosOptions {
     IoCtxInterface *io_ctx_interface_;
 
     static std::shared_ptr<RadosOptions> FromPoolName(std::string pool_name);
-
-    /// \brief Set the Rados interface
-    Status SetRadosInterface(RadosInterface *rados_interface) { 
-      rados_interface_ = rados_interface;
-      return Status::OK();
-    }
-
-    /// \brief Set the IoCtx interface
-    Status SetIoCtxInterface(IoCtxInterface *io_ctx_interface) {
-      io_ctx_interface_ = io_ctx_interface;
-      return Status::OK();
-    }
-
-    /// \brief Get the Rados interface
-    RadosInterface* GetRadosInterface() { 
-      return rados_interface_;
-    }
-
-    /// \brief Get the IoCtx interface
-    IoCtxInterface* GetIoCtxInterface() {
-      return io_ctx_interface_;
-    }
 };
 
 /// \brief A Fragment that maps to an object in the backend.

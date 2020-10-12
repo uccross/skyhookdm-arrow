@@ -80,17 +80,17 @@ RadosDataset::RadosDataset(std::shared_ptr<Schema> schema,
       rados_options_(std::move(rados_options)) {}
 
 Status RadosDataset::Connect() {
-  rados_options_->GetRadosInterface()->init2(rados_options_->user_name_.c_str(), 
+  rados_options_->rados_interface_->init2(rados_options_->user_name_.c_str(), 
                rados_options_->cluster_name_.c_str(), 
                rados_options_->flags_);
-  rados_options_->GetRadosInterface()->conf_read_file(rados_options_->ceph_config_path_.c_str());
-  rados_options_->GetRadosInterface()->connect();
-  rados_options_->GetRadosInterface()->ioctx_create(rados_options_->pool_name_.c_str(), *(rados_options_->GetIoCtxInterface()));
+  rados_options_->rados_interface_->conf_read_file(rados_options_->ceph_config_path_.c_str());
+  rados_options_->rados_interface_->connect();
+  rados_options_->rados_interface_->ioctx_create(rados_options_->pool_name_.c_str(), *(rados_options_->io_ctx_interface_));
   return Status::OK();
 }
 
 Status RadosDataset::Shutdown() {
-  rados_options_->GetRadosInterface()->shutdown();
+  rados_options_->rados_interface_->shutdown();
   return Status::OK();
 }
 
@@ -121,7 +121,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
     in
   ));
 
-  rados_options_->GetIoCtxInterface()->exec(object_->id(), 
+  rados_options_->io_ctx_interface_->exec(object_->id(), 
                                            rados_options_->cls_name_.c_str(), 
                                            rados_options_->cls_method_.c_str(), 
                                            in, out);
