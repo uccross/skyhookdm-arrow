@@ -37,6 +37,20 @@
 namespace arrow {
 namespace dataset {
 
+std::shared_ptr<RadosOptions> RadosOptions::FromPoolName(std::string pool_name) {
+  std::shared_ptr<RadosOptions> options = std::make_shared<RadosOptions>();
+  options->pool_name_ = pool_name;
+  options->user_name_ = "client.admin";
+  options->cluster_name_ = "ceph";
+  options->flags_ = 0;
+  options->ceph_config_path_ = "/etc/ceph/ceph.conf";
+  options->cls_name_ = "arrow";
+  options->cls_method_ = "read";
+  options->rados_interface_ = new RadosWrapper();
+  options->io_ctx_interface_ = new IoCtxWrapper();
+  return options;
+}
+
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
   ScanTaskVector v{std::make_shared<RadosScanTask>(
