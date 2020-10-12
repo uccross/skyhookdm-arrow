@@ -43,7 +43,7 @@ TEST_F(TestRadosScanTask, Execute) {
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
   auto object = std::make_shared<Object>("object.1");
-  auto rados_options = std::make_shared<RadosOptions>("test_pool");
+  auto rados_options = RadosOptions::FromPoolName("test_pool");
 
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -68,7 +68,7 @@ TEST_F(TestRadosFragment, Scan) {
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
   auto object = std::make_shared<Object>("object.1");
-  auto rados_options = std::make_shared<RadosOptions>("test_pool");
+  auto rados_options = RadosOptions::FromPoolName("test_pool");
   
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -98,7 +98,7 @@ TEST_F(TestRadosDataset, GetFragments) {
   auto batch = GenerateTestRecordBatch();
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
-  auto rados_options = std::make_shared<RadosOptions>("test_pool");
+  auto rados_options = RadosOptions::FromPoolName("test_pool");
   
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -119,7 +119,7 @@ TEST_F(TestRadosDataset, ConnectAndShutdown) {
     std::make_shared<Object>("object.2")
   };
 
-  auto rados_options = std::make_shared<RadosOptions>("test_pool");
+  auto rados_options = RadosOptions::FromPoolName("test_pool");
 
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -144,7 +144,7 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
   auto dataset =  std::make_shared<RadosDataset>(
     schema_,
     object_vector,
-    std::make_shared<RadosOptions>("test_pool")
+    RadosOptions::FromPoolName("test_pool")
   );
 
   // drop field

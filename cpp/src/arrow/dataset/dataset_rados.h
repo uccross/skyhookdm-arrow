@@ -60,22 +60,7 @@ using ObjectIterator = Iterator<std::shared_ptr<Object>>;
 /// \brief Store configuration for connecting to a RADOS backend and 
 /// the CLS library and functions to invoke. Also, holds the cluster 
 // and io_ctx context.
-class ARROW_DS_EXPORT RadosOptions {
-  public:
-    RadosOptions(std::string pool_name,
-                 std::string ceph_config_path = "/etc/ceph/ceph.conf",
-                 std::string user_name = "client.admin", 
-                 std::string cluster_name = "ceph",
-                 uint64_t flags = 0,
-                 std::string cls_name = "arrow", 
-                 std::string cls_method = "read")
-        : pool_name_(pool_name),
-          user_name_(user_name), 
-          cluster_name_(cluster_name), 
-          ceph_config_path_(ceph_config_path),
-          flags_(flags),
-          cls_name_(cls_name),
-          cls_method_(cls_method) {}
+struct ARROW_DS_EXPORT RadosOptions {
 
     std::string pool_name_;
     std::string user_name_;
@@ -84,6 +69,11 @@ class ARROW_DS_EXPORT RadosOptions {
     uint64_t flags_;
     std::string cls_name_;
     std::string cls_method_;
+
+    RadosInterface *rados_interface_;
+    IoCtxInterface *io_ctx_interface_;
+
+    static std::shared_ptr<RadosOptions> FromPoolName(std::string pool_name);
 
     /// \brief Set the Rados interface
     Status SetRadosInterface(RadosInterface *rados_interface) { 
@@ -106,10 +96,6 @@ class ARROW_DS_EXPORT RadosOptions {
     IoCtxInterface* GetIoCtxInterface() {
       return io_ctx_interface_;
     }
-
-  protected:
-    RadosInterface *rados_interface_ = new RadosWrapper();
-    IoCtxInterface *io_ctx_interface_ = new IoCtxWrapper();
 };
 
 /// \brief A Fragment that maps to an object in the backend.
