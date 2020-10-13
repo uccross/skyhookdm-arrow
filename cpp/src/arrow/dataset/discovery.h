@@ -239,5 +239,84 @@ class ARROW_DS_EXPORT FileSystemDatasetFactory : public DatasetFactory {
   FileSystemFactoryOptions options_;
 };
 
+struct RadosFactoryOptions {
+  
+  PartitioningOrFactory partitioning{Partitioning::Default()};
+
+  // For the purposes of applying the partitioning, paths will be stripped
+  // of the partition_base_dir. Files not matching the partition_base_dir
+  // prefix will be skipped for partition discovery. The ignored files will still
+  // be part of the Dataset, but will not have partition information.
+  //
+  // Example:
+  // partition_base_dir = "/dataset";
+  //
+  // - "/dataset/US/sales.csv" -> "US/sales.csv" will be given to the partitioning
+  //
+  // - "/home/john/late_sales.csv" -> Will be ignored for partition discovery.
+  //
+  // This is useful for partitioning which parses directory when ordering
+  // is important, e.g. DirectoryPartitioning.
+  std::string partition_base_dir;
+
+  // Invalid files (via selector or explicitly) will be excluded by checking
+  // with the FileFormat::IsSupported method.  This will incur IO for each files
+  // in a serial and single threaded fashion. Disabling this feature will skip the
+  // IO, but unsupported files may be present in the Dataset
+  // (resulting in an error at scan time).
+  bool exclude_invalid_files = false;
+
+  // When discovering from a Selector (and not from an explicit file list), ignore
+  // files and directories matching any of these prefixes.
+  //
+  // Example (with selector = "/dataset/**"):
+  // selector_ignore_prefixes = {"_", ".DS_STORE" };
+  //
+  // - "/dataset/data.csv" -> not ignored
+  // - "/dataset/_metadata" -> ignored
+  // - "/dataset/.DS_STORE" -> ignored
+  // - "/dataset/_hidden/dat" -> ignored
+  // - "/dataset/nested/.DS_STORE" -> ignored
+  std::vector<std::string> selector_ignore_prefixes = {
+      ".",
+      "_",
+  };
+};
+
+/// \brief RadosDatasetFactory creates a Dataset from a Ceph config file
+class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
+ public:
+  /// \brief Build a RadosDatasetFactory from an Ceph config path.
+  ///
+  /// \param[in] Ceph config path
+  /// \param[in] factory options.
+  static Result<std::shared_ptr<DatasetFactory>> Make(
+      const std::vector<std::string>& paths,
+      RadosFactoryOptions options);
+  
+
+  Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(
+      InspectOptions options) override;
+
+  Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
+
+ protected:
+  static Result<std::shared_ptr<DatasetFactory>> Make(
+      const std::vector<fs::FileInfo>& files,
+      RadosFactoryOptions options);
+
+  RadosDatasetFactory(std::vector<fs::FileInfo> files,
+                           RadosFactoryOptions options);
+
+  Result<std::shared_ptr<Schema>> PartitionSchema();
+
+  static Result<bool> IsCephConf(const std::string& source);
+
+  std::vector<fs::FileInfo> files_;
+  std::shared_ptr<fs::FileSystem> fs_;
+  std::shared_ptr<FileFormat> format_;
+  RadosFactoryOptions options_;
+};
+
 }  // namespace dataset
 }  // namespace arrow
