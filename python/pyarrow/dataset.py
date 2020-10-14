@@ -20,6 +20,7 @@
 import pyarrow as pa
 from pyarrow.fs import _MockFileSystem
 from pyarrow.util import _stringify_path, _is_path_like
+import pathlib
 
 from pyarrow._dataset import (  # noqa
     CsvFileFormat,
@@ -32,6 +33,8 @@ from pyarrow._dataset import (  # noqa
     FileSystemDataset,
     FileSystemDatasetFactory,
     FileSystemFactoryOptions,
+    RadosDatasetFactory,
+    RadosFactoryOptions,
     FileWriteOptions,
     Fragment,
     HivePartitioning,
@@ -438,6 +441,37 @@ def _filesystem_dataset(source, schema=None, filesystem=None,
     return factory.finish(schema)
 
 
+def _is_rados_format(source, format):
+    if isinstance(source, str):
+        return RadosDatasetFactory.IsCephConf(source)
+    if hasattr(source, '__fspath__'):
+        return RadosDatasetFactory.IsCephConf(source.__fspath__)
+    if isinstance(source, pathlib.Path):
+        return RadosDatasetFactory.IsCephConf(source.absolute())
+    return False
+
+
+def _rados_dataset(source, schema=None, filesystem=None,
+                        partitioning=None, format=None,
+                        partition_base_dir=None, exclude_invalid_files=None,
+                        selector_ignore_prefixes=None):
+    # format = _ensure_format(format or 'parquet')
+    # partitioning = _ensure_partitioning(partitioning)
+
+    if isinstance(source, (list, tuple)):
+        _, paths_or_selector = _ensure_multiple_sources(source)
+    else:
+        _, paths_or_selector = _ensure_single_source(source)
+
+    options = RadosFactoryOptions(
+        partitioning=partitioning,
+        exclude_invalid_files=exclude_invalid_files
+    )
+    factory = RadosDatasetFactory(paths_or_selector, options)
+
+    return factory.finish(schema)
+
+
 def _union_dataset(children, schema=None, **kwargs):
     if any(v is not None for v in kwargs.values()):
         raise ValueError(
@@ -668,6 +702,8 @@ def dataset(source, schema=None, format=None, filesystem=None,
 
     # TODO(kszucs): support InMemoryDataset for a table input
     if _is_path_like(source):
+        if _is_rados_format(source, format):
+            return _rados_dataset(source, **kwargs)
         return _filesystem_dataset(source, **kwargs)
     elif isinstance(source, (tuple, list)):
         if all(_is_path_like(elem) for elem in source):
