@@ -330,10 +330,11 @@ Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas
     schemas.push_back(schema);
   }
 
-  ARROW_ASSIGN_OR_RAISE(auto partition_schema,
-                        options_.partitioning.GetOrInferSchema(
-                            StripPrefixAndFilename(files_, options_.partition_base_dir)));
-  schemas.push_back(partition_schema);
+  //todo: partitioning
+  // ARROW_ASSIGN_OR_RAISE(auto partition_schema,
+  //                       options_.partitioning.GetOrInferSchema(
+  //                           StripPrefixAndFilename(files_, options_.partition_base_dir)));
+  // schemas.push_back(partition_schema);
 
   return schemas;
 }
