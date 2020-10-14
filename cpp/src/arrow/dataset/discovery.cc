@@ -355,15 +355,15 @@ Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions optio
     }
   }
 
-  // todo: instanciate object generator properly
-  auto object_gen = std::make_shared<RadosDataset::ObjectGenerator>();
+  // todo: object vector
+  ObjectVector object_vec;
 
   std::shared_ptr<RadosOptions> rados_options = std::make_shared<RadosOptions>();
   rados_options->ceph_config_path_ = "/etc/ceph/ceph.conf";
   rados_options->rados_interface_ = new RadosWrapper();
   rados_options->io_ctx_interface_ = new IoCtxWrapper();
 
-  return std::make_shared<RadosDataset>(schema, object_gen, rados_options);
+  return std::make_shared<RadosDataset>(schema, object_vec, rados_options);
 }
 
 }  // namespace dataset
