@@ -31,7 +31,7 @@
 #include "arrow/dataset/rados_utils.h"
 
 // WILL BE REMOVED
-#include "arrow/dataset/mockrados.h"
+// #include "arrow/dataset/mockrados.h"
 
 
 namespace arrow {
