@@ -1750,8 +1750,7 @@ cdef class FileSystemFactoryOptions(_Weakrefable):
     __slots__ = ()  # avoid mistakingly creating attributes
 
     def __init__(self, partition_base_dir=None, partitioning=None,
-                 exclude_invalid_files=None,
-                 list selector_ignore_prefixes=None):
+                 exclude_invalid_files=None):
         if isinstance(partitioning, PartitioningFactory):
             self.partitioning_factory = partitioning
         elif isinstance(partitioning, Partitioning):
@@ -1893,6 +1892,138 @@ cdef class FileSystemDatasetFactory(DatasetFactory):
     cdef init(self, shared_ptr[CDatasetFactory]& sp):
         DatasetFactory.init(self, sp)
         self.filesystem_factory = <CFileSystemDatasetFactory*> sp.get()
+
+
+cdef class RadosFactoryOptions(_Weakrefable):
+    """
+    Influences the discovery of rados paths.
+
+    Parameters
+    ----------
+    partition_base_dir : str, optional
+        For the purposes of applying the partitioning, paths will be
+        stripped of the partition_base_dir. Files not matching the
+        partition_base_dir prefix will be skipped for partitioning discovery.
+        The ignored files will still be part of the Dataset, but will not
+        have partition information.
+    partitioning: Partitioning/PartitioningFactory, optional
+       Apply the Partitioning to every discovered Fragment. See Partitioning or
+       PartitioningFactory documentation.
+    exclude_invalid_files : bool, optional (default True)
+        If True, invalid files will be excluded (file format specific check).
+        This will incur IO for each files in a serial and single threaded
+        fashion. Disabling this feature will skip the IO, but unsupported
+        files may be present in the Dataset (resulting in an error at scan
+        time).
+    selector_ignore_prefixes : list, optional
+        When discovering from a Selector (and not from an explicit file list),
+        ignore files and directories matching any of these prefixes.
+        By default this is ['.', '_'].
+    """
+
+    cdef:
+        CRadosFactoryOptions options
+
+    __slots__ = ()  # avoid mistakingly creating attributes
+
+    def __init__(self,partitioning=None,
+                 exclude_invalid_files=None):
+        if isinstance(partitioning, PartitioningFactory):
+            self.partitioning_factory = partitioning
+        elif isinstance(partitioning, Partitioning):
+            self.partitioning = partitioning
+
+        if exclude_invalid_files is not None:
+            self.exclude_invalid_files = exclude_invalid_files
+
+    cdef inline CRadosFactoryOptions unwrap(self):
+        return self.options
+
+    @property
+    def partitioning(self):
+        c_partitioning = self.options.partitioning.partitioning()
+        if c_partitioning.get() == nullptr:
+            return None
+        return Partitioning.wrap(c_partitioning)
+
+    @partitioning.setter
+    def partitioning(self, Partitioning value):
+        self.options.partitioning = (<Partitioning> value).unwrap()
+
+    @property
+    def partitioning_factory(self):
+        c_factory = self.options.partitioning.factory()
+        if c_factory.get() == nullptr:
+            return None
+        return PartitioningFactory.wrap(c_factory)
+
+    @partitioning_factory.setter
+    def partitioning_factory(self, PartitioningFactory value):
+        self.options.partitioning = (<PartitioningFactory> value).unwrap()
+
+    @property
+    def exclude_invalid_files(self):
+        """Whether to exclude invalid files."""
+        return self.options.exclude_invalid_files
+
+    @exclude_invalid_files.setter
+    def exclude_invalid_files(self, bint value):
+        self.options.exclude_invalid_files = value
+
+
+cdef class RadosDatasetFactory(DatasetFactory):
+    """
+    Create a DatasetFactory from a Ceph config.
+
+    Parameters
+    ----------
+    filesystem : pyarrow.fs.FileSystem
+        Filesystem to discover.
+    paths_or_selector: pyarrow.fs.Selector or list of path-likes
+        Either a Selector object or a list of path-like objects.
+    format : FileFormat
+        Currently only ParquetFileFormat and IpcFileFormat are supported.
+    options : RadosFactoryOptions, optional
+        Various flags influencing the discovery of filesystem paths.
+    """
+
+    cdef:
+        CRadosDatasetFactory* rados_factory
+
+    def __init__(self,paths_or_selector,
+                 RadosFactoryOptions options=None):
+        cdef:
+            vector[c_string] paths
+            CResult[shared_ptr[CDatasetFactory]] result
+            CRadosFactoryOptions c_options
+
+        options = options or RadosFactoryOptions()
+        c_options = options.unwrap()
+
+        if isinstance(paths_or_selector, FileSelector):
+            with nogil:
+                c_selector = (<FileSelector> paths_or_selector).selector
+                result = CRadosDatasetFactory.MakeFromSelector(
+                    c_selector,
+                    c_options
+                )
+        if isinstance(paths_or_selector, (list, tuple)):
+            paths = [tobytes(s) for s in paths_or_selector]
+            with nogil:
+                result = CRadosDatasetFactory.MakeFromPaths(
+                    paths,
+                    c_options
+                )
+        else:
+            raise TypeError('Must pass either paths or a FileSelector, but '
+                            'passed {}'.format(type(paths_or_selector)))
+
+        self.init(GetResultValue(result))
+
+    cdef init(self, shared_ptr[CDatasetFactory]& sp):
+        DatasetFactory.init(self, sp)
+        self.rados_factory = <CRadosDatasetFactory*> sp.get()
+
 
 
 cdef class UnionDatasetFactory(DatasetFactory):
