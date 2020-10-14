@@ -80,9 +80,3 @@ cpp/Brewfile.lock.json
 
 # docker volumes used for caching
 .docker
-
-# cls
-cpp/src/arrow/adapters/cls/build/
-cpp/src/arrow/adapters/cls/test-cluster/
-cpp/src/arrow/adapters/cls/ceph/
-cpp/src/arrow/adapters/cls/scripts/test-cluster/
