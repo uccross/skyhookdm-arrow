@@ -38,11 +38,11 @@ int RadosWrapper::init2(const char * const name, const char * const clustername,
     return this->cluster->init2(name, clustername, flags);
 }
 
-int RadosWrapper::ioctx_create(const char *name, IoCtxInterface &pioctx) {
+int RadosWrapper::ioctx_create(const char *name, IoCtxInterface *pioctx) {
   librados::IoCtx ioCtx;
-  int res = this->cluster->ioctx_create(name, ioCtx);
-  pioctx.setIoCtx(ioCtx);
-  return res;
+  int ret = this->cluster->ioctx_create(name, ioCtx);
+  pioctx->setIoCtx(&ioCtx);
+  return ret;
 }
 
 int RadosWrapper::conf_read_file(const char * const path) {

@@ -50,7 +50,7 @@ public:
     MOCK_METHOD2(write_full, int(const std::string& oid, librados::bufferlist& bl));
     MOCK_METHOD4(read, int(const std::string& oid, librados::bufferlist& bl, size_t len, uint64_t off));
     MOCK_METHOD5(exec, int(const std::string& oid, const char *cls, const char *method, librados::bufferlist& inbl, librados::bufferlist& outbl));
-    MOCK_METHOD1(setIoCtx, void (librados::IoCtx& ioCtx_));
+    MOCK_METHOD1(setIoCtx, void (librados::IoCtx *ioCtx_));
 private:
     Status setup(){
         EXPECT_CALL(*this, write_full(testing::_, testing::_))
@@ -76,7 +76,7 @@ public:
         testing::Mock::AllowLeak(this);
     }
     MOCK_METHOD3(init2, int(const char * const name, const char * const clustername, uint64_t flags));
-    MOCK_METHOD2(ioctx_create, int(const char *name, IoCtxInterface &pioctx));
+    MOCK_METHOD2(ioctx_create, int(const char *name, IoCtxInterface *pioctx));
     MOCK_METHOD1(conf_read_file, int(const char * const path));
     MOCK_METHOD0(connect, int());
     MOCK_METHOD0(shutdown, void());

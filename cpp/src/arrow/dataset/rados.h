@@ -36,11 +36,14 @@ class ARROW_DS_EXPORT IoCtxInterface {
     virtual int exec(const std::string& oid, const char *cls, const char *method, librados::bufferlist& inbl, librados::bufferlist& outbl) = 0;
   private:
     friend class RadosWrapper;
-    virtual void setIoCtx(librados::IoCtx &ioCtx_) = 0;
+    virtual void setIoCtx(librados::IoCtx *ioCtx_) = 0;
 };
 
 class ARROW_DS_EXPORT IoCtxWrapper: public IoCtxInterface {
   public:
+     IoCtxWrapper() {
+       ioCtx = new librados::IoCtx();
+     }
     ~IoCtxWrapper() {
       delete ioCtx;
     }
@@ -48,8 +51,8 @@ class ARROW_DS_EXPORT IoCtxWrapper: public IoCtxInterface {
     int read(const std::string& oid, librados::bufferlist& bl, size_t len, uint64_t off) override;
     int exec(const std::string& oid, const char *cls, const char *method, librados::bufferlist& inbl, librados::bufferlist& outbl) override;
   private:
-    void setIoCtx(librados::IoCtx& ioCtx_) override {
-      ioCtx = &ioCtx_;
+    void setIoCtx(librados::IoCtx *ioCtx_) override {
+      *ioCtx = *ioCtx_;
     }
     librados::IoCtx *ioCtx;
 };
@@ -59,7 +62,7 @@ class ARROW_DS_EXPORT RadosInterface {
   public:
     RadosInterface() {};
     virtual int init2(const char * const name, const char * const clustername, uint64_t flags) = 0;
-    virtual int ioctx_create(const char *name, IoCtxInterface &pioctx) = 0;
+    virtual int ioctx_create(const char *name, IoCtxInterface *pioctx) = 0;
     virtual int conf_read_file(const char * const path) = 0;
     virtual int connect() = 0;
     virtual void shutdown() = 0;
@@ -76,7 +79,7 @@ class ARROW_DS_EXPORT RadosWrapper: public RadosInterface {
     }
 
     int init2(const char * const name, const char * const clustername, uint64_t flags) override;
-    int ioctx_create(const char *name, IoCtxInterface &pioctx) override;
+    int ioctx_create(const char *name, IoCtxInterface *pioctx) override;
     int conf_read_file(const char * const path);
     int connect();
     void shutdown();
