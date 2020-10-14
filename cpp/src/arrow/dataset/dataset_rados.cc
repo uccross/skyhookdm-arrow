@@ -85,7 +85,8 @@ Status RadosDataset::Connect() {
                rados_options_->flags_);
   rados_options_->rados_interface_->conf_read_file(rados_options_->ceph_config_path_.c_str());
   rados_options_->rados_interface_->connect();
-  rados_options_->rados_interface_->ioctx_create(rados_options_->pool_name_.c_str(), *(rados_options_->io_ctx_interface_));
+  rados_options_->rados_interface_->ioctx_create(rados_options_->pool_name_.c_str(), rados_options_->io_ctx_interface_);
+  //
   return Status::OK();
 }
 
