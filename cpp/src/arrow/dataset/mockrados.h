@@ -17,9 +17,8 @@
 
 #pragma once
 
-#include <gmock/gmock.h>
-
 #include "arrow/dataset/type_fwd.h"
+#include "arrow/dataset/test_util.h"
 #include "arrow/dataset/visibility.h"
 #include "arrow/util/macros.h"
 #include "arrow/dataset/rados.h"
