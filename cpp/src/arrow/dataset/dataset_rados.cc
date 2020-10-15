@@ -30,10 +30,6 @@
 #include "arrow/util/make_unique.h"
 #include "arrow/dataset/rados_utils.h"
 
-// WILL BE REMOVED
-// #include "arrow/dataset/mockrados.h"
-
-
 namespace arrow {
 namespace dataset {
 
@@ -80,13 +76,29 @@ RadosDataset::RadosDataset(std::shared_ptr<Schema> schema,
       rados_options_(std::move(rados_options)) {}
 
 Status RadosDataset::Connect() {
-  rados_options_->rados_interface_->init2(rados_options_->user_name_.c_str(), 
+  int e;
+  e = rados_options_->rados_interface_->init2(rados_options_->user_name_.c_str(), 
                rados_options_->cluster_name_.c_str(), 
                rados_options_->flags_);
-  rados_options_->rados_interface_->conf_read_file(rados_options_->ceph_config_path_.c_str());
-  rados_options_->rados_interface_->connect();
-  rados_options_->rados_interface_->ioctx_create(rados_options_->pool_name_.c_str(), rados_options_->io_ctx_interface_);
-  //
+  if (e != 0) {
+    return Status::ExecutionError("call to init2() returned non-zero exit code.");
+  }
+  
+  e = rados_options_->rados_interface_->conf_read_file(rados_options_->ceph_config_path_.c_str());
+  if (e != 0) {
+    return Status::ExecutionError("call to conf_read_file() returned non-zero exit code.");
+  }
+  
+  e = rados_options_->rados_interface_->connect();
+  if (e != 0) {
+    return Status::ExecutionError("call to connect() returned non-zero exit code.");
+  }
+  
+  e = rados_options_->rados_interface_->ioctx_create(rados_options_->pool_name_.c_str(), rados_options_->io_ctx_interface_);
+  if (e != 0) {
+    return Status::ExecutionError("call to ioctx_create() returned non-zero exit code.");
+  }
+
   return Status::OK();
 }
 
@@ -122,10 +134,13 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
     in
   ));
 
-  rados_options_->io_ctx_interface_->exec(object_->id(), 
+  int e = rados_options_->io_ctx_interface_->exec(object_->id(), 
                                            rados_options_->cls_name_.c_str(), 
                                            rados_options_->cls_method_.c_str(), 
                                            in, out);
+  if (e != 0) {
+    return Status::ExecutionError("call to exec() returned non-zero exit code.");
+  }
 
   std::shared_ptr<Table> result_table;
   ARROW_RETURN_NOT_OK(read_table_from_bufferlist(&result_table, out));
