@@ -128,18 +128,18 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
 
   Result<std::shared_ptr<Dataset>> ReplaceSchema(
       std::shared_ptr<Schema> schema) const override;
-  
-  /// \brief Connect to the Rados cluster
-  Status Connect();
-
-  /// \brief Shutdown the connection to the Rados cluster
-  Status Shutdown();
 
  protected:
   /// \brief Generates fragments from the dataset
   FragmentIterator GetFragmentsImpl(std::shared_ptr<Expression> predicate = scalar(true)) override;
   std::shared_ptr<ObjectGenerator> get_objects_;
   std::shared_ptr<RadosOptions> rados_options_;
+
+  /// \brief Connect to the Rados cluster
+  Status Connect();
+
+  /// \brief Shutdown the connection to the Rados cluster
+  Status Shutdown();
 };
 
 class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
