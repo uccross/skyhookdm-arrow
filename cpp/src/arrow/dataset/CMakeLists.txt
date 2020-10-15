@@ -30,7 +30,8 @@ set(ARROW_DATASET_SRCS
     projector.cc
     scanner.cc
     rados_utils.cc
-    rados.cc)
+    rados.cc 
+    mockrados.cc)
 
 set(ARROW_DATASET_LINK_STATIC arrow_static)
 set(ARROW_DATASET_LINK_SHARED arrow_shared)
