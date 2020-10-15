@@ -110,28 +110,6 @@ TEST_F(TestRadosDataset, GetFragments) {
   AssertDatasetEquals(reader.get(), dataset.get());
 }
 
-TEST_F(TestRadosDataset, ConnectAndShutdown) {
-  SetSchema({field("i32", int32()), field("f64", float64())});
-  
-  ObjectVector object_vector{
-    std::make_shared<Object>("object.1"), 
-    std::make_shared<Object>("object.2")
-  };
-
-  auto rados_options = RadosOptions::FromPoolName("test_pool");
-
-  auto mock_rados_interface = new MockRados();
-  auto mock_ioctx_interface = new MockIoCtx();
-
-  rados_options->rados_interface_ = mock_rados_interface;
-  rados_options->io_ctx_interface_ = mock_ioctx_interface;
-
-  auto dataset =  std::make_shared<RadosDataset>(schema_, object_vector, rados_options);
-
-  ASSERT_OK(dataset->Connect());
-  ASSERT_OK(dataset->Shutdown());
-}
-
 TEST_F(TestRadosDataset, ReplaceSchema) {
   SetSchema({field("i32", int32()), field("f64", float64())});
   
@@ -140,10 +118,18 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
     std::make_shared<Object>("object.2")
   };
 
+  auto rados_options = RadosOptions::FromPoolName("test_pool");
+  
+  auto mock_rados_interface = new MockRados();
+  auto mock_ioctx_interface = new MockIoCtx();
+
+  rados_options->rados_interface_ = mock_rados_interface;
+  rados_options->io_ctx_interface_ = mock_ioctx_interface;
+
   auto dataset =  std::make_shared<RadosDataset>(
     schema_,
     object_vector,
-    RadosOptions::FromPoolName("test_pool")
+    rados_options
   );
 
   // drop field
