@@ -91,7 +91,7 @@ private:
         EXPECT_CALL(*this, connect())
                 .WillOnce(testing::Return(0));
         EXPECT_CALL(*this, shutdown())
-                .WillOnce(testing::Return());
+                .WillRepeatedly(testing::Return());
         return Status::OK();
     }
 };
