@@ -19,6 +19,7 @@
 #include "arrow/dataset/mockrados.h"
 #include "arrow/dataset/dataset_internal.h"
 #include "arrow/dataset/discovery.h"
+#include "arrow/dataset/scanner.h"
 #include "arrow/dataset/partition.h"
 #include "arrow/ipc/api.h"
 #include "arrow/dataset/test_util.h"
@@ -205,6 +206,41 @@ TEST_F(TestRadosDataset, SerializeDeserializeTable) {
   read_table_from_bufferlist(&table__, bl__);
 
   ASSERT_TRUE(table__->Equals(*table));
+}
+
+
+TEST_F(TestRadosDataset, EndToEnd) {
+  constexpr int64_t kNumberBatches = 24;
+
+  SetSchema({field("f1", int64()), field("f2", int64())});
+
+  ObjectVector object_vector{
+    std::make_shared<Object>("object.1"), 
+    std::make_shared<Object>("object.2"),
+    std::make_shared<Object>("object.3")
+  };
+
+  auto batch = GenerateTestRecordBatch();
+  auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
+
+  auto rados_options = RadosOptions::FromPoolName("test_pool");
+
+  auto mock_rados_interface = new MockRados();
+  auto mock_ioctx_interface = new MockIoCtx();
+
+  rados_options->rados_interface_ = mock_rados_interface;
+  rados_options->io_ctx_interface_ = mock_ioctx_interface;
+
+  auto dataset = std::make_shared<RadosDataset>(schema_, object_vector, rados_options);
+  auto context = std::make_shared<ScanContext>();
+  auto builder = std::make_shared<ScannerBuilder>(dataset, context);
+  auto scanner = builder->Finish().ValueOrDie();
+  
+  std::shared_ptr<Table> table;
+  reader->ReadAll(&table);
+
+  auto table_ =  scanner->ToTable().ValueOrDie();
+  ASSERT_TRUE(table->Equals(*table_));
 }
 
 }
