@@ -120,6 +120,8 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
                ObjectVector objects,
                std::shared_ptr<RadosOptions> rados_options);
 
+  ~RadosDataset();
+
   const std::shared_ptr<Schema>& schema() const { return schema_; }
 
   const std::shared_ptr<RadosOptions>& rados_options() const { return rados_options_; }
