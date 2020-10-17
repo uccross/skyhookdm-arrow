@@ -1750,7 +1750,8 @@ cdef class FileSystemFactoryOptions(_Weakrefable):
     __slots__ = ()  # avoid mistakingly creating attributes
 
     def __init__(self, partition_base_dir=None, partitioning=None,
-                 exclude_invalid_files=None):
+                 exclude_invalid_files=None,
+                 list selector_ignore_prefixes=None):
         if isinstance(partitioning, PartitioningFactory):
             self.partitioning_factory = partitioning
         elif isinstance(partitioning, Partitioning):
@@ -1893,6 +1894,12 @@ cdef class FileSystemDatasetFactory(DatasetFactory):
         DatasetFactory.init(self, sp)
         self.filesystem_factory = <CFileSystemDatasetFactory*> sp.get()
 
+cdef class RadosDataset(Dataset):
+    cdef:
+        CRadosDataset* rados_dataset
+
+    def __init__(self):
+        pass
 
 cdef class RadosFactoryOptions(_Weakrefable):
     """
@@ -2000,13 +2007,6 @@ cdef class RadosDatasetFactory(DatasetFactory):
         options = options or RadosFactoryOptions()
         c_options = options.unwrap()
 
-        if isinstance(paths_or_selector, FileSelector):
-            with nogil:
-                c_selector = (<FileSelector> paths_or_selector).selector
-                result = CRadosDatasetFactory.MakeFromSelector(
-                    c_selector,
-                    c_options
-                )
         if isinstance(paths_or_selector, (list, tuple)):
             paths = [tobytes(s) for s in paths_or_selector]
             with nogil:
