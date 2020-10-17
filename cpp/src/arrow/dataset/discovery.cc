@@ -268,12 +268,11 @@ RadosDatasetFactory::RadosDatasetFactory(
     : files_(std::move(files)),
       options_(std::move(options)) {}
 
-Result<bool> RadosDatasetFactory::IsCephConf(const std::string& source){
+bool RadosDatasetFactory::IsCephConf(const std::string& source){
   librados::Rados cluster;
   auto ret = cluster.conf_read_file(source.c_str());
   if(ret < 0){
-    return Status::IOError("Could not read  the Ceph configuration file '", source,
-                           "': ", ret);
+    return false;
   }
   return true;
 }
@@ -284,9 +283,7 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
   std::vector<fs::FileInfo> filtered_files;
   for (const auto& path : paths) {
     if (options.exclude_invalid_files) {
-      ARROW_ASSIGN_OR_RAISE(auto supported,
-                            IsCephConf(path));
-      if (!supported) {
+      if (!IsCephConf(path)) {
         continue;
       }
     }
@@ -304,9 +301,7 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
   std::vector<fs::FileInfo> filtered_files;
   for (const auto& info : files) {
     if (options.exclude_invalid_files) {
-      ARROW_ASSIGN_OR_RAISE(auto supported,
-                            IsCephConf(info.path()));
-      if (!supported) {
+      if (!IsCephConf(info.path())) {
         continue;
       }
     }

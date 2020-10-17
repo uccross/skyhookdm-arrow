@@ -257,13 +257,13 @@ class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
   static Result<std::shared_ptr<DatasetFactory>> Make(
       const std::vector<std::string>& paths,
       RadosFactoryOptions options);
-  
 
   Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(
       InspectOptions options) override;
 
   Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
 
+  static bool IsCephConf(const std::string& source);
  protected:
   static Result<std::shared_ptr<DatasetFactory>> Make(
       const std::vector<fs::FileInfo>& files,
@@ -273,8 +273,6 @@ class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
                            RadosFactoryOptions options);
 
   Result<std::shared_ptr<Schema>> PartitionSchema();
-
-  static Result<bool> IsCephConf(const std::string& source);
 
   std::vector<fs::FileInfo> files_;
   std::shared_ptr<fs::FileSystem> fs_;

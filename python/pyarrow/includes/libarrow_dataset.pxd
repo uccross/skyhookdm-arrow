@@ -389,6 +389,10 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
             CFileSystemFactoryOptions options
         )
 
+    cdef cppclass CRadosDataset \
+            "arrow::dataset::RadosDataset":
+            pass
+
     cdef cppclass CRadosFactoryOptions \
             "arrow::dataset::RadosFactoryOptions":
         CPartitioningOrFactory partitioning
@@ -400,13 +404,12 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
         @staticmethod
         CResult[shared_ptr[CDatasetFactory]] MakeFromPaths "Make"(
             vector[c_string] paths,
-            CFileSystemFactoryOptions options
+            CRadosFactoryOptions options
         )
 
         @staticmethod
-        CResult[shared_ptr[CDatasetFactory]] MakeFromSelector "Make"(
-            CFileSelector,
-            CFileSystemFactoryOptions options
+        c_bool IsCephConf "IsCephConf"(
+            c_string path
         )
 
     cdef cppclass CParquetFactoryOptions \
