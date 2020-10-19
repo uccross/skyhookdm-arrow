@@ -2500,3 +2500,32 @@ def test_write_dataset_schema_metadata_parquet(tempdir):
 
     schema = pq.read_table(tempdir / "part-0.parquet").schema
     assert schema.metadata == {b'key': b'value'}
+
+def test_rados_dataset():
+    from pyarrow.dataset import RadosFormat, RadosDataset
+    rados_format = RadosFormat(
+        pool_name='test_pool',
+        object_list=['object.1', 'object.2', 'object.3'],
+        cls_name='rados',
+        cls_method='read'
+        )
+
+    schema = pa.schema([
+        pa.field('f1', pa.int64()),
+        pa.field('f2', pa.int64())
+    ])
+
+    dataset = ds.dataset('/etc/ceph/ceph.conf',
+                         format=rados_format,
+                         schema=schema)
+    
+    # dataset = RadosDataset('/etc/ceph/ceph.conf', format=format, schema=schema)
+
+    assert isinstance(dataset, RadosDataset)
+
+    batches = dataset.to_batches()
+    assert all(isinstance(batch, pa.RecordBatch) for batch in batches)
+
+    table = dataset.to_table()
+    assert isinstance(table, pa.Table)
+
