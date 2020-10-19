@@ -268,7 +268,6 @@ cdef class Dataset(_Weakrefable):
         classes = {
             'union': UnionDataset,
             'filesystem': FileSystemDataset,
-            'rados': RadosDataset
         }
 
         class_ = classes.get(type_name, None)
@@ -1714,6 +1713,7 @@ cdef class DatasetFactory(_Weakrefable):
         else:
             with nogil:
                 result = self.factory.Finish()
+
         return Dataset.wrap(GetResultValue(result))
 
 
@@ -1893,186 +1893,6 @@ cdef class FileSystemDatasetFactory(DatasetFactory):
     cdef init(self, shared_ptr[CDatasetFactory]& sp):
         DatasetFactory.init(self, sp)
         self.filesystem_factory = <CFileSystemDatasetFactory*> sp.get()
-
-cdef class RadosFormat(_Weakrefable):
-    cdef:
-        CRadosFormat rados_format
-
-    __slots__ = ()
-
-    def __init__(self, pool_name='rados_pool',
-                    object_list=[],
-                    user_name='user',
-                    cluster_name='cluster',
-                    flags=0,
-                    cls_name='rados',
-                    cls_method='read'
-                ):
-        # cdef:
-        #     vector[c_string] object_vector_
-        #     c_string pool_name_
-        #     c_string user_name_
-        #     c_string cluster_name_
-        #     uint64_t flags_
-        #     c_string cls_name_
-        #     c_string cls_method_
-        self.rados_format.pool_name_ = tobytes(pool_name)
-        self.rados_format.object_vector_ = [tobytes(s) for s in object_list]
-        self.rados_format.user_name_ = tobytes(user_name)
-        self.rados_format.cluster_name_ = tobytes(cluster_name)
-        self.rados_format.flags_ = flags
-        self.rados_format.cls_name_ = tobytes(cls_name)
-        self.rados_format.cls_method_ = tobytes(cls_method)
-
-    cdef inline CRadosFormat unwrap(self):
-        return self.rados_format
-
-cdef class RadosDataset(Dataset):
-    cdef:
-        CRadosDataset* rados_dataset
-
-    def __init__(self, conf_path, RadosFormat format=None, Schema schema=None):
-        cdef:
-            CRadosFormat c_format
-        if format is None:
-            format = RadosFormat()
-        c_format = format.unwrap()
-        sp_schema = pyarrow_unwrap_schema(schema)
-        result = CRadosDataset.Make(sp_schema, tobytes(conf_path), c_format)
-        self.init(GetResultValue(result))
-
-    cdef void init(self, const shared_ptr[CDataset]& sp):
-        Dataset.init(self, sp)
-        self.rados_dataset = <CRadosDataset*> sp.get()
-
-cdef class RadosFactoryOptions(_Weakrefable):
-    """
-    Influences the discovery of rados paths.
-
-    Parameters
-    ----------
-    partition_base_dir : str, optional
-        For the purposes of applying the partitioning, paths will be
-        stripped of the partition_base_dir. Files not matching the
-        partition_base_dir prefix will be skipped for partitioning discovery.
-        The ignored files will still be part of the Dataset, but will not
-        have partition information.
-    partitioning: Partitioning/PartitioningFactory, optional
-       Apply the Partitioning to every discovered Fragment. See Partitioning or
-       PartitioningFactory documentation.
-    exclude_invalid_files : bool, optional (default True)
-        If True, invalid files will be excluded (file format specific check).
-        This will incur IO for each files in a serial and single threaded
-        fashion. Disabling this feature will skip the IO, but unsupported
-        files may be present in the Dataset (resulting in an error at scan
-        time).
-    selector_ignore_prefixes : list, optional
-        When discovering from a Selector (and not from an explicit file list),
-        ignore files and directories matching any of these prefixes.
-        By default this is ['.', '_'].
-    """
-
-    cdef:
-        CRadosFactoryOptions options
-
-    __slots__ = ()  # avoid mistakingly creating attributes
-
-    def __init__(self,partitioning=None,
-                 exclude_invalid_files=None):
-        if isinstance(partitioning, PartitioningFactory):
-            self.partitioning_factory = partitioning
-        elif isinstance(partitioning, Partitioning):
-            self.partitioning = partitioning
-
-        if exclude_invalid_files is not None:
-            self.exclude_invalid_files = exclude_invalid_files
-
-    cdef inline CRadosFactoryOptions unwrap(self):
-        return self.options
-
-    @property
-    def partitioning(self):
-        c_partitioning = self.options.partitioning.partitioning()
-        if c_partitioning.get() == nullptr:
-            return None
-        return Partitioning.wrap(c_partitioning)
-
-    @partitioning.setter
-    def partitioning(self, Partitioning value):
-        self.options.partitioning = (<Partitioning> value).unwrap()
-
-    @property
-    def partitioning_factory(self):
-        c_factory = self.options.partitioning.factory()
-        if c_factory.get() == nullptr:
-            return None
-        return PartitioningFactory.wrap(c_factory)
-
-    @partitioning_factory.setter
-    def partitioning_factory(self, PartitioningFactory value):
-        self.options.partitioning = (<PartitioningFactory> value).unwrap()
-
-    @property
-    def exclude_invalid_files(self):
-        """Whether to exclude invalid files."""
-        return self.options.exclude_invalid_files
-
-    @exclude_invalid_files.setter
-    def exclude_invalid_files(self, bint value):
-        self.options.exclude_invalid_files = value
-
-
-cdef class RadosDatasetFactory(DatasetFactory):
-    """
-    Create a DatasetFactory from a Ceph config.
-
-    Parameters
-    ----------
-    filesystem : pyarrow.fs.FileSystem
-        Filesystem to discover.
-    paths_or_selector: pyarrow.fs.Selector or list of path-likes
-        Either a Selector object or a list of path-like objects.
-    format : FileFormat
-        Currently only ParquetFileFormat and IpcFileFormat are supported.
-    options : RadosFactoryOptions, optional
-        Various flags influencing the discovery of filesystem paths.
-    """
-
-    cdef:
-        CRadosDatasetFactory* rados_factory
-
-    def __init__(self,paths_or_selector,
-                 RadosFormat rados_format=None,
-                 RadosFactoryOptions options=None):
-        cdef:
-            vector[c_string] paths
-            CResult[shared_ptr[CDatasetFactory]] result
-            CRadosFactoryOptions c_options
-            CRadosFormat c_format
-
-        options = options or RadosFactoryOptions()
-        c_options = options.unwrap()
-        rados_format = rados_format or RadosFormat()
-        c_format = rados_format.unwrap()
-
-        if isinstance(paths_or_selector, (list, tuple)):
-            paths = [tobytes(s) for s in paths_or_selector]
-            with nogil:
-                result = CRadosDatasetFactory.MakeFromPaths(
-                    paths,
-                    c_format,
-                    c_options
-                )
-        else:
-            raise TypeError('Must pass either paths or a FileSelector, but '
-                            'passed {}'.format(type(paths_or_selector)))
-
-        self.init(GetResultValue(result))
-
-    cdef init(self, shared_ptr[CDatasetFactory]& sp):
-        DatasetFactory.init(self, sp)
-        self.rados_factory = <CRadosDatasetFactory*> sp.get()
-
 
 
 cdef class UnionDatasetFactory(DatasetFactory):

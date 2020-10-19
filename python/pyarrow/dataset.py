@@ -20,7 +20,6 @@
 import pyarrow as pa
 from pyarrow.fs import _MockFileSystem
 from pyarrow.util import _stringify_path, _is_path_like
-import pathlib
 
 from pyarrow._dataset import (  # noqa
     CsvFileFormat,
@@ -33,10 +32,6 @@ from pyarrow._dataset import (  # noqa
     FileSystemDataset,
     FileSystemDatasetFactory,
     FileSystemFactoryOptions,
-    RadosFormat,
-    RadosDataset,
-    RadosDatasetFactory,
-    RadosFactoryOptions,
     FileWriteOptions,
     Fragment,
     HivePartitioning,
@@ -442,37 +437,6 @@ def _filesystem_dataset(source, schema=None, filesystem=None,
 
     return factory.finish(schema)
 
-def is_rados_format(format):
-    if format:
-        if isinstance(format, str):
-            return format == 'rados'
-        return isinstance(format, RadosFormat)
-    return False
-
-def _rados_dataset(source, schema=None, filesystem=None,
-                        partitioning=None, format=None,
-                        partition_base_dir=None, exclude_invalid_files=None,
-                        selector_ignore_prefixes=None):
-    # format = _ensure_format(format or 'parquet')
-    # partitioning = _ensure_partitioning(partitioning)
-
-    if isinstance(source, (list, tuple)):
-        _, paths_or_selector = _ensure_multiple_sources(source)
-    else:
-        _, paths_or_selector = _ensure_single_source(source)
-
-    options = RadosFactoryOptions(
-        partitioning=partitioning,
-        exclude_invalid_files=exclude_invalid_files
-    )
-
-    if isinstance(format, str) and format == 'rados':
-        format = RadosFormat()
-
-    factory = RadosDatasetFactory(paths_or_selector, format, options)
-
-    return factory.finish(schema)
-
 
 def _union_dataset(children, schema=None, **kwargs):
     if any(v is not None for v in kwargs.values()):
@@ -703,8 +667,6 @@ def dataset(source, schema=None, format=None, filesystem=None,
     )
 
     # TODO(kszucs): support InMemoryDataset for a table input
-    if(is_rados_format(format)):
-        return _rados_dataset(source, **kwargs)
     if _is_path_like(source):
         return _filesystem_dataset(source, **kwargs)
     elif isinstance(source, (tuple, list)):
