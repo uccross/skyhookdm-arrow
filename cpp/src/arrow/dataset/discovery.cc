@@ -264,8 +264,10 @@ Result<std::shared_ptr<Dataset>> FileSystemDatasetFactory::Finish(FinishOptions 
 
 RadosDatasetFactory::RadosDatasetFactory(
     std::vector<fs::FileInfo> files,
+    RadosFormat format,
     RadosFactoryOptions options)
     : files_(std::move(files)),
+      format_(format),
       options_(std::move(options)) {}
 
 bool RadosDatasetFactory::IsCephConf(const std::string& source){
@@ -279,6 +281,7 @@ bool RadosDatasetFactory::IsCephConf(const std::string& source){
 
 Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
     const std::vector<std::string>& paths,
+    RadosFormat format,
     RadosFactoryOptions options) {
   std::vector<fs::FileInfo> filtered_files;
   for (const auto& path : paths) {
@@ -292,11 +295,12 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
   }
 
   return std::shared_ptr<DatasetFactory>(
-      new RadosDatasetFactory(std::move(filtered_files), std::move(options)));
+      new RadosDatasetFactory(std::move(filtered_files), format, std::move(options)));
 }
 
 Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
     const std::vector<fs::FileInfo>& files,
+    RadosFormat format,
     RadosFactoryOptions options) {
   std::vector<fs::FileInfo> filtered_files;
   for (const auto& info : files) {
@@ -310,27 +314,13 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
   }
 
   return std::shared_ptr<DatasetFactory>(
-      new RadosDatasetFactory(std::move(filtered_files), std::move(options)));
+      new RadosDatasetFactory(std::move(filtered_files), format, std::move(options)));
 }
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
     InspectOptions options) {
   std::vector<std::shared_ptr<Schema>> schemas;
-
-  const bool has_fragments_limit = options.fragments >= 0;
-  int fragments = options.fragments;
-  for (const auto& info : files_) {
-    if (has_fragments_limit && fragments-- == 0) break;
-    ARROW_ASSIGN_OR_RAISE(auto schema, format_->Inspect({info, fs_}));
-    schemas.push_back(schema);
-  }
-
-  //todo: partitioning
-  // ARROW_ASSIGN_OR_RAISE(auto partition_schema,
-  //                       options_.partitioning.GetOrInferSchema(
-  //                           StripPrefixAndFilename(files_, options_.partition_base_dir)));
-  // schemas.push_back(partition_schema);
-
+  // todo: inspect schema
   return schemas;
 }
 
@@ -350,13 +340,22 @@ Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions optio
     }
   }
 
-  // todo: object vector
-  ObjectVector object_vec;
-
   std::shared_ptr<RadosOptions> rados_options = std::make_shared<RadosOptions>();
-  rados_options->ceph_config_path_ = "/etc/ceph/ceph.conf";
+  if(files_.size())
+    rados_options->ceph_config_path_ = files_[0].path();
+  rados_options->flags_ = format_.flags_;
+  rados_options->cls_name_ = format_.cls_name_;
+  rados_options->cls_method_ = format_.cls_method_;
+  rados_options->pool_name_ = format_.pool_name_;
+  rados_options->user_name_ = format_.user_name_;
+  
   rados_options->rados_interface_ = new RadosWrapper();
   rados_options->io_ctx_interface_ = new IoCtxWrapper();
+
+  ObjectVector object_vec;
+  for (std::string& id: format_.object_vector_){
+    object_vec.push_back(std::make_shared<Object>(id));
+  }
 
   return std::make_shared<RadosDataset>(schema, object_vec, rados_options);
 }

@@ -30,6 +30,7 @@ set(ARROW_DATASET_SRCS
     projector.cc
     scanner.cc
     rados_utils.cc
+    rados_format.cc
     rados.cc)
 
 set(ARROW_DATASET_LINK_STATIC arrow_static)

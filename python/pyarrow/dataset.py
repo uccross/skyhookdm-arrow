@@ -33,6 +33,7 @@ from pyarrow._dataset import (  # noqa
     FileSystemDataset,
     FileSystemDatasetFactory,
     FileSystemFactoryOptions,
+    RadosFormat,
     RadosDataset,
     RadosDatasetFactory,
     RadosFactoryOptions,
@@ -441,6 +442,13 @@ def _filesystem_dataset(source, schema=None, filesystem=None,
 
     return factory.finish(schema)
 
+def is_rados_format(format):
+    if format:
+        if isinstance(format, str):
+            return format == 'rados'
+        return isinstance(format, RadosFormat)
+    return False
+
 def _rados_dataset(source, schema=None, filesystem=None,
                         partitioning=None, format=None,
                         partition_base_dir=None, exclude_invalid_files=None,
@@ -457,7 +465,11 @@ def _rados_dataset(source, schema=None, filesystem=None,
         partitioning=partitioning,
         exclude_invalid_files=exclude_invalid_files
     )
-    factory = RadosDatasetFactory(paths_or_selector, options)
+
+    if isinstance(format, str) and format == 'rados':
+        format = RadosFormat()
+
+    factory = RadosDatasetFactory(paths_or_selector, format, options)
 
     return factory.finish(schema)
 
@@ -691,7 +703,7 @@ def dataset(source, schema=None, format=None, filesystem=None,
     )
 
     # TODO(kszucs): support InMemoryDataset for a table input
-    if format and isinstance(format, str) and format == 'rados':
+    if(is_rados_format(format)):
         return _rados_dataset(source, **kwargs)
     if _is_path_like(source):
         return _filesystem_dataset(source, **kwargs)

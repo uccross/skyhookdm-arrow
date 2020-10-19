@@ -35,6 +35,7 @@
 #include "arrow/result.h"
 #include "arrow/util/macros.h"
 #include "arrow/util/variant.h"
+#include "arrow/dataset/rados_format.h"
 
 namespace arrow {
 namespace dataset {
@@ -256,6 +257,7 @@ class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
   /// \param[in] factory options.
   static Result<std::shared_ptr<DatasetFactory>> Make(
       const std::vector<std::string>& paths,
+      RadosFormat format,
       RadosFactoryOptions options);
 
   Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(
@@ -267,16 +269,17 @@ class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
  protected:
   static Result<std::shared_ptr<DatasetFactory>> Make(
       const std::vector<fs::FileInfo>& files,
+      RadosFormat format,
       RadosFactoryOptions options);
 
   RadosDatasetFactory(std::vector<fs::FileInfo> files,
+                           RadosFormat format,
                            RadosFactoryOptions options);
 
   Result<std::shared_ptr<Schema>> PartitionSchema();
 
   std::vector<fs::FileInfo> files_;
-  std::shared_ptr<fs::FileSystem> fs_;
-  std::shared_ptr<FileFormat> format_;
+  RadosFormat format_;
   RadosFactoryOptions options_;
 };
 
