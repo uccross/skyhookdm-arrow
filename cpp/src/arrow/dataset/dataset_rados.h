@@ -25,16 +25,8 @@
 #include <utility>
 #include <vector>
 
-#include "arrow/util/macros.h"
-#include "arrow/util/mutex.h"
-#include "arrow/dataset/type_fwd.h"
-#include "arrow/dataset/visibility.h"
 #include "arrow/dataset/dataset.h"
-#include "arrow/dataset/file_base.h"
-#include "arrow/dataset/filter.h"
-#include "arrow/result.h"
-#include "arrow/type.h"
-#include "arrow/util/iterator.h"
+#include "arrow/dataset/scanner.h"
 #include "arrow/dataset/rados.h"
 
 namespace arrow {

@@ -16,19 +16,19 @@
 // under the License.
 
 #include "arrow/dataset/dataset_rados.h"
+#include "arrow/dataset/rados_utils.h"
 
 #include <memory>
 #include <utility>
 
-#include "arrow/io/memory.h"
-#include "arrow/ipc/api.h"
-#include "arrow/dataset/api.h"
+#include "arrow/dataset/dataset_internal.h"
+#include "arrow/dataset/filter.h"
+#include "arrow/dataset/scanner.h"
 #include "arrow/table.h"
 #include "arrow/util/bit_util.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/logging.h"
 #include "arrow/util/make_unique.h"
-#include "arrow/dataset/rados_utils.h"
 
 namespace arrow {
 namespace dataset {
