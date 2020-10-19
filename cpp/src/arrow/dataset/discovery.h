@@ -35,7 +35,6 @@
 #include "arrow/result.h"
 #include "arrow/util/macros.h"
 #include "arrow/util/variant.h"
-#include "arrow/dataset/rados_format.h"
 
 namespace arrow {
 namespace dataset {
@@ -238,49 +237,6 @@ class ARROW_DS_EXPORT FileSystemDatasetFactory : public DatasetFactory {
   std::shared_ptr<fs::FileSystem> fs_;
   std::shared_ptr<FileFormat> format_;
   FileSystemFactoryOptions options_;
-};
-
-struct RadosFactoryOptions {
-  
-  PartitioningOrFactory partitioning{Partitioning::Default()};
-
-  // Invalid config files (via selector or explicitly) will be excluded.
-  bool exclude_invalid_files = false;
-};
-
-/// \brief RadosDatasetFactory creates a Dataset from a Ceph config file
-class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
- public:
-  /// \brief Build a RadosDatasetFactory from an Ceph config path.
-  ///
-  /// \param[in] Ceph config path
-  /// \param[in] factory options.
-  static Result<std::shared_ptr<DatasetFactory>> Make(
-      const std::vector<std::string>& paths,
-      RadosFormat format,
-      RadosFactoryOptions options);
-
-  Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(
-      InspectOptions options) override;
-
-  Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
-
-  static bool IsCephConf(const std::string& source);
- protected:
-  static Result<std::shared_ptr<DatasetFactory>> Make(
-      const std::vector<fs::FileInfo>& files,
-      RadosFormat format,
-      RadosFactoryOptions options);
-
-  RadosDatasetFactory(std::vector<fs::FileInfo> files,
-                           RadosFormat format,
-                           RadosFactoryOptions options);
-
-  Result<std::shared_ptr<Schema>> PartitionSchema();
-
-  std::vector<fs::FileInfo> files_;
-  RadosFormat format_;
-  RadosFactoryOptions options_;
 };
 
 }  // namespace dataset

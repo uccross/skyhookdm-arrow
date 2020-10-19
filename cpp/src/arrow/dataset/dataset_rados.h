@@ -36,7 +36,6 @@
 #include "arrow/type.h"
 #include "arrow/util/iterator.h"
 #include "arrow/dataset/rados.h"
-#include "arrow/dataset/rados_format.h"
 
 namespace arrow {
 namespace dataset {
@@ -120,10 +119,6 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
   RadosDataset(std::shared_ptr<Schema> schema, 
                ObjectVector objects,
                std::shared_ptr<RadosOptions> rados_options);
-  
-  static Result<std::shared_ptr<RadosDataset>> Make(std::shared_ptr<Schema> schema,
-                std::string conf_path,
-                RadosFormat format);
 
   ~RadosDataset();
 

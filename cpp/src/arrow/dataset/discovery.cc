@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "arrow/dataset/dataset.h"
-#include "arrow/dataset/dataset_rados.h"
 #include "arrow/dataset/file_base.h"
 #include "arrow/dataset/partition.h"
 #include "arrow/dataset/type_fwd.h"
@@ -260,104 +259,6 @@ Result<std::shared_ptr<Dataset>> FileSystemDatasetFactory::Finish(FinishOptions 
   }
 
   return FileSystemDataset::Make(schema, root_partition_, format_, fs_, fragments);
-}
-
-RadosDatasetFactory::RadosDatasetFactory(
-    std::vector<fs::FileInfo> files,
-    RadosFormat format,
-    RadosFactoryOptions options)
-    : files_(std::move(files)),
-      format_(format),
-      options_(std::move(options)) {}
-
-bool RadosDatasetFactory::IsCephConf(const std::string& source){
-  librados::Rados cluster;
-  auto ret = cluster.conf_read_file(source.c_str());
-  if(ret < 0){
-    return false;
-  }
-  return true;
-}
-
-Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
-    const std::vector<std::string>& paths,
-    RadosFormat format,
-    RadosFactoryOptions options) {
-  std::vector<fs::FileInfo> filtered_files;
-  for (const auto& path : paths) {
-    if (options.exclude_invalid_files) {
-      if (!IsCephConf(path)) {
-        continue;
-      }
-    }
-
-    filtered_files.emplace_back(path);
-  }
-
-  return std::shared_ptr<DatasetFactory>(
-      new RadosDatasetFactory(std::move(filtered_files), format, std::move(options)));
-}
-
-Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
-    const std::vector<fs::FileInfo>& files,
-    RadosFormat format,
-    RadosFactoryOptions options) {
-  std::vector<fs::FileInfo> filtered_files;
-  for (const auto& info : files) {
-    if (options.exclude_invalid_files) {
-      if (!IsCephConf(info.path())) {
-        continue;
-      }
-    }
-
-    filtered_files.emplace_back(info);
-  }
-
-  return std::shared_ptr<DatasetFactory>(
-      new RadosDatasetFactory(std::move(filtered_files), format, std::move(options)));
-}
-
-Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
-    InspectOptions options) {
-  std::vector<std::shared_ptr<Schema>> schemas;
-  // todo: inspect schema
-  return schemas;
-}
-
-Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions options) {
-  std::shared_ptr<Schema> schema = options.schema;
-  bool schema_missing = schema == nullptr;
-  if (schema_missing) {
-    ARROW_ASSIGN_OR_RAISE(schema, Inspect(options.inspect_options));
-  }
-
-  if (options.validate_fragments && !schema_missing) {
-    // If the schema was not explicitly provided we don't need to validate
-    // since Inspect has already succeeded in producing a valid unified schema.
-    ARROW_ASSIGN_OR_RAISE(auto schemas, InspectSchemas(options.inspect_options));
-    for (const auto& s : schemas) {
-      RETURN_NOT_OK(SchemaBuilder::AreCompatible({schema, s}));
-    }
-  }
-
-  std::shared_ptr<RadosOptions> rados_options = std::make_shared<RadosOptions>();
-  if(files_.size())
-    rados_options->ceph_config_path_ = files_[0].path();
-  rados_options->flags_ = format_.flags_;
-  rados_options->cls_name_ = format_.cls_name_;
-  rados_options->cls_method_ = format_.cls_method_;
-  rados_options->pool_name_ = format_.pool_name_;
-  rados_options->user_name_ = format_.user_name_;
-  
-  rados_options->rados_interface_ = new RadosWrapper();
-  rados_options->io_ctx_interface_ = new IoCtxWrapper();
-
-  ObjectVector object_vec;
-  for (std::string& id: format_.object_vector_){
-    object_vec.push_back(std::make_shared<Object>(id));
-  }
-
-  return std::make_shared<RadosDataset>(schema, object_vec, rados_options);
 }
 
 }  // namespace dataset
