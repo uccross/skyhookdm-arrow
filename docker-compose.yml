@@ -62,22 +62,6 @@ x-ccache: &ccache
   CCACHE_MAXSIZE: 500M
   CCACHE_DIR: /ccache
 
-# CPU/memory limit presets to pass to Docker.
-#
-# Usage: archery docker run --resource-limit=github <image>
-#
-# Note that exporting ARCHERY_DOCKER_BIN="sudo docker" is likely required,
-# unless Docker is configured with cgroups v2 (else Docker will silently
-# ignore the limits).
-x-limit-presets:
-  # These values emulate GitHub Actions:
-  # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
-  github:
-    # Note we use cpuset and not cpus since Ninja only detects and limits
-    # parallelism given the former
-    cpuset_cpus: [0, 1]
-    memory: 7g
-
 x-with-gpus:
   - ubuntu-cuda-cpp
   - ubuntu-cuda-python
@@ -129,7 +113,6 @@ x-hierarchy:
       - ubuntu-docs
     - ubuntu-python-sdist-test
     - ubuntu-r
-    - ubuntu-r-only-r
   - ubuntu-cuda-cpp:
     - ubuntu-cuda-python
   - ubuntu-csharp
@@ -320,7 +303,6 @@ services:
         base: "${ARCH}/ubuntu:${UBUNTU}"
         clang_tools: ${CLANG_TOOLS}
         llvm: ${LLVM}
-        gcc_version: ${GCC_VERSION}
     shm_size: *shm-size
     ulimits: *ulimits
     environment:
@@ -813,16 +795,6 @@ services:
     command: /arrow/ci/scripts/python_wheel_manylinux_test.sh unittests
 
   python-wheel-windows-vs2017:
-    # The windows images must be built locally and pushed to a remote registry:
-    # export REPO=ghcr.io/ursacomputing/arrow
-    # PYTHON=3.6 archery docker build --no-pull --using-docker-cli python-wheel-windows-vs2017
-    # PYTHON=3.7 archery docker build --no-pull --using-docker-cli python-wheel-windows-vs2017
-    # PYTHON=3.8 archery docker build --no-pull --using-docker-cli python-wheel-windows-vs2017
-    # PYTHON=3.9 archery docker build --no-pull --using-docker-cli python-wheel-windows-vs2017
-    # PYTHON=3.6 archery docker push python-wheel-windows-vs2017
-    # PYTHON=3.7 archery docker push python-wheel-windows-vs2017
-    # PYTHON=3.8 archery docker push python-wheel-windows-vs2017
-    # PYTHON=3.9 archery docker push python-wheel-windows-vs2017
     image: ${REPO}:python-${PYTHON}-wheel-windows-vs2017-vcpkg-${VCPKG}
     build:
       args:
@@ -1095,26 +1067,17 @@ services:
         arch: ${ARCH}
         r: ${R}
         base: ${REPO}:${ARCH}-ubuntu-${UBUNTU}-cpp
-        gcc_version: ${GCC_VERSION}
-        tz: ${TZ}
     shm_size: *shm-size
     environment:
       <<: *ccache
       ARROW_R_CXXFLAGS: '-Werror'
       LIBARROW_BUILD: 'false'
       NOT_CRAN: 'true'
-      ARROW_R_DEV: ${ARROW_R_DEV}
     volumes: *ubuntu-volumes
     command: >
       /bin/bash -c "
         /arrow/ci/scripts/cpp_build.sh /arrow /build &&
         /arrow/ci/scripts/python_build.sh /arrow /build &&
-        /arrow/ci/scripts/r_test.sh /arrow"
-
-  ubuntu-r-only-r:
-    extends: ubuntu-r
-    command: >
-      /bin/bash -c "
         /arrow/ci/scripts/r_test.sh /arrow"
 
   r:
@@ -1134,7 +1097,6 @@ services:
         base: ${R_ORG}/${R_IMAGE}:${R_TAG}
         r_dev: ${ARROW_R_DEV}
         devtoolset_version: ${DEVTOOLSET_VERSION}
-        tz: ${TZ}
     shm_size: *shm-size
     environment:
       LIBARROW_DOWNLOAD: "false"
@@ -1165,7 +1127,6 @@ services:
       args:
         base: wch1/r-debug:latest
         r_bin: RDsan
-        tz: ${TZ}
     environment:
       <<: *ccache
     volumes: *ubuntu-volumes
@@ -1187,7 +1148,6 @@ services:
       args:
         base: wch1/r-debug:latest
         r_bin: RDvalgrind
-        tz: ${TZ}
     environment:
       <<: *ccache
       ARROW_R_DEV: ${ARROW_R_DEV}
@@ -1212,7 +1172,6 @@ services:
       args:
         base: rstudio/r-base:4.0-focal
         r_dev: ${ARROW_R_DEV}
-        tz: ${TZ}
     shm_size: *shm-size
     environment:
       LIBARROW_DOWNLOAD: "true"
