@@ -114,6 +114,10 @@ TEST(ClsSDK, TestEndToEnd) {
   create_test_arrow_table(&table);
   write_table_to_bufferlist(table, in);
 
+  arrow::TableBatchReader table_reader(*table);
+  arrow::RecordBatchVector batches;
+  table_reader.ReadAll(&batches);
+
   for (int i = 0; i < 4; i++) {
     std::string obj_id = "obj." + std::to_string(i);
     ASSERT_EQ(0, ioctx.exec(obj_id, "arrow", "write", in, out));
@@ -126,16 +130,28 @@ TEST(ClsSDK, TestEndToEnd) {
     });
 
     arrow::dataset::ObjectVector objects;
-    for (int i = 0; i < 4; i++) objects.push_back(std::make_shared<arrow::dataset::Object>("obj." + std::to_string(i)));
-    
+    for (int i = 0; i < 1; i++) objects.push_back(std::make_shared<arrow::dataset::Object>("obj." + std::to_string(i)));
+ 
     auto rados_options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
-    auto ds = std::make_shared<arrow::dataset::RadosDataset>(schema, objects, rados_options);
+
+    auto rados_ds = std::make_shared<arrow::dataset::RadosDataset>(schema, objects, rados_options);
+    auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema, batches);
+
     auto context = std::make_shared<arrow::dataset::ScanContext>();
-    auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(ds, context);
 
-    builder->Filter(("id"_ > int32_t(7)).Copy());
-    builder->Project(std::vector<std::string>{"cost", "id"});
-    auto scanner = builder->Finish().ValueOrDie();
+    auto rados_scanner_builder = std::make_shared<arrow::dataset::ScannerBuilder>(rados_ds, context);
+    auto inmemory_scanner_builder = std::make_shared<arrow::dataset::ScannerBuilder>(inmemory_ds, context);
 
-    std::cerr << scanner->ToTable().ValueOrDie()->ToString() << "\n";
+    rados_scanner_builder->Filter(("id"_ > int32_t(7)).Copy());
+    rados_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+    auto rados_scanner = rados_scanner_builder->Finish().ValueOrDie();
+
+    inmemory_scanner_builder->Filter(("id"_ > int32_t(7)).Copy());
+    inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+    auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
+
+    auto expected_table = inmemory_scanner->ToTable().ValueOrDie();
+    auto result_table = rados_scanner->ToTable().ValueOrDie();
+
+    ASSERT_EQ(result_table->Equals(*expected_table), 1);
 }
