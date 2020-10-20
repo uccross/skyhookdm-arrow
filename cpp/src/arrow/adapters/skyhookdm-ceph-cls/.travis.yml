@@ -1,0 +1,12 @@
+---
+dist: xenial
+language: python
+python: 3.7
+services: docker
+
+install:
+- git clone --depth=1 https://github.com/systemslab/popper /tmp/popper
+- export PYTHONUNBUFFERED=1
+- pip install /tmp/popper/src
+
+script: popper run --allow-undefined-secrets-in-ci
