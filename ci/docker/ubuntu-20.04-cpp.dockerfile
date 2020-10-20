@@ -69,6 +69,7 @@ RUN apt-get update -y -q && \
         libthrift-dev \
         libutf8proc-dev \
         libzstd-dev \
+        libradospp-dev \
         make \
         ninja-build \
         pkg-config \
