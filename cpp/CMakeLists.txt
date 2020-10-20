@@ -163,6 +163,7 @@ endif()
 
 find_package(ClangTools)
 find_package(InferTools)
+
 if("$ENV{CMAKE_EXPORT_COMPILE_COMMANDS}" STREQUAL "1" OR CLANG_TIDY_FOUND OR INFER_FOUND)
   # Generate a Clang compile_commands.json "compilation database" file for use
   # with various development tools, such as Vim's YouCompleteMe plugin.
@@ -341,6 +342,14 @@ if(ARROW_CUDA
    OR ARROW_BUILD_TESTS
    OR ARROW_BUILD_BENCHMARKS)
   set(ARROW_IPC ON)
+endif()
+
+if(ARROW_CLS)
+  set(ARROW_RADOS ON)
+endif()
+
+if(ARROW_RADOS)
+  set(ARROW_DATASET ON)
 endif()
 
 if(ARROW_DATASET)
