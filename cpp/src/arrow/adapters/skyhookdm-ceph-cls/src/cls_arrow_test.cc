@@ -101,7 +101,7 @@ TEST(ClsSDK, TestSelection) {
   ASSERT_EQ(0, destroy_one_pool_pp(pool_name, cluster));
 }
 
-TEST(ClsSDK, TestWriteObjects) {
+TEST(ClsSDK, TestEndToEnd) {
   librados::Rados cluster;
   std::string pool_name = "test-pool";
   create_one_pool_pp(pool_name, cluster);
@@ -118,4 +118,24 @@ TEST(ClsSDK, TestWriteObjects) {
     std::string obj_id = "obj." + std::to_string(i);
     ASSERT_EQ(0, ioctx.exec(obj_id, "arrow", "write", in, out));
   }
+
+  auto schema = arrow::schema({
+      arrow::field("id", arrow::int32()),
+      arrow::field("cost", arrow::float64()),
+      arrow::field("cost_components", arrow::list(arrow::float64()))
+    });
+
+    arrow::dataset::ObjectVector objects;
+    for (int i = 0; i < 4; i++) objects.push_back(std::make_shared<arrow::dataset::Object>("obj." + std::to_string(i)));
+    
+    auto rados_options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
+    auto ds = std::make_shared<arrow::dataset::RadosDataset>(schema, objects, rados_options);
+    auto context = std::make_shared<arrow::dataset::ScanContext>();
+    auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(ds, context);
+
+    builder->Filter(("id"_ > int32_t(7)).Copy());
+    builder->Project(std::vector<std::string>{"cost", "id"});
+    auto scanner = builder->Finish().ValueOrDie();
+
+    std::cerr << scanner->ToTable().ValueOrDie()->ToString() << "\n";
 }
