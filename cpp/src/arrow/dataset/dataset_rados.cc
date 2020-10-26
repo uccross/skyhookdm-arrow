@@ -59,17 +59,17 @@ Result<std::shared_ptr<Schema>> RadosFragment::ReadPhysicalSchemaImpl() {
   return physical_schema_;
 }
 
-struct VectorObjectGenerator : RadosDataset::ObjectGenerator {
-  explicit VectorObjectGenerator(ObjectVector objects)
+struct VectorObjectGenerator : RadosDataset::RadosObjectGenerator {
+  explicit VectorObjectGenerator(RadosObjectVector objects)
       : objects_(std::move(objects)) {}
 
-  ObjectIterator Get() const final { return MakeVectorIterator(objects_); }
+  RadosObjectIterator Get() const final { return MakeVectorIterator(objects_); }
 
-  ObjectVector objects_;
+  RadosObjectVector objects_;
 };
 
 RadosDataset::RadosDataset(std::shared_ptr<Schema> schema, 
-                           ObjectVector objects,
+                           RadosObjectVector objects,
                            std::shared_ptr<RadosOptions> rados_options)
     : Dataset(std::move(schema)),
       get_objects_(new VectorObjectGenerator(std::move(objects))), 
@@ -122,7 +122,7 @@ FragmentIterator RadosDataset::GetFragmentsImpl(std::shared_ptr<Expression>) {
   auto rados_options = this->rados_options();
 
   auto create_fragment =
-    [schema, rados_options](std::shared_ptr<Object> object) -> Result<std::shared_ptr<Fragment>> {
+    [schema, rados_options](std::shared_ptr<RadosObject> object) -> Result<std::shared_ptr<Fragment>> {
     return std::make_shared<RadosFragment>(std::move(schema), std::move(object), std::move(rados_options));
   };
 

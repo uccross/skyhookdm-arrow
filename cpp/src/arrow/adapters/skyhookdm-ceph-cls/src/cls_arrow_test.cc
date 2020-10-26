@@ -192,7 +192,7 @@ TEST(ClsSDK, TestEndToEnd) {
     });
 
     arrow::dataset::ObjectVector objects;
-    for (int i = 0; i < 1; i++) objects.push_back(std::make_shared<arrow::dataset::Object>("obj." + std::to_string(i)));
+    for (int i = 0; i < 1; i++) objects.push_back(std::make_shared<arrow::dataset::RadosObject>("obj." + std::to_string(i)));
 
     auto rados_options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
 

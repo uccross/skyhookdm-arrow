@@ -32,11 +32,11 @@
 namespace arrow {
 namespace dataset {
 
-/// \brief The Object abstraction encapsulate object properties.
+/// \brief The RadosObject abstraction encapsulate object properties.
 /// Currently it hold only the object id.
-class ARROW_DS_EXPORT Object {
+class ARROW_DS_EXPORT RadosObject {
   public:
-    Object(std::string id)
+    RadosObject(std::string id)
       : id_(id) {}
 
     std::string id() const { return id_; }
@@ -45,9 +45,9 @@ class ARROW_DS_EXPORT Object {
     std::string id_;
 };
 
-/// \brief A vector of Object and an iterator over that object vector
-using ObjectVector = std::vector<std::shared_ptr<Object>>;
-using ObjectIterator = Iterator<std::shared_ptr<Object>>;
+/// \brief A vector of RadosObject and an iterator over that object vector
+using RadosObjectVector = std::vector<std::shared_ptr<RadosObject>>;
+using RadosObjectIterator = Iterator<std::shared_ptr<RadosObject>>;
 
 /// \brief Store configuration for connecting to a RADOS backend and 
 /// the CLS library and functions to invoke. Also, holds the cluster 
@@ -74,7 +74,7 @@ struct ARROW_DS_EXPORT RadosOptions {
 class ARROW_DS_EXPORT RadosFragment : public Fragment {
   public:
     RadosFragment(std::shared_ptr<Schema> schema, 
-                  std::shared_ptr<Object> object,
+                  std::shared_ptr<RadosObject> object,
                   std::shared_ptr<RadosOptions> rados_options)
         : Fragment(scalar(true), std::move(schema)), 
           object_(std::move(object)), 
@@ -89,7 +89,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
 
   protected:
     Result<std::shared_ptr<Schema>> ReadPhysicalSchemaImpl() override;
-    std::shared_ptr<Object> object_;
+    std::shared_ptr<RadosObject> object_;
     std::shared_ptr<RadosOptions> rados_options_;
 };
 
@@ -97,19 +97,19 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
 /// RadosFragments out of them.
 class ARROW_DS_EXPORT RadosDataset : public Dataset {
  public:
-  class ObjectGenerator {
+  class RadosObjectGenerator {
     public:
-      virtual ~ObjectGenerator() = default;
-      virtual ObjectIterator Get() const = 0;
+      virtual ~RadosObjectGenerator() = default;
+      virtual RadosObjectIterator Get() const = 0;
   };
 
   RadosDataset(std::shared_ptr<Schema> schema,
-               std::shared_ptr<ObjectGenerator> get_objects,
+               std::shared_ptr<RadosObjectGenerator> get_objects,
                std::shared_ptr<RadosOptions> rados_options)
       : Dataset(std::move(schema)), get_objects_(std::move(get_objects)), rados_options_(std::move(rados_options)) {}
 
   RadosDataset(std::shared_ptr<Schema> schema, 
-               ObjectVector objects,
+               RadosObjectVector objects,
                std::shared_ptr<RadosOptions> rados_options);
 
   ~RadosDataset();
@@ -126,7 +126,7 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
  protected:
   /// \brief Generates fragments from the dataset
   FragmentIterator GetFragmentsImpl(std::shared_ptr<Expression> predicate = scalar(true)) override;
-  std::shared_ptr<ObjectGenerator> get_objects_;
+  std::shared_ptr<RadosObjectGenerator> get_objects_;
   std::shared_ptr<RadosOptions> rados_options_;
 
   /// \brief Connect to the Rados cluster
@@ -140,7 +140,7 @@ class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
   public: 
     RadosScanTask(std::shared_ptr<ScanOptions> options, 
                   std::shared_ptr<ScanContext> context,
-                  std::shared_ptr<Object> object,
+                  std::shared_ptr<RadosObject> object,
                   std::shared_ptr<RadosOptions> rados_options)
         : ScanTask(std::move(options), std::move(context)), 
           object_(std::move(object)), 
@@ -149,7 +149,7 @@ class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
     Result<RecordBatchIterator> Execute() override;
 
   protected:
-    std::shared_ptr<Object> object_;
+    std::shared_ptr<RadosObject> object_;
     std::shared_ptr<RadosOptions> rados_options_;
 };
 

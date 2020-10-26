@@ -37,7 +37,7 @@ TEST_F(TestRadosScanTask, Execute) {
   auto batch = generate_test_record_batch();
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
-  auto object = std::make_shared<Object>("object.1");
+  auto object = std::make_shared<RadosObject>("object.1");
   auto rados_options = RadosOptions::FromPoolName("test_pool");
 
   auto mock_rados_interface = new MockRados();
@@ -62,7 +62,7 @@ TEST_F(TestRadosFragment, Scan) {
   auto batch = generate_test_record_batch();
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
-  auto object = std::make_shared<Object>("object.1");
+  auto object = std::make_shared<RadosObject>("object.1");
   auto rados_options = RadosOptions::FromPoolName("test_pool");
   
   auto mock_rados_interface = new MockRados();
@@ -83,10 +83,10 @@ TEST_F(TestRadosDataset, GetFragments) {
 
   SetSchema({field("f1", int64()), field("f2", int64())});
   
-  ObjectVector object_vector{
-    std::make_shared<Object>("object.1"), 
-    std::make_shared<Object>("object.2"),
-    std::make_shared<Object>("object.3")
+  RadosObjectVector object_vector{
+    std::make_shared<RadosObject>("object.1"), 
+    std::make_shared<RadosObject>("object.2"),
+    std::make_shared<RadosObject>("object.3")
   };
 
   auto batch = generate_test_record_batch();
@@ -108,9 +108,9 @@ TEST_F(TestRadosDataset, GetFragments) {
 TEST_F(TestRadosDataset, ReplaceSchema) {
   SetSchema({field("i32", int32()), field("f64", float64())});
   
-  ObjectVector object_vector{
-    std::make_shared<Object>("object.1"), 
-    std::make_shared<Object>("object.2")
+  RadosObjectVector object_vector{
+    std::make_shared<RadosObject>("object.1"), 
+    std::make_shared<RadosObject>("object.2")
   };
 
   auto rados_options = RadosOptions::FromPoolName("test_pool");
@@ -191,10 +191,10 @@ TEST_F(TestRadosDataset, EndToEnd) {
 
   SetSchema({field("f1", int64()), field("f2", int64())});
 
-  ObjectVector object_vector{
-    std::make_shared<Object>("object.1"), 
-    std::make_shared<Object>("object.2"),
-    std::make_shared<Object>("object.3")
+  RadosObjectVector object_vector{
+    std::make_shared<RadosObject>("object.1"), 
+    std::make_shared<RadosObject>("object.2"),
+    std::make_shared<RadosObject>("object.3")
   };
 
   auto batch = generate_test_record_batch();
