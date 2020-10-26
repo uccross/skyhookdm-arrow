@@ -32,21 +32,25 @@
 namespace arrow {
 namespace dataset {
 
-/// \brief The RadosObject abstraction encapsulate object properties.
-/// Currently it hold only the object id.
+/// \brief An abstraction to encapsulate information about a 
+/// RADOS object. Currently, it holds only the object ID.
 class ARROW_DS_EXPORT RadosObject {
   public:
+    /// \brief Constructs a RadosObject.
+    /// \param[in] id the object ID.
     RadosObject(std::string id)
       : id_(id) {}
 
+    /// \brief Return the object ID.
     std::string id() const { return id_; }
 
   protected:
     std::string id_;
 };
 
-/// \brief A vector of RadosObject and an iterator over that object vector
+/// \brief A vector of RadosObject(s).
 using RadosObjectVector = std::vector<std::shared_ptr<RadosObject>>;
+/// \brief An iterator over the RadosObjectVector.
 using RadosObjectIterator = Iterator<std::shared_ptr<RadosObject>>;
 
 /// \brief Store configuration for connecting to a RADOS backend and 
@@ -68,11 +72,15 @@ struct ARROW_DS_EXPORT RadosOptions {
     static std::shared_ptr<RadosOptions> FromPoolName(std::string pool_name);
 };
 
-/// \brief A Fragment that maps to an object in the backend.
-/// A RadosFragment stores a vector of RecordBatches in the form
-/// of an arrow Table.
+/// \brief A Fragment that maps to an object stored in the Ceph object store.
 class ARROW_DS_EXPORT RadosFragment : public Fragment {
   public:
+    /// \brief Construct a RadosFragment object.
+    ///
+    /// \param[in] schema the schema of the Table stored in an object
+    /// to which this Fragment maps to.
+    /// \param[in] object the RadosObject that this Fragment wraps.
+    /// \param[in] rados_options the connection information to the RADOS interface.
     RadosFragment(std::shared_ptr<Schema> schema, 
                   std::shared_ptr<RadosObject> object,
                   std::shared_ptr<RadosOptions> rados_options)
@@ -93,7 +101,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
     std::shared_ptr<RadosOptions> rados_options_;
 };
 
-/// \brief A RadosDataset wraps a vector of Objects and generates 
+/// \brief A Dataset to wrap a vector of RadosObjects and generate 
 /// RadosFragments out of them.
 class ARROW_DS_EXPORT RadosDataset : public Dataset {
  public:
@@ -103,19 +111,40 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
       virtual RadosObjectIterator Get() const = 0;
   };
 
+  /// \brief Construct a RadosDataset. 
+  ///
+  /// A RadosDataset is a logical view of a set of objects stored in 
+  /// a RADOS cluster which contains partitions of a Table in the 
+  /// form of a vector of RecordBatches. Upon calling Scan on a RadosDataset,
+  /// the filter Expression and projection Schema is pushed down to the CLS
+  /// where they are applied on an InMemoryFragment wrapping an object containing 
+  /// a table partition.
+  ///
+  /// \param[in] schema the schema of the tables referred to by the dataset.
+  /// \param[in] get_objects a generator to yield RadosObjects from a RadosObjectVector.
+  /// \param[in] rados_options the connection information to the RADOS interface.
   RadosDataset(std::shared_ptr<Schema> schema,
                std::shared_ptr<RadosObjectGenerator> get_objects,
                std::shared_ptr<RadosOptions> rados_options)
       : Dataset(std::move(schema)), get_objects_(std::move(get_objects)), rados_options_(std::move(rados_options)) {}
 
+  /// \brief Constructs a RadosDataset wrapping RadosObjects and
+  /// connects to a RADOS cluster.
+  ///
+  /// \param[in] schema the schema of the tables referred to by the dataset.
+  /// \param[in] objects a vector of RadosObjects that comprise a RadosDataset.
+  /// \param[in] rados_options the connection information to the RADOS interface.
   RadosDataset(std::shared_ptr<Schema> schema, 
                RadosObjectVector objects,
                std::shared_ptr<RadosOptions> rados_options);
-
+  
+  /// \brief The RadosDataset destuctor destroys the RadosDataset 
+  /// and shutdowns the connection to the RADOS cluster.
   ~RadosDataset();
 
   const std::shared_ptr<Schema>& schema() const { return schema_; }
 
+  /// \brief Returns the RadosOptions for this Dataset.
   const std::shared_ptr<RadosOptions>& rados_options() const { return rados_options_; }
 
   std::string type_name() const { return "rados"; }
@@ -124,20 +153,28 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
       std::shared_ptr<Schema> schema) const override;
 
  protected:
-  /// \brief Generates fragments from the dataset
+  /// \brief Generates RadosFragments from the Dataset.
   FragmentIterator GetFragmentsImpl(std::shared_ptr<Expression> predicate = scalar(true)) override;
   std::shared_ptr<RadosObjectGenerator> get_objects_;
   std::shared_ptr<RadosOptions> rados_options_;
 
-  /// \brief Connect to the Rados cluster
+  /// \brief Connect to the Rados cluster.
   Status Connect();
 
-  /// \brief Shutdown the connection to the Rados cluster
+  /// \brief Shutdown the connection to the Rados cluster.
   Status Shutdown();
 };
 
+/// \brief A ScanTask to push down operations to the CLS for 
+/// performing an In-Memory Scan of a RadosObject.
 class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
   public: 
+    /// \brief Construct a RadosScanTask object.
+    ///
+    /// \param[in] options the ScanOptions.
+    /// \param[in] context the ScanContext.
+    /// \param[in] object the RadosObject to apply the ScanTask.
+    /// \param[in] rados_options the connection information to the RADOS interface.
     RadosScanTask(std::shared_ptr<ScanOptions> options, 
                   std::shared_ptr<ScanContext> context,
                   std::shared_ptr<RadosObject> object,

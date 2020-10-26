@@ -80,7 +80,7 @@ TEST(ClsSDK, TestWriteAndReadTable) {
   librados::bufferlist in, out;
   std::shared_ptr<arrow::Table> table;
   create_test_arrow_table(&table);
-  arrow::dataset::write_table_to_bufferlist(table, in);
+  arrow::dataset::serialize_table_to_bufferlist(table, in);
   ASSERT_EQ(0, ioctx.exec("test_object_1", "arrow", "write", in, out));
 
   // READ PATH
@@ -93,7 +93,7 @@ TEST(ClsSDK, TestWriteAndReadTable) {
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
   ASSERT_EQ(0, ioctx.exec("test_object_1", "arrow", "read", in_, out_));
   std::shared_ptr<arrow::Table> table_;
-  arrow::dataset::read_table_from_bufferlist(&table_, out_);
+  arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
   ASSERT_EQ(table->Equals(*table_), 1);
 
   ASSERT_EQ(0, destroy_one_pool_pp(pool_name, cluster));
@@ -110,7 +110,7 @@ TEST(ClsSDK, TestProjection) {
   librados::bufferlist in, out;
   std::shared_ptr<arrow::Table> table;
   create_test_arrow_table(&table);
-  arrow::dataset::write_table_to_bufferlist(table, in);
+  arrow::dataset::serialize_table_to_bufferlist(table, in);
   ASSERT_EQ(0, ioctx.exec("test_object_2", "arrow", "write", in, out));
 
   // READ PATH
@@ -124,7 +124,7 @@ TEST(ClsSDK, TestProjection) {
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
   ASSERT_EQ(0, ioctx.exec("test_object_2", "arrow", "read", in_, out_));
   std::shared_ptr<arrow::Table> table_;
-  arrow::dataset::read_table_from_bufferlist(&table_, out_);
+  arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
 
   ASSERT_EQ(table->Equals(*table_), 0);
   ASSERT_EQ(table_projected->Equals(*table_), 1);
@@ -145,7 +145,7 @@ TEST(ClsSDK, TestSelection) {
   librados::bufferlist in, out;
   std::shared_ptr<arrow::Table> table;
   create_test_arrow_table(&table);
-  arrow::dataset::write_table_to_bufferlist(table, in);
+  arrow::dataset::serialize_table_to_bufferlist(table, in);
   ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "write", in, out));
 
   // READ PATH
@@ -158,7 +158,7 @@ TEST(ClsSDK, TestSelection) {
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
   ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "read", in_, out_));
   std::shared_ptr<arrow::Table> table_;
-  arrow::dataset::read_table_from_bufferlist(&table_, out_);
+  arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
   ASSERT_EQ(table_->num_rows(), 2);
   ASSERT_EQ(0, destroy_one_pool_pp(pool_name, cluster));
 }
@@ -174,7 +174,7 @@ TEST(ClsSDK, TestEndToEnd) {
   librados::bufferlist in, out;
   std::shared_ptr<arrow::Table> table;
   create_test_arrow_table(&table);
-  arrow::dataset::write_table_to_bufferlist(table, in);
+  arrow::dataset::serialize_table_to_bufferlist(table, in);
 
   arrow::TableBatchReader table_reader(*table);
   arrow::RecordBatchVector batches;

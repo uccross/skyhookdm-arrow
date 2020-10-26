@@ -72,7 +72,7 @@ static int read(cls_method_context_t hctx, ceph::buffer::list *in, ceph::buffer:
 
   CLS_LOG(0, "writing the resultant table into the [out] bufferlist");
   ceph::buffer::list result_bl;
-  arrow_ret = arrow::dataset::write_table_to_bufferlist(result_table, result_bl);
+  arrow_ret = arrow::dataset::serialize_table_to_bufferlist(result_table, result_bl);
   if (!arrow_ret.ok()) {
     CLS_ERR("ERROR: failed to write table to bufferlist");
     return -1;

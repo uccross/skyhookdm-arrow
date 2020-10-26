@@ -27,7 +27,6 @@
 namespace arrow {
 namespace dataset {
 
-// should be an abstract class
 class ARROW_DS_EXPORT IoCtxInterface {
   public:
     IoCtxInterface() {};
@@ -57,7 +56,6 @@ class ARROW_DS_EXPORT IoCtxWrapper: public IoCtxInterface {
     librados::IoCtx *ioCtx;
 };
 
-// should be an abstract class
 class ARROW_DS_EXPORT RadosInterface {
   public:
     RadosInterface() {};
@@ -87,5 +85,5 @@ class ARROW_DS_EXPORT RadosWrapper: public RadosInterface {
     librados::Rados *cluster;
 };
 
-}
-}
+} // namespace dataset
+} // namespace arrow

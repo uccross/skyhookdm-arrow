@@ -147,7 +147,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   }
 
   std::shared_ptr<Table> result_table;
-  ARROW_RETURN_NOT_OK(read_table_from_bufferlist(&result_table, out));
+  ARROW_RETURN_NOT_OK(deserialize_table_from_bufferlist(&result_table, out));
 
   if (!options_->schema()->Equals(*(result_table->schema()))) {
     return Status::Invalid("the schema of the result table doesn't match the schema of the requested projection.");

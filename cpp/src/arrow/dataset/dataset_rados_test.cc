@@ -176,11 +176,11 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
 TEST_F(TestRadosDataset, SerializeDeserializeTable) {
   auto table = generate_test_table();
   librados::bufferlist bl;
-  write_table_to_bufferlist(table, bl);
+  serialize_table_to_bufferlist(table, bl);
 
   librados::bufferlist bl__(bl);
   std::shared_ptr<Table> table__;
-  read_table_from_bufferlist(&table__, bl__);
+  deserialize_table_from_bufferlist(&table__, bl__);
 
   ASSERT_TRUE(table__->Equals(*table));
 }
