@@ -191,7 +191,7 @@ TEST(ClsSDK, TestEndToEnd) {
       arrow::field("cost_components", arrow::list(arrow::float64()))
     });
 
-    arrow::dataset::ObjectVector objects;
+    arrow::dataset::RadosObjectVector objects;
     for (int i = 0; i < 1; i++) objects.push_back(std::make_shared<arrow::dataset::RadosObject>("obj." + std::to_string(i)));
 
     auto rados_options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
