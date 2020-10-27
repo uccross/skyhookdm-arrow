@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "arrow/dataset/dataset.h"
-#include "arrow/dataset/scanner.h"
 #include "arrow/dataset/rados.h"
 
 namespace arrow {
@@ -54,10 +53,9 @@ using RadosObjectVector = std::vector<std::shared_ptr<RadosObject>>;
 using RadosObjectIterator = Iterator<std::shared_ptr<RadosObject>>;
 
 /// \brief Store configuration for connecting to a RADOS backend and 
-/// the CLS library and functions to invoke. Also, holds the cluster 
-// and io_ctx context.
+/// the CLS library and functions to invoke. Also, holds pointers to 
+/// a RadosInterface and IoCtxInterface instance.
 struct ARROW_DS_EXPORT RadosOptions {
-
     std::string pool_name_;
     std::string user_name_;
     std::string cluster_name_;
@@ -69,15 +67,18 @@ struct ARROW_DS_EXPORT RadosOptions {
     RadosInterface *rados_interface_;
     IoCtxInterface *io_ctx_interface_;
 
+    /// \brief Creates a RadosOptions instance with default values and a pool name.
+    /// 
+    /// \param[in] pool_name the RADOS pool to connect to.
     static std::shared_ptr<RadosOptions> FromPoolName(std::string pool_name);
 };
 
 /// \brief A Fragment that maps to an object stored in the Ceph object store.
 class ARROW_DS_EXPORT RadosFragment : public Fragment {
   public:
-    /// \brief Construct a RadosFragment object.
+    /// \brief Construct a RadosFragment instance.
     ///
-    /// \param[in] schema the schema of the Table stored in an object
+    /// \param[in] schema the schema of the Table stored in an object.
     /// to which this Fragment maps to.
     /// \param[in] object the RadosObject that this Fragment wraps.
     /// \param[in] rados_options the connection information to the RADOS interface.
@@ -138,7 +139,7 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
                RadosObjectVector objects,
                std::shared_ptr<RadosOptions> rados_options);
   
-  /// \brief The RadosDataset destuctor destroys the RadosDataset 
+  /// \brief The RadosDataset destructor destroys the RadosDataset 
   /// and shutdowns the connection to the RADOS cluster.
   ~RadosDataset();
 
@@ -163,31 +164,6 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
 
   /// \brief Shutdown the connection to the Rados cluster.
   Status Shutdown();
-};
-
-/// \brief A ScanTask to push down operations to the CLS for 
-/// performing an In-Memory Scan of a RadosObject.
-class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
-  public: 
-    /// \brief Construct a RadosScanTask object.
-    ///
-    /// \param[in] options the ScanOptions.
-    /// \param[in] context the ScanContext.
-    /// \param[in] object the RadosObject to apply the ScanTask.
-    /// \param[in] rados_options the connection information to the RADOS interface.
-    RadosScanTask(std::shared_ptr<ScanOptions> options, 
-                  std::shared_ptr<ScanContext> context,
-                  std::shared_ptr<RadosObject> object,
-                  std::shared_ptr<RadosOptions> rados_options)
-        : ScanTask(std::move(options), std::move(context)), 
-          object_(std::move(object)), 
-          rados_options_(rados_options) {}
-
-    Result<RecordBatchIterator> Execute() override;
-
-  protected:
-    std::shared_ptr<RadosObject> object_;
-    std::shared_ptr<RadosOptions> rados_options_;
 };
 
 }  // namespace dataset

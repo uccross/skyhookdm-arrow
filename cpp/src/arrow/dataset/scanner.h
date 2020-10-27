@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "arrow/dataset/dataset.h"
+#include "arrow/dataset/dataset_rados.h"
 #include "arrow/dataset/projector.h"
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
@@ -133,6 +134,31 @@ class ARROW_DS_EXPORT InMemoryScanTask : public ScanTask {
 
  protected:
   std::vector<std::shared_ptr<RecordBatch>> record_batches_;
+};
+
+/// \brief A ScanTask to push down operations to the CLS for 
+/// performing an InMemory Scan of a RadosObject.
+class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
+  public: 
+    /// \brief Construct a RadosScanTask object.
+    ///
+    /// \param[in] options the ScanOptions.
+    /// \param[in] context the ScanContext.
+    /// \param[in] object the RadosObject to apply the operations.
+    /// \param[in] rados_options the connection information to the RADOS interface.
+    RadosScanTask(std::shared_ptr<ScanOptions> options, 
+                  std::shared_ptr<ScanContext> context,
+                  std::shared_ptr<RadosObject> object,
+                  std::shared_ptr<RadosOptions> rados_options)
+        : ScanTask(std::move(options), std::move(context)), 
+          object_(std::move(object)), 
+          rados_options_(rados_options) {}
+
+    Result<RecordBatchIterator> Execute() override;
+
+  protected:
+    std::shared_ptr<RadosObject> object_;
+    std::shared_ptr<RadosOptions> rados_options_;
 };
 
 ARROW_DS_EXPORT Result<ScanTaskIterator> ScanTaskIteratorFromRecordBatch(

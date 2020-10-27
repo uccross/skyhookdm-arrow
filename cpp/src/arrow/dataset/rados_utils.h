@@ -22,15 +22,18 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
-#include "arrow/util/macros.h"
 #include "arrow/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/io/api.h"
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
+#include "arrow/dataset/filter.h"
+#include "arrow/dataset/scanner.h"
+#include "arrow/dataset/dataset.h"
 #include "arrow/dataset/rados.h"
-#include "arrow/dataset/api.h"
+#include "arrow/util/macros.h"
 
 namespace arrow {
 namespace dataset {
