@@ -91,7 +91,7 @@ TEST(ClsSDK, TestWriteAndReadTable) {
       arrow::field("cost", arrow::float64()),
       arrow::field("cost_components", arrow::list(arrow::float64()))});
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
-  ASSERT_EQ(0, ioctx.exec("test_object_1", "arrow", "read", in_, out_));
+  ASSERT_EQ(0, ioctx.exec("test_object_1", "arrow", "read_and_scan", in_, out_));
   std::shared_ptr<arrow::Table> table_;
   arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
   ASSERT_EQ(table->Equals(*table_), 1);
@@ -122,7 +122,7 @@ TEST(ClsSDK, TestProjection) {
 
   auto table_projected = table->RemoveColumn(1).ValueOrDie();
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
-  ASSERT_EQ(0, ioctx.exec("test_object_2", "arrow", "read", in_, out_));
+  ASSERT_EQ(0, ioctx.exec("test_object_2", "arrow", "read_and_scan", in_, out_));
   std::shared_ptr<arrow::Table> table_;
   arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
 
@@ -156,7 +156,7 @@ TEST(ClsSDK, TestSelection) {
       arrow::field("cost", arrow::float64()),
       arrow::field("cost_components", arrow::list(arrow::float64()))});
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
-  ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "read", in_, out_));
+  ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "read_and_scan", in_, out_));
   std::shared_ptr<arrow::Table> table_;
   arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
   ASSERT_EQ(table_->num_rows(), 2);
