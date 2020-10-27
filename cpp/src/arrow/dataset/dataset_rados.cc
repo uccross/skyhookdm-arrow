@@ -16,6 +16,7 @@
 // under the License.
 
 #include "arrow/dataset/dataset_rados.h"
+#include "arrow/dataset/scanner_rados.h"
 #include "arrow/dataset/rados_utils.h"
 
 #include <memory>
@@ -23,7 +24,6 @@
 
 #include "arrow/dataset/dataset_internal.h"
 #include "arrow/dataset/filter.h"
-#include "arrow/dataset/scanner.h"
 #include "arrow/table.h"
 #include "arrow/util/bit_util.h"
 #include "arrow/util/iterator.h"
