@@ -163,7 +163,6 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   librados::bufferlist bl;
   serialize_scan_request_to_bufferlist(filter, schema, bl); 
 
-  // will point to the deserialized filter, schema and batch size
   librados::bufferlist bl__ = std::move(bl);
   std::shared_ptr<Expression> filter__;
   std::shared_ptr<Schema> schema__;
