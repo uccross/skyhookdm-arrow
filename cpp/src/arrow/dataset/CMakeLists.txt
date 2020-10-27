@@ -33,9 +33,15 @@ set(ARROW_DATASET_LINK_STATIC arrow_static)
 set(ARROW_DATASET_LINK_SHARED arrow_shared)
 
 if(ARROW_RADOS)
+  find_package(librados REQUIRED)
+  include_directories(${LIBRADOS_INCLUDE_DIR})
+  
+  set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${LIBRADOS_LIBRARIES})
+  set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${LIBRADOS_LIBRARIES})
+
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} dataset_rados.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} scanner_rados.cc)
-  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados_util.cc)
+  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados_utils.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} mockrados.cc)
 endif()
@@ -65,7 +71,6 @@ add_arrow_lib(arrow_dataset
               PRIVATE_INCLUDES
               ${ARROW_DATASET_PRIVATE_INCLUDES}
               SHARED_LINK_LIBS
-              ${LIBRADOS_LIBRARIES}
               ${ARROW_DATASET_LINK_SHARED}
               STATIC_LINK_LIBS
               ${ARROW_DATASET_LINK_STATIC})
