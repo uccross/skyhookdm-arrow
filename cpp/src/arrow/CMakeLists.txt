@@ -462,7 +462,7 @@ if(ARROW_ORC)
 endif()
 
 if(ARROW_CLS)
-  list(APPEND ARROW_SRCS adapters/skyhookdm-ceph-cls/src/cls_arrow.cc)
+  list(APPEND ARROW_SRCS adapters/skyhookdm-ceph-cls/cls_arrow.cc)
 endif()
 
 if(NOT APPLE AND NOT MSVC_TOOLCHAIN)
