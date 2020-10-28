@@ -29,10 +29,11 @@ endif()
 if(${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
   list(APPEND find_package_arguments QUIET)
 endif()
+
 find_package(ArrowDataset ${find_package_arguments})
 find_package(Parquet ${find_package_arguments})
 
-if(ARROW_FOUND AND PARQUET_FOUND)
+if(ARROW_DATASET_FOUND AND PARQUET_FOUND)
   arrow_find_package(ARROW_CLS
                      "${ARROW_HOME}"
                      cls_arrow
