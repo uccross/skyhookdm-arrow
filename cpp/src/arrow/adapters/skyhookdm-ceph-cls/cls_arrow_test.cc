@@ -8,7 +8,7 @@
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 
-#include "test_utils.h"
+#include "cls_arrow_test_utils.h"
 #include "gtest/gtest.h"
 
 using arrow::dataset::string_literals::operator"" _;
