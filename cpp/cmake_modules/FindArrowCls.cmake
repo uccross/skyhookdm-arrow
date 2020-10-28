@@ -29,7 +29,7 @@ endif()
 if(${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
   list(APPEND find_package_arguments QUIET)
 endif()
-find_package(Arrow ${find_package_arguments})
+find_package(ArrowDataset ${find_package_arguments})
 find_package(Parquet ${find_package_arguments})
 
 if(ARROW_FOUND AND PARQUET_FOUND)
