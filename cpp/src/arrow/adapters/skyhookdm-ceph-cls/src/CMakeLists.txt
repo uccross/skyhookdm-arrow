@@ -1,37 +1,35 @@
-set(cls_dir ${CMAKE_INSTALL_LIBDIR}/rados-classes)
+add_custom_target(cls_arrow)
+arrow_install_all_headers("arrow/adapters/skyhookdm-ceph-cls-src")  # CHECK
 
 # cls_arrow
-add_library(cls_arrow SHARED cls_arrow.cc)
-set_target_properties(cls_arrow PROPERTIES
-        VERSION "1.0.0"
-        SOVERSION "1"
-        INSTALL_RPATH ""
-        CXX_VISIBILITY_PRESET hidden
-        )
-target_link_libraries(cls_arrow
-        arrow
-        arrow_dataset
-        )
+set(ARROW_CLS_SRCS cls_arrow.cc)
 
-install(TARGETS cls_arrow DESTINATION ${cls_dir})
+set(ARROW_CLS_LINK_STATIC arrow_static arrow_dataset_static)
+set(ARROW_CLS_LINK_SHARED arrow_shared arrow_dataset_shared)
+
+find_package(librados REQUIRED)
+include_directories(${LIBRADOS_INCLUDE_DIR})
+
+add_arrow_lib(cls_arrow
+              CMAKE_PACKAGE_NAME
+              ArrowCls
+              PKG_CONFIG_NAME
+              arrow-cls
+              OUTPUTS
+              ARROW_CLS_LIBRARIES
+              SOURCES
+              ${ARROW_CLS_SRCS}
+              PRIVATE_INCLUDES
+              ${ARROW_CLS_PRIVATE_INCLUDES}
+              SHARED_LINK_LIBS
+              ${ARROW_CLS_LINK_SHARED}
+              STATIC_LINK_LIBS
+              ${ARROW_CLS_LINK_STATIC})
 
 # cls_arrow_test
-add_executable(cls_arrow_test
-        cls_arrow_test.cc
-        test_utils.cc
-        )
-
-target_link_libraries(cls_arrow_test
-        arrow
-        arrow_dataset
-        ${LIBRADOS_LIBRARIES}
-        ${GTEST_MAIN_LIBRARIES}
-        ${GTEST_INCLUDE_DIRS}
-        ${GTEST_LIBRARIES}
-        )
-
-install(TARGETS
-        cls_arrow_test
-        RUNTIME DESTINATION bin
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-        )
+add_arrow_test(cls_arrow_test
+               SOURCES
+               cls_arrow_test.cc
+               test_utils.cc
+               PREFIX
+               "arrow-cls")

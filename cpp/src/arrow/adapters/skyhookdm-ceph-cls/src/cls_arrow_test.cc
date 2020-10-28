@@ -3,10 +3,10 @@
 
 #include <rados/librados.hpp>
 
-#include <arrow/api.h>
-#include <arrow/dataset/api.h>
-#include <arrow/io/api.h>
-#include <arrow/ipc/api.h>
+#include "arrow/api.h"
+#include "arrow/dataset/api.h"
+#include "arrow/io/api.h"
+#include "arrow/ipc/api.h"
 
 #include "test_utils.h"
 #include "gtest/gtest.h"
