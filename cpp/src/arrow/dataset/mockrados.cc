@@ -23,49 +23,46 @@ namespace arrow {
 namespace dataset {
 
 std::shared_ptr<RecordBatch> generate_test_record_batch() {
-    // Initialize random seed
-    srand (time(NULL));
+  // Initialize random seed
+  srand(time(NULL));
 
-    // The number of rows that the Record Batch will contain
-    int64_t row_count = 100;
+  // The number of rows that the Record Batch will contain
+  int64_t row_count = 100;
 
-    // Define a schema
-    auto schema_ = schema({field("f1", int64()), field("f2", int64())});
-    
-    // Build the `f1` column
-    auto f1_builder = std::make_shared<Int64Builder>();
-    f1_builder->Reset();
-    for(auto i = 0; i < row_count; i++) {
-        f1_builder->Append(rand());
-    }
-    std::shared_ptr<Array> batch_size_array;
-    f1_builder->Finish(&batch_size_array);
+  // Define a schema
+  auto schema_ = schema({field("f1", int64()), field("f2", int64())});
 
-    // Build the `f2` column
-    auto f2_builder = std::make_shared<Int64Builder>();
-    f2_builder->Reset();
-    for(auto i = 0; i < row_count; i++) {
-        f2_builder->Append(rand());
-    }
-    std::shared_ptr<Array> seq_num_array;
-    f2_builder->Finish(&seq_num_array);
+  // Build the `f1` column
+  auto f1_builder = std::make_shared<Int64Builder>();
+  f1_builder->Reset();
+  for (auto i = 0; i < row_count; i++) {
+    f1_builder->Append(rand());
+  }
+  std::shared_ptr<Array> batch_size_array;
+  f1_builder->Finish(&batch_size_array);
 
-    // Build the Record Batch
-    std::vector<std::shared_ptr<Array>> columns = {
-            batch_size_array,
-            seq_num_array
-    };
-    return RecordBatch::Make(schema_, row_count, columns);
+  // Build the `f2` column
+  auto f2_builder = std::make_shared<Int64Builder>();
+  f2_builder->Reset();
+  for (auto i = 0; i < row_count; i++) {
+    f2_builder->Append(rand());
+  }
+  std::shared_ptr<Array> seq_num_array;
+  f2_builder->Finish(&seq_num_array);
+
+  // Build the Record Batch
+  std::vector<std::shared_ptr<Array>> columns = {batch_size_array, seq_num_array};
+  return RecordBatch::Make(schema_, row_count, columns);
 }
 
 std::shared_ptr<Table> generate_test_table() {
-    RecordBatchVector batches;
-    for (int i = 0; i < 8; i++) {
-        batches.push_back(generate_test_record_batch());
-    }
-    // Build a Table having 8 Record Batches
-    auto table = Table::FromRecordBatches(batches).ValueOrDie();
-    return table;
+  RecordBatchVector batches;
+  for (int i = 0; i < 8; i++) {
+    batches.push_back(generate_test_record_batch());
+  }
+  // Build a Table having 8 Record Batches
+  auto table = Table::FromRecordBatches(batches).ValueOrDie();
+  return table;
 }
 
 }  // namespace dataset

@@ -19,9 +19,9 @@
 #include "arrow/dataset/api.h"
 #include "arrow/dataset/mockrados.h"
 #include "arrow/dataset/test_util.h"
-#include "arrow/ipc/api.h"
-#include "arrow/io/memory.h"
 #include "arrow/filesystem/mockfs.h"
+#include "arrow/io/memory.h"
+#include "arrow/ipc/api.h"
 #include "arrow/testing/generator.h"
 #include "arrow/util/optional.h"
 
@@ -47,8 +47,7 @@ TEST_F(TestRadosScanTask, Execute) {
   rados_options->io_ctx_interface_ = mock_ioctx_interface;
 
   std::shared_ptr<RadosScanTask> task = std::make_shared<RadosScanTask>(
-    options_, ctx_, std::move(object), std::move(rados_options)
-  );
+      options_, ctx_, std::move(object), std::move(rados_options));
 
   AssertScanTaskEquals(reader.get(), task.get(), false);
 }
@@ -64,7 +63,7 @@ TEST_F(TestRadosFragment, Scan) {
 
   auto object = std::make_shared<RadosObject>("object.1");
   auto rados_options = RadosOptions::FromPoolName("test_pool");
-  
+
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
 
@@ -82,21 +81,19 @@ TEST_F(TestRadosDataset, GetFragments) {
   constexpr int64_t kNumberBatches = 24;
 
   SetSchema({field("f1", int64()), field("f2", int64())});
-  
-  RadosObjectVector object_vector{
-    std::make_shared<RadosObject>("object.1"), 
-    std::make_shared<RadosObject>("object.2"),
-    std::make_shared<RadosObject>("object.3")
-  };
+
+  RadosObjectVector object_vector{std::make_shared<RadosObject>("object.1"),
+                                  std::make_shared<RadosObject>("object.2"),
+                                  std::make_shared<RadosObject>("object.3")};
 
   auto batch = generate_test_record_batch();
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
   auto rados_options = RadosOptions::FromPoolName("test_pool");
-  
+
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
-  
+
   rados_options->rados_interface_ = mock_rados_interface;
   rados_options->io_ctx_interface_ = mock_ioctx_interface;
 
@@ -107,25 +104,19 @@ TEST_F(TestRadosDataset, GetFragments) {
 
 TEST_F(TestRadosDataset, ReplaceSchema) {
   SetSchema({field("i32", int32()), field("f64", float64())});
-  
-  RadosObjectVector object_vector{
-    std::make_shared<RadosObject>("object.1"), 
-    std::make_shared<RadosObject>("object.2")
-  };
+
+  RadosObjectVector object_vector{std::make_shared<RadosObject>("object.1"),
+                                  std::make_shared<RadosObject>("object.2")};
 
   auto rados_options = RadosOptions::FromPoolName("test_pool");
-  
+
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
 
   rados_options->rados_interface_ = mock_rados_interface;
   rados_options->io_ctx_interface_ = mock_ioctx_interface;
 
-  auto dataset =  std::make_shared<RadosDataset>(
-    schema_,
-    object_vector,
-    rados_options
-  );
+  auto dataset = std::make_shared<RadosDataset>(schema_, object_vector, rados_options);
 
   // drop field
   ASSERT_OK(dataset->ReplaceSchema(schema({field("i32", int32())})).status());
@@ -147,10 +138,10 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
 
 TEST_F(TestRadosDataset, IntToCharAndCharToInt) {
   int64_t value = 12345678;
-  char *result = new char[8];
+  char* result = new char[8];
   int64_to_char((uint8_t*)result, value);
 
-  char *result_ = result;
+  char* result_ = result;
   int64_t value_ = 0;
   char_to_int64((uint8_t*)result_, value_);
 
@@ -161,7 +152,7 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   auto filter = std::make_shared<OrExpression>("b"_ == 3 or "b"_ == 4);
   auto schema = arrow::schema({field("i32", int32()), field("f64", float64())});
   librados::bufferlist bl;
-  serialize_scan_request_to_bufferlist(filter, schema, bl); 
+  serialize_scan_request_to_bufferlist(filter, schema, bl);
 
   librados::bufferlist bl__ = std::move(bl);
   std::shared_ptr<Expression> filter__;
@@ -184,17 +175,14 @@ TEST_F(TestRadosDataset, SerializeDeserializeTable) {
   ASSERT_TRUE(table__->Equals(*table));
 }
 
-
 TEST_F(TestRadosDataset, EndToEnd) {
   constexpr int64_t kNumberBatches = 24;
 
   SetSchema({field("f1", int64()), field("f2", int64())});
 
-  RadosObjectVector object_vector{
-    std::make_shared<RadosObject>("object.1"), 
-    std::make_shared<RadosObject>("object.2"),
-    std::make_shared<RadosObject>("object.3")
-  };
+  RadosObjectVector object_vector{std::make_shared<RadosObject>("object.1"),
+                                  std::make_shared<RadosObject>("object.2"),
+                                  std::make_shared<RadosObject>("object.3")};
 
   auto batch = generate_test_record_batch();
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
@@ -211,13 +199,13 @@ TEST_F(TestRadosDataset, EndToEnd) {
   auto context = std::make_shared<ScanContext>();
   auto builder = std::make_shared<ScannerBuilder>(dataset, context);
   auto scanner = builder->Finish().ValueOrDie();
-  
+
   std::shared_ptr<Table> table;
   reader->ReadAll(&table);
 
-  auto table_ =  scanner->ToTable().ValueOrDie();
+  auto table_ = scanner->ToTable().ValueOrDie();
   ASSERT_TRUE(table->Equals(*table_));
 }
 
-}
-}
+}  // namespace dataset
+}  // namespace arrow

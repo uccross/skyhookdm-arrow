@@ -1,5 +1,5 @@
-#include <iostream>
 #include <errno.h>
+#include <iostream>
 
 #include <rados/librados.hpp>
 
@@ -13,20 +13,19 @@
 
 using arrow::dataset::string_literals::operator"" _;
 
-int create_test_arrow_table(std::shared_ptr<arrow::Table> *out_table) {
-
+int create_test_arrow_table(std::shared_ptr<arrow::Table>* out_table) {
   // Create a memory pool
-  arrow::MemoryPool *pool = arrow::default_memory_pool();
+  arrow::MemoryPool* pool = arrow::default_memory_pool();
 
   // An arrow array builder for each table column
   arrow::Int32Builder id_builder(pool);
   arrow::DoubleBuilder cost_builder(pool);
-  arrow::ListBuilder components_builder(
-      pool, std::make_shared<arrow::DoubleBuilder>(pool));
+  arrow::ListBuilder components_builder(pool,
+                                        std::make_shared<arrow::DoubleBuilder>(pool));
 
   // The following builder is owned by components_builder.
-  arrow::DoubleBuilder &cost_components_builder = *(
-      static_cast<arrow::DoubleBuilder *>(components_builder.value_builder()));
+  arrow::DoubleBuilder& cost_components_builder =
+      *(static_cast<arrow::DoubleBuilder*>(components_builder.value_builder()));
 
   // Append some fake data
   for (int i = 0; i < 10; ++i) {
@@ -56,12 +55,10 @@ int create_test_arrow_table(std::shared_ptr<arrow::Table> *out_table) {
 
   // Create table schema and make table from col arrays and schema
   std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
-      arrow::field("id", arrow::int32()),
-      arrow::field("cost", arrow::float64()),
+      arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
       arrow::field("cost_components", arrow::list(arrow::float64()))};
   auto schema = std::make_shared<arrow::Schema>(schema_vector);
-  *out_table =
-      arrow::Table::Make(schema, {id_array, cost_array, cost_components_array});
+  *out_table = arrow::Table::Make(schema, {id_array, cost_array, cost_components_array});
 
   if (*out_table == nullptr) {
     return -1;
@@ -84,10 +81,9 @@ TEST(ClsSDK, TestWriteAndReadTable) {
 
   librados::bufferlist in_, out_;
   auto filter = arrow::dataset::scalar(true);
-  auto schema = arrow::schema({
-      arrow::field("id", arrow::int32()),
-      arrow::field("cost", arrow::float64()),
-      arrow::field("cost_components", arrow::list(arrow::float64()))});
+  auto schema = arrow::schema(
+      {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
+       arrow::field("cost_components", arrow::list(arrow::float64()))});
 
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
   ASSERT_EQ(0, ioctx.exec("test_object_1", "arrow", "read_and_scan", in_, out_));
@@ -113,9 +109,9 @@ TEST(ClsSDK, TestProjection) {
 
   librados::bufferlist in_, out_;
   auto filter = arrow::dataset::scalar(true);
-  auto schema = arrow::schema({
-      arrow::field("id", arrow::int32()),
-      arrow::field("cost_components", arrow::list(arrow::float64()))});
+  auto schema =
+      arrow::schema({arrow::field("id", arrow::int32()),
+                     arrow::field("cost_components", arrow::list(arrow::float64()))});
 
   auto table_projected = table->RemoveColumn(1).ValueOrDie();
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
@@ -145,11 +141,11 @@ TEST(ClsSDK, TestSelection) {
   ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "write", in, out));
 
   librados::bufferlist in_, out_;
-  std::shared_ptr<arrow::dataset::Expression> filter = ("id"_ == int32_t(8) || "id"_ == int32_t(7)).Copy();
-  auto schema = arrow::schema({
-      arrow::field("id", arrow::int32()),
-      arrow::field("cost", arrow::float64()),
-      arrow::field("cost_components", arrow::list(arrow::float64()))});
+  std::shared_ptr<arrow::dataset::Expression> filter =
+      ("id"_ == int32_t(8) || "id"_ == int32_t(7)).Copy();
+  auto schema = arrow::schema(
+      {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
+       arrow::field("cost_components", arrow::list(arrow::float64()))});
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
   ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "read_and_scan", in_, out_));
   std::shared_ptr<arrow::Table> table_;
@@ -179,35 +175,36 @@ TEST(ClsSDK, TestEndToEnd) {
     ASSERT_EQ(0, ioctx.exec(obj_id, "arrow", "write", in, out));
   }
 
-  auto schema = arrow::schema({
-      arrow::field("id", arrow::int32()),
-      arrow::field("cost", arrow::float64()),
-      arrow::field("cost_components", arrow::list(arrow::float64()))
-    });
+  auto schema = arrow::schema(
+      {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
+       arrow::field("cost_components", arrow::list(arrow::float64()))});
 
-    arrow::dataset::RadosObjectVector objects;
-    for (int i = 0; i < 1; i++) objects.push_back(std::make_shared<arrow::dataset::RadosObject>("obj." + std::to_string(i)));
+  arrow::dataset::RadosObjectVector objects;
+  for (int i = 0; i < 1; i++)
+    objects.push_back(
+        std::make_shared<arrow::dataset::RadosObject>("obj." + std::to_string(i)));
 
-    auto rados_options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
+  auto rados_options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
 
-    auto rados_ds = std::make_shared<arrow::dataset::RadosDataset>(schema, objects, rados_options);
-    auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema, batches);
+  auto rados_ds =
+      std::make_shared<arrow::dataset::RadosDataset>(schema, objects, rados_options);
+  auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema, batches);
 
-    auto context = std::make_shared<arrow::dataset::ScanContext>();
+  auto context = std::make_shared<arrow::dataset::ScanContext>();
 
-    auto rados_scanner_builder = rados_ds->NewScan().ValueOrDie();
-    auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
+  auto rados_scanner_builder = rados_ds->NewScan().ValueOrDie();
+  auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
 
-    rados_scanner_builder->Filter(("id"_ > int32_t(7)).Copy());
-    rados_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
-    auto rados_scanner = rados_scanner_builder->Finish().ValueOrDie();
+  rados_scanner_builder->Filter(("id"_ > int32_t(7)).Copy());
+  rados_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+  auto rados_scanner = rados_scanner_builder->Finish().ValueOrDie();
 
-    inmemory_scanner_builder->Filter(("id"_ > int32_t(7)).Copy());
-    inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
-    auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
+  inmemory_scanner_builder->Filter(("id"_ > int32_t(7)).Copy());
+  inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+  auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
 
-    auto expected_table = inmemory_scanner->ToTable().ValueOrDie();
-    auto result_table = rados_scanner->ToTable().ValueOrDie();
+  auto expected_table = inmemory_scanner->ToTable().ValueOrDie();
+  auto result_table = rados_scanner->ToTable().ValueOrDie();
 
-    ASSERT_EQ(result_table->Equals(*expected_table), 1);
+  ASSERT_EQ(result_table->Equals(*expected_table), 1);
 }

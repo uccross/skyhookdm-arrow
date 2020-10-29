@@ -16,8 +16,8 @@
 // under the License.
 
 #include "arrow/dataset/dataset_rados.h"
-#include "arrow/dataset/scanner_rados.h"
 #include "arrow/dataset/rados_utils.h"
+#include "arrow/dataset/scanner_rados.h"
 
 #include <memory>
 #include <utility>
@@ -49,8 +49,9 @@ std::shared_ptr<RadosOptions> RadosOptions::FromPoolName(std::string pool_name) 
 
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
-  ScanTaskVector v{std::make_shared<RadosScanTask>(
-    std::move(options), std::move(context), std::move(object_), std::move(rados_options_))};
+  ScanTaskVector v{std::make_shared<RadosScanTask>(std::move(options), std::move(context),
+                                                   std::move(object_),
+                                                   std::move(rados_options_))};
 
   return MakeVectorIterator(v);
 }
@@ -68,41 +69,43 @@ struct VectorObjectGenerator : RadosDataset::RadosObjectGenerator {
   RadosObjectVector objects_;
 };
 
-RadosDataset::RadosDataset(std::shared_ptr<Schema> schema, 
-                           RadosObjectVector objects,
+RadosDataset::RadosDataset(std::shared_ptr<Schema> schema, RadosObjectVector objects,
                            std::shared_ptr<RadosOptions> rados_options)
     : Dataset(std::move(schema)),
-      get_objects_(new VectorObjectGenerator(std::move(objects))), 
-      rados_options_(std::move(rados_options)) { this->Connect(); }
-
-RadosDataset::~RadosDataset() {
-  this->Shutdown();
+      get_objects_(new VectorObjectGenerator(std::move(objects))),
+      rados_options_(std::move(rados_options)) {
+  this->Connect();
 }
+
+RadosDataset::~RadosDataset() { this->Shutdown(); }
 
 Status RadosDataset::Connect() {
   int e;
   /// Initialize the cluster handle.
-  e = rados_options_->rados_interface_->init2(rados_options_->user_name_.c_str(), 
-               rados_options_->cluster_name_.c_str(), 
-               rados_options_->flags_);
+  e = rados_options_->rados_interface_->init2(rados_options_->user_name_.c_str(),
+                                              rados_options_->cluster_name_.c_str(),
+                                              rados_options_->flags_);
   if (e != 0) {
     return Status::ExecutionError("call to init2() returned non-zero exit code.");
   }
-  
+
   /// Read the Ceph config file.
-  e = rados_options_->rados_interface_->conf_read_file(rados_options_->ceph_config_path_.c_str());
+  e = rados_options_->rados_interface_->conf_read_file(
+      rados_options_->ceph_config_path_.c_str());
   if (e != 0) {
-    return Status::ExecutionError("call to conf_read_file() returned non-zero exit code.");
+    return Status::ExecutionError(
+        "call to conf_read_file() returned non-zero exit code.");
   }
-  
+
   /// Connect to the Ceph cluster.
   e = rados_options_->rados_interface_->connect();
   if (e != 0) {
     return Status::ExecutionError("call to connect() returned non-zero exit code.");
   }
-  
+
   /// Initialize the I/O context to start doing I/O operations on objects.
-  e = rados_options_->rados_interface_->ioctx_create(rados_options_->pool_name_.c_str(), rados_options_->io_ctx_interface_);
+  e = rados_options_->rados_interface_->ioctx_create(rados_options_->pool_name_.c_str(),
+                                                     rados_options_->io_ctx_interface_);
   if (e != 0) {
     return Status::ExecutionError("call to ioctx_create() returned non-zero exit code.");
   }
@@ -118,7 +121,8 @@ Status RadosDataset::Shutdown() {
 Result<std::shared_ptr<Dataset>> RadosDataset::ReplaceSchema(
     std::shared_ptr<Schema> schema) const {
   RETURN_NOT_OK(CheckProjectable(*schema_, *schema));
-  return std::make_shared<RadosDataset>(std::move(schema), get_objects_, std::move(rados_options_));
+  return std::make_shared<RadosDataset>(std::move(schema), get_objects_,
+                                        std::move(rados_options_));
 }
 
 FragmentIterator RadosDataset::GetFragmentsImpl(std::shared_ptr<Expression>) {
@@ -126,12 +130,14 @@ FragmentIterator RadosDataset::GetFragmentsImpl(std::shared_ptr<Expression>) {
   auto rados_options = this->rados_options();
 
   auto create_fragment =
-    [schema, rados_options](std::shared_ptr<RadosObject> object) -> Result<std::shared_ptr<Fragment>> {
-    return std::make_shared<RadosFragment>(std::move(schema), std::move(object), std::move(rados_options));
+      [schema, rados_options](
+          std::shared_ptr<RadosObject> object) -> Result<std::shared_ptr<Fragment>> {
+    return std::make_shared<RadosFragment>(std::move(schema), std::move(object),
+                                           std::move(rados_options));
   };
 
   return MakeMaybeMapIterator(std::move(create_fragment), get_objects_->Get());
 }
 
-} // namespace dataset
-} // namespace arrow
+}  // namespace dataset
+}  // namespace arrow

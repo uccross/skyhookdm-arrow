@@ -26,7 +26,6 @@ add_arrow_lib(cls_arrow
               STATIC_LINK_LIBS
               ${ARROW_CLS_LINK_STATIC})
 
-
 if(ARROW_TEST_LINKAGE STREQUAL "static")
   set(ARROW_DATASET_TEST_LINK_LIBS arrow_dataset_static ${ARROW_TEST_STATIC_LINK_LIBS})
 else()
