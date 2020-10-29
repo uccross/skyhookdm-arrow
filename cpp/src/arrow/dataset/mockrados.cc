@@ -36,7 +36,7 @@ std::shared_ptr<RecordBatch> generate_test_record_batch() {
   auto f1_builder = std::make_shared<Int64Builder>();
   f1_builder->Reset();
   for (auto i = 0; i < row_count; i++) {
-    f1_builder->Append(rand());
+    f1_builder->Append(rand_r());
   }
   std::shared_ptr<Array> batch_size_array;
   f1_builder->Finish(&batch_size_array);
@@ -45,7 +45,7 @@ std::shared_ptr<RecordBatch> generate_test_record_batch() {
   auto f2_builder = std::make_shared<Int64Builder>();
   f2_builder->Reset();
   for (auto i = 0; i < row_count; i++) {
-    f2_builder->Append(rand());
+    f2_builder->Append(rand_r());
   }
   std::shared_ptr<Array> seq_num_array;
   f2_builder->Finish(&seq_num_array);

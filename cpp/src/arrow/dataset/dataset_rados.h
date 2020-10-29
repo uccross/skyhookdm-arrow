@@ -37,7 +37,7 @@ class ARROW_DS_EXPORT RadosObject {
  public:
   /// \brief Constructs a RadosObject.
   /// \param[in] id the object ID.
-  RadosObject(std::string id) : id_(id) {}
+  explicit RadosObject(std::string id) : id_(id) {}
 
   /// \brief Return the object ID.
   std::string id() const { return id_; }
