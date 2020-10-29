@@ -53,7 +53,7 @@ class ARROW_DS_EXPORT IoCtxInterface {
   /// \param[in] in a bufferlist to send data to the CLS function.
   /// \param[in] out a bufferlist to recieve data from the CLS function.
   virtual int exec(const std::string& oid, const char* cls, const char* method,
-                   librados::bufferlist& inbl, librados::bufferlist& outbl) = 0;
+                   librados::bufferlist& in, librados::bufferlist& out) = 0;
 
  private:
   friend class RadosWrapper;
@@ -69,7 +69,7 @@ class ARROW_DS_EXPORT IoCtxWrapper : public IoCtxInterface {
   int read(const std::string& oid, librados::bufferlist& bl, size_t len,
            uint64_t off) override;
   int exec(const std::string& oid, const char* cls, const char* method,
-           librados::bufferlist& inbl, librados::bufferlist& outbl) override;
+           librados::bufferlist& in, librados::bufferlist& out) override;
 
  private:
   void setIoCtx(librados::IoCtx* ioCtx_) override { *ioCtx = *ioCtx_; }
