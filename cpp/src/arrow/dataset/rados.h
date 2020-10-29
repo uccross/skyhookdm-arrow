@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <iostream>
 #include <rados/librados.hpp>
 
 #include "arrow/dataset/type_fwd.h"
@@ -29,7 +28,7 @@ namespace dataset {
 
 class ARROW_DS_EXPORT IoCtxInterface {
  public:
-  IoCtxInterface(){}
+  IoCtxInterface() {}
 
   /// \brief Write data to an object.
   ///
@@ -79,7 +78,7 @@ class ARROW_DS_EXPORT IoCtxWrapper : public IoCtxInterface {
 
 class ARROW_DS_EXPORT RadosInterface {
  public:
-  RadosInterface(){}
+  RadosInterface() {}
 
   /// \brief Initializes a cluster handle.
   ///

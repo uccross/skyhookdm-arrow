@@ -16,7 +16,8 @@
 // under the License.
 
 #include "arrow/adapters/skyhookdm-ceph-cls/cls_arrow_test_utils.h"
-using namespace librados;
+
+namespace librados {
 
 std::string get_temp_pool_name(const std::string& prefix) {
   char hostname[80];
@@ -188,3 +189,5 @@ int destroy_one_pool_pp(const std::string& pool_name, Rados& cluster) {
   cluster.shutdown();
   return 0;
 }
+
+}  // namespace librados

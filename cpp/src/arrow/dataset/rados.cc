@@ -17,6 +17,8 @@
 
 #include "arrow/dataset/rados.h"
 
+#include <iostream>
+
 namespace arrow {
 namespace dataset {
 
