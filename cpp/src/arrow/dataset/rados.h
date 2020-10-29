@@ -43,7 +43,7 @@ class ARROW_DS_EXPORT IoCtxInterface {
   /// \param[in] len the length of data to read from an object.
   /// \param[in] offset the offset of the object to read from.
   virtual int read(const std::string& oid, librados::bufferlist& bl, size_t len,
-                   uint64_t off) = 0;
+                   uint64_t offset) = 0;
 
   /// \brief Executes a CLS function.
   ///
@@ -67,7 +67,7 @@ class ARROW_DS_EXPORT IoCtxWrapper : public IoCtxInterface {
   ~IoCtxWrapper() { delete ioCtx; }
   int write_full(const std::string& oid, librados::bufferlist& bl) override;
   int read(const std::string& oid, librados::bufferlist& bl, size_t len,
-           uint64_t off) override;
+           uint64_t offset) override;
   int exec(const std::string& oid, const char* cls, const char* method,
            librados::bufferlist& in, librados::bufferlist& out) override;
 

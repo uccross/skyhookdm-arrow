@@ -46,7 +46,7 @@ class ARROW_DS_EXPORT MockIoCtx : public IoCtxInterface {
   ~MockIoCtx() {}
   MOCK_METHOD2(write_full, int(const std::string& oid, librados::bufferlist& bl));
   MOCK_METHOD4(read, int(const std::string& oid, librados::bufferlist& bl, size_t len,
-                         uint64_t off));
+                         uint64_t offset));
   MOCK_METHOD5(exec, int(const std::string& oid, const char* cls, const char* method,
                          librados::bufferlist& in, librados::bufferlist& out));
   MOCK_METHOD1(setIoCtx, void(librados::IoCtx* ioCtx_));
