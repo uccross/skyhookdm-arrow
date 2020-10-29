@@ -34,6 +34,7 @@ RUN apt-get update -y -q && \
         libbz2-dev \
         libgoogle-glog-dev \
         libsnappy-dev \
+        libradospp-dev \
         libssl-dev \
         make \
         ninja-build \

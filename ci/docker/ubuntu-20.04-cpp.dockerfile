@@ -80,11 +80,11 @@ RUN apt-get update -y -q && \
         libprotoc-dev \
         libre2-dev \
         libsnappy-dev \
+        libradospp-dev \
         libssl-dev \
         libthrift-dev \
         libutf8proc-dev \
         libzstd-dev \
-        libradospp-dev \
         make \
         ninja-build \
         pkg-config \

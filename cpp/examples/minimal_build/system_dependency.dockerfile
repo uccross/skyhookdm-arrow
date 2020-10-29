@@ -33,6 +33,7 @@ RUN apt-get update -y -q && \
       libprotobuf-dev \
       libprotoc-dev \
       libsnappy-dev \
+      libradospp-dev \
       libthrift-dev \
       libutf8proc-dev \
       libzstd-dev \
