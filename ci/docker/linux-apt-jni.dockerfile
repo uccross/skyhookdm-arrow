@@ -51,7 +51,7 @@ RUN apt-get update -y -q && \
         liblz4-dev \
         libre2-dev \
         libsnappy-dev \
-        libradospp-dev \
+        librados-dev \
         libssl-dev \
         llvm-${llvm}-dev \
         make \
