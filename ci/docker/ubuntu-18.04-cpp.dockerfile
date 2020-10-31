@@ -78,6 +78,7 @@ RUN apt-get update -y -q && \
         libprotoc-dev \
         libre2-dev \
         libsnappy-dev \
+        librados-dev \
         libssl-dev \
         libutf8proc-dev \
         libzstd-dev \
