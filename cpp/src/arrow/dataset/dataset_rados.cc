@@ -17,7 +17,7 @@
 
 #include "arrow/dataset/dataset_rados.h"
 #include "arrow/dataset/rados_utils.h"
-#include "arrow/dataset/scanner_rados.h"
+#include "arrow/dataset/scanner.h"
 
 #include <memory>
 #include <utility>
