@@ -19,8 +19,6 @@
 
 #include "arrow/dataset/rados.h"
 
-#include <gmock/gmock.h>
-
 #include "arrow/api.h"
 #include "arrow/dataset/api.h"
 #include "arrow/dataset/visibility.h"
