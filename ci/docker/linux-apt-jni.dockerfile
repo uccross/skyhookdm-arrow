@@ -52,7 +52,6 @@ RUN apt-get update -y -q && \
         libre2-dev \
         libsnappy-dev \
         librados-dev \
-        rados-objclass-dev \
         libssl-dev \
         llvm-${llvm}-dev \
         make \
