@@ -92,11 +92,11 @@ Status serialize_table_to_bufferlist(std::shared_ptr<Table>& table,
                                      librados::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
   const auto options = ipc::IpcWriteOptions::Defaults();
-  ARROW_ASSIGN_OR_RAISE(auto writer, ipc::NewStreamWriter(buffer_output_stream.get(),
+  ARROW_ASSIGN_OR_RAISE(auto writer, ipc::MakeStreamWriter(buffer_output_stream,
                                                           table->schema(), options));
 
-  writer->WriteTable(*table);
-  writer->Close();
+  ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
+  ARROW_RETURN_NOT_OK(writer->Close());
 
   ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
   bl.append((char*)buffer->data(), buffer->size());

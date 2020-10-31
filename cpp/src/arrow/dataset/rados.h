@@ -113,9 +113,9 @@ class ARROW_DS_EXPORT RadosWrapper : public RadosInterface {
   int init2(const char* const name, const char* const clustername,
             uint64_t flags) override;
   int ioctx_create(const char* name, IoCtxInterface* pioctx) override;
-  int conf_read_file(const char* const path);
-  int connect();
-  void shutdown();
+  int conf_read_file(const char* const path) override;
+  int connect() override;
+  void shutdown() override;
 
  private:
   librados::Rados* cluster;

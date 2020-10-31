@@ -90,7 +90,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   Result<ScanTaskIterator> Scan(std::shared_ptr<ScanOptions> options,
                                 std::shared_ptr<ScanContext> context) override;
 
-  std::string type_name() const { return "rados"; }
+  std::string type_name() const override { return "rados"; }
 
   bool splittable() const override { return false; }
 
@@ -147,7 +147,7 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
   /// \brief Returns the RadosOptions for this Dataset.
   const std::shared_ptr<RadosOptions>& rados_options() const { return rados_options_; }
 
-  std::string type_name() const { return "rados"; }
+  std::string type_name() const override { return "rados"; }
 
   Result<std::shared_ptr<Dataset>> ReplaceSchema(
       std::shared_ptr<Schema> schema) const override;

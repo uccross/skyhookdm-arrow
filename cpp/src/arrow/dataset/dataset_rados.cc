@@ -74,10 +74,10 @@ RadosDataset::RadosDataset(std::shared_ptr<Schema> schema, RadosObjectVector obj
     : Dataset(std::move(schema)),
       get_objects_(new VectorObjectGenerator(std::move(objects))),
       rados_options_(std::move(rados_options)) {
-  this->Connect();
+  ARROW_CHECK_OK(this->Connect());
 }
 
-RadosDataset::~RadosDataset() { this->Shutdown(); }
+RadosDataset::~RadosDataset() { ARROW_CHECK_OK(this->Shutdown()); }
 
 Status RadosDataset::Connect() {
   int e;
