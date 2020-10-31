@@ -27,6 +27,7 @@
 
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/rados.h"
+#include "arrow/dataset/scanner.h"
 
 namespace arrow {
 namespace dataset {
@@ -183,7 +184,7 @@ class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
         object_(std::move(object)),
         rados_options_(rados_options) {}
 
-  Result<RecordBatchIterator> Execute() override;
+  Result<RecordBatchIterator> Execute();
 
  protected:
   std::shared_ptr<RadosObject> object_;

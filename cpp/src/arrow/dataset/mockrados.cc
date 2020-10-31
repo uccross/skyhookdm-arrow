@@ -31,12 +31,13 @@ std::shared_ptr<RecordBatch> generate_test_record_batch() {
 
   // Define a schema
   auto schema_ = schema({field("f1", int64()), field("f2", int64())});
+  unsigned int seed = 1u;
 
   // Build the `f1` column
   auto f1_builder = std::make_shared<Int64Builder>();
   f1_builder->Reset();
   for (auto i = 0; i < row_count; i++) {
-    f1_builder->Append(rand_r());
+    f1_builder->Append(rand_r(&seed));
   }
   std::shared_ptr<Array> batch_size_array;
   f1_builder->Finish(&batch_size_array);
@@ -45,7 +46,7 @@ std::shared_ptr<RecordBatch> generate_test_record_batch() {
   auto f2_builder = std::make_shared<Int64Builder>();
   f2_builder->Reset();
   for (auto i = 0; i < row_count; i++) {
-    f2_builder->Append(rand_r());
+    f2_builder->Append(rand_r(&seed));
   }
   std::shared_ptr<Array> seq_num_array;
   f2_builder->Finish(&seq_num_array);

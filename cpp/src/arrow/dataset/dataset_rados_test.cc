@@ -17,6 +17,8 @@
 
 #include "arrow/api.h"
 #include "arrow/dataset/api.h"
+#include "arrow/dataset/dataset_rados.h"
+#include "arrow/dataset/rados_utils.h"
 #include "arrow/dataset/mockrados.h"
 #include "arrow/dataset/test_util.h"
 #include "arrow/filesystem/mockfs.h"
