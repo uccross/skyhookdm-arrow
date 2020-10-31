@@ -29,8 +29,7 @@ Status int64_to_char(uint8_t* num_buffer, int64_t num) {
 }
 
 Status char_to_int64(char num_buffer[8], int64_t& num) {
-  union
-  {
+  union {
     int64_t integer;
     char byte[8];
   } converter;
@@ -61,9 +60,9 @@ Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
   return Status::OK();
 }
 
-
-
-Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression> *filter, std::shared_ptr<Schema> *schema, librados::bufferlist &bl) {
+Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* filter,
+                                                std::shared_ptr<Schema>* schema,
+                                                librados::bufferlist& bl) {
   int64_t filter_size = 0;
   char filter_size_buffer[8];
   ceph::bufferlist::iterator itr = bl.begin();
@@ -71,7 +70,7 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression> *fil
   itr.copy(8, filter_size_buffer);
   ARROW_RETURN_NOT_OK(char_to_int64(filter_size_buffer, filter_size));
 
-  char *filter_buffer = new char[filter_size];
+  char* filter_buffer = new char[filter_size];
   itr.copy(filter_size, filter_buffer);
 
   int64_t schema_size = 0;
@@ -79,10 +78,11 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression> *fil
   itr.copy(8, schema_size_buffer);
   ARROW_RETURN_NOT_OK(char_to_int64(schema_size_buffer, schema_size));
 
-  char *schema_buffer = new char[schema_size];
+  char* schema_buffer = new char[schema_size];
   itr.copy(schema_size, schema_buffer);
 
-  ARROW_ASSIGN_OR_RAISE(auto filter_, Expression::Deserialize(Buffer((uint8_t*)filter_buffer, filter_size)));
+  ARROW_ASSIGN_OR_RAISE(auto filter_, Expression::Deserialize(
+                                          Buffer((uint8_t*)filter_buffer, filter_size)));
   *filter = filter_;
 
   ipc::DictionaryMemo empty_memo;
@@ -98,8 +98,8 @@ Status serialize_table_to_bufferlist(std::shared_ptr<Table>& table,
                                      librados::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
   const auto options = ipc::IpcWriteOptions::Defaults();
-  ARROW_ASSIGN_OR_RAISE(auto writer, ipc::MakeStreamWriter(buffer_output_stream,
-                                                          table->schema(), options));
+  ARROW_ASSIGN_OR_RAISE(
+      auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
 
   ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
   ARROW_RETURN_NOT_OK(writer->Close());
