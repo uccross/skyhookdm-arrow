@@ -64,6 +64,7 @@ RUN \
     libre2-dev \
     libsnappy-dev \
     libradospp-dev \
+    rados-objclass-dev \
     libssl-dev \
     libthrift-dev \
     libutf8proc-dev \

@@ -71,6 +71,7 @@ RUN \
     libre2-dev \
     libsnappy-dev \
     libradospp-dev \
+    rados-objclass-dev \
     libssl-dev \
     libutf8proc-dev \
     libzstd-dev \
