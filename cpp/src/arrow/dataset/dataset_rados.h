@@ -46,7 +46,7 @@ class ARROW_DS_EXPORT RadosObject {
   std::string id_;
 };
 
-/// \brief A vector of RadosObject(s).
+/// \brief A vector of RadosObjects.
 using RadosObjectVector = std::vector<std::shared_ptr<RadosObject>>;
 /// \brief An iterator over the RadosObjectVector.
 using RadosObjectIterator = Iterator<std::shared_ptr<RadosObject>>;
