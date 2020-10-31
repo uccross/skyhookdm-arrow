@@ -28,10 +28,15 @@ Status int64_to_char(uint8_t* num_buffer, int64_t num) {
   return Status::OK();
 }
 
-Status char_to_int64(uint8_t* num_buffer, int64_t& num) {
-  BasicDecimal128 basic_decimal(num_buffer);
-  Decimal128 decimal(basic_decimal);
-  num = (int64_t)decimal;
+Status char_to_int64(char num_buffer[8], int64_t& num) {
+  union
+  {
+    int64_t integer;
+    char byte[8];
+  } converter;
+
+  memcpy(converter.byte, num_buffer, 8);
+  num = converter.integer;
   return Status::OK();
 }
 
@@ -64,7 +69,7 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression> *fil
   ceph::bufferlist::iterator itr = bl.begin();
 
   itr.copy(8, filter_size_buffer);
-  ARROW_RETURN_NOT_OK(char_to_int64((uint8_t*)filter_size_buffer, filter_size));
+  ARROW_RETURN_NOT_OK(char_to_int64(filter_size_buffer, filter_size));
 
   char *filter_buffer = new char[filter_size];
   itr.copy(filter_size, filter_buffer);
@@ -72,7 +77,7 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression> *fil
   int64_t schema_size = 0;
   char schema_size_buffer[8];
   itr.copy(8, schema_size_buffer);
-  ARROW_RETURN_NOT_OK(char_to_int64((uint8_t*)schema_size_buffer, schema_size));
+  ARROW_RETURN_NOT_OK(char_to_int64(schema_size_buffer, schema_size));
 
   char *schema_buffer = new char[schema_size];
   itr.copy(schema_size, schema_buffer);

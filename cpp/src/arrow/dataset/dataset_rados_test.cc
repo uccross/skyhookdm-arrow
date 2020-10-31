@@ -208,7 +208,7 @@ TEST_F(TestRadosDataset, IntToCharAndCharToInt) {
 
   char* result_ = result;
   int64_t value_ = 0;
-  char_to_int64((uint8_t*)result_, value_);
+  char_to_int64(result_, value_);
 
   ASSERT_EQ(value, value_);
 }
