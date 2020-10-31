@@ -69,13 +69,13 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* fil
 
   char* filter_buffer = new char[filter_size];
   itr.copy(filter_size, filter_buffer);
-  itr.seek(8 + filter_size);
+  itr.seek(filter_size);
 
   int64_t schema_size = 0;
   char schema_size_buffer[8];
   itr.copy(8, schema_size_buffer);
   ARROW_RETURN_NOT_OK(char_to_int64((uint8_t*)schema_size_buffer, schema_size));
-  itr.seek(16 + filter_size);
+  itr.seek(8);
 
   char* schema_buffer = new char[schema_size];
   itr.copy(schema_size, schema_buffer);
