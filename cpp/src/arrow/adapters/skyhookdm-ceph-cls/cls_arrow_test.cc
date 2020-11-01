@@ -21,7 +21,9 @@
 #include <rados/librados.hpp>
 
 #include "arrow/api.h"
-#include "arrow/dataset/api.h"
+#include "arrow/dataset/dataset.h"
+#include "arrow/dataset/dataset_rados.h"
+#include "arrow/dataset/rados_utils.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 
