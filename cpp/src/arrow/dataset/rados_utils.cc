@@ -22,39 +22,71 @@
 namespace arrow {
 namespace dataset {
 
-Status int64_to_char(uint8_t* num_buffer, int64_t num) {
-  BasicDecimal128 decimal(num);
-  decimal.ToBytes(num_buffer);
+/// \brief Finds out and returns the host systems endianness.
+/// 
+/// \return 1(Little Endian), 0(Big Endian)
+char* get_endianness_() {
+  int n = 1;
+  char *e = new char[1];
+  e[0] = ((*(char *)&n) == 1) + '0';
+  return e;
+}
+
+/// \brief A union for convertions between char buffer 
+/// and a 64-bit integer. The conversion always 
+/// happen in Little-Endian format.
+union {
+  int64_t integer_;
+  char bytes_[8];
+} converter_;
+
+Status int64_to_char(char *buffer, int64_t num) {
+  /// Pass the integer through the union to 
+  /// get the byte representation.
+  converter_.integer_ = num;
+  memcpy(buffer, converter_.bytes_, 8);
   return Status::OK();
 }
 
-Status char_to_int64(char num_buffer[8], int64_t& num) {
-  union {
-    int64_t integer;
-    char byte[8];
-  } converter;
-
-  memcpy(converter.byte, num_buffer, 8);
-  num = converter.integer;
+Status char_to_int64(int32_t endianness, char *buffer, int64_t& num) {
+  if (endianness == 0) {
+    /// If Big endian, convert to Little endian.
+    std::reverse(buffer, buffer + 8);
+  }
+  /// Pass the byte representation through the union to 
+  /// get the integer.
+  memcpy(converter_.bytes_, buffer, 8);
+  num = converter_.integer_;
   return Status::OK();
 }
 
 Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
                                             std::shared_ptr<Schema> schema,
                                             librados::bufferlist& bl) {
+  /// Serialize the filter Expression and the Schema.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, filter->Serialize());
   ARROW_ASSIGN_OR_RAISE(auto schema_buffer, ipc::SerializeSchema(*schema));
 
+  /// Convert filter Expression size to buffer.
   char* filter_size_buffer = new char[8];
-  ARROW_RETURN_NOT_OK(int64_to_char((uint8_t*)filter_size_buffer, filter_buffer->size()));
+  ARROW_RETURN_NOT_OK(int64_to_char(filter_size_buffer, filter_buffer->size()));
 
+  /// Convert Schema size to buffer.
   char* schema_size_buffer = new char[8];
-  ARROW_RETURN_NOT_OK(int64_to_char((uint8_t*)schema_size_buffer, schema_buffer->size()));
+  ARROW_RETURN_NOT_OK(int64_to_char(schema_size_buffer, schema_buffer->size()));
 
+  /// Pass the systems endianness.
+  char *endianness_buffer = get_endianness_();
+  bl.append(endianness_buffer, 1);
+
+  /// Append the filter Expression size.
   bl.append(filter_size_buffer, 8);
+  /// Append the filter Expression data.
   bl.append((char*)filter_buffer->data(), filter_buffer->size());
 
+  /// Append the Schema size.
   bl.append(schema_size_buffer, 8);
+  /// Append the Schema data.
   bl.append((char*)schema_buffer->data(), schema_buffer->size());
 
   return Status::OK();
@@ -63,20 +95,25 @@ Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
 Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* filter,
                                                 std::shared_ptr<Schema>* schema,
                                                 librados::bufferlist& bl) {
-  int64_t filter_size = 0;
-  char filter_size_buffer[8];
-  ceph::bufferlist::iterator itr = bl.begin();
+  librados::bufferlist::iterator itr = bl.begin();
 
+  /// Decode the endianness of the client.
+  char *endianness_buffer = new char[1];
+  itr.copy(1, endianness_buffer);
+  int endianness = endianness_buffer[0] - '0';
+
+  int64_t filter_size = 0;
+  char *filter_size_buffer = new char[8];
   itr.copy(8, filter_size_buffer);
-  ARROW_RETURN_NOT_OK(char_to_int64(filter_size_buffer, filter_size));
+  ARROW_RETURN_NOT_OK(char_to_int64(endianness, filter_size_buffer, filter_size));
 
   char* filter_buffer = new char[filter_size];
   itr.copy(filter_size, filter_buffer);
 
   int64_t schema_size = 0;
-  char schema_size_buffer[8];
+  char *schema_size_buffer = new char[8];
   itr.copy(8, schema_size_buffer);
-  ARROW_RETURN_NOT_OK(char_to_int64(schema_size_buffer, schema_size));
+  ARROW_RETURN_NOT_OK(char_to_int64(endianness, schema_size_buffer, schema_size));
 
   char* schema_buffer = new char[schema_size];
   itr.copy(schema_size, schema_buffer);

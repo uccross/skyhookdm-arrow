@@ -204,11 +204,11 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
 TEST_F(TestRadosDataset, IntToCharAndCharToInt) {
   int64_t value = 12345678;
   char* result = new char[8];
-  int64_to_char((uint8_t*)result, value);
+  int64_to_char(result, value);
 
   char* result_ = result;
   int64_t value_ = 0;
-  char_to_int64(result_, value_);
+  char_to_int64(1, result_, value_);
 
   ASSERT_EQ(value, value_);
 }

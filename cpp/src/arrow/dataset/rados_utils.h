@@ -38,10 +38,10 @@ namespace arrow {
 namespace dataset {
 
 /// \brief Convert a 64-bit integer to a buffer.
-ARROW_DS_EXPORT Status int64_to_char(uint8_t* num_buffer, int64_t num);
+ARROW_DS_EXPORT Status int64_to_char(char *buffer, int64_t num);
 
 /// \brief Convert a buffer to 64-bit integer.
-ARROW_DS_EXPORT Status char_to_int64(char num_buffer[8], int64_t& num);
+ARROW_DS_EXPORT Status char_to_int64(int32_t endianness, char *buffer, int64_t& num);
 
 /// \brief Serialize Expression and Schema to a bufferlist.
 ///
