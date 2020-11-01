@@ -85,8 +85,8 @@ int create_test_arrow_table(std::shared_ptr<arrow::Table>* out_table) {
 
 TEST(ClsSDK, TestWriteAndReadTable) {
   librados::Rados cluster;
-  std::string pool_name = get_temp_pool_name();
-  ASSERT_EQ("", create_one_pool_pp(pool_name, cluster));
+  std::string pool_name = librados::get_temp_pool_name();
+  ASSERT_EQ("", librados::create_one_pool_pp(pool_name, cluster));
   librados::IoCtx ioctx;
   cluster.ioctx_create(pool_name.c_str(), ioctx);
 
@@ -113,8 +113,8 @@ TEST(ClsSDK, TestWriteAndReadTable) {
 
 TEST(ClsSDK, TestProjection) {
   librados::Rados cluster;
-  std::string pool_name = get_temp_pool_name();
-  ASSERT_EQ("", create_one_pool_pp(pool_name, cluster));
+  std::string pool_name = librados::get_temp_pool_name();
+  ASSERT_EQ("", librados::create_one_pool_pp(pool_name, cluster));
   librados::IoCtx ioctx;
   cluster.ioctx_create(pool_name.c_str(), ioctx);
 
@@ -146,8 +146,8 @@ TEST(ClsSDK, TestProjection) {
 
 TEST(ClsSDK, TestSelection) {
   librados::Rados cluster;
-  std::string pool_name = get_temp_pool_name();
-  ASSERT_EQ("", create_one_pool_pp(pool_name, cluster));
+  std::string pool_name = librados::get_temp_pool_name();
+  ASSERT_EQ("", librados::create_one_pool_pp(pool_name, cluster));
   librados::IoCtx ioctx;
   cluster.ioctx_create(pool_name.c_str(), ioctx);
 
@@ -174,7 +174,7 @@ TEST(ClsSDK, TestSelection) {
 TEST(ClsSDK, TestEndToEnd) {
   librados::Rados cluster;
   std::string pool_name = "test-pool";
-  create_one_pool_pp(pool_name, cluster);
+  librados::create_one_pool_pp(pool_name, cluster);
   librados::IoCtx ioctx;
   cluster.ioctx_create(pool_name.c_str(), ioctx);
 

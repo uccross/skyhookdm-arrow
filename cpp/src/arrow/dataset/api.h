@@ -27,8 +27,5 @@
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/filter.h"
 #include "arrow/dataset/scanner.h"
-
-#ifdef ARROW_RADOS
 #include "arrow/dataset/dataset_rados.h"
 #include "arrow/dataset/rados_utils.h"
-#endif
