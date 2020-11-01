@@ -23,37 +23,37 @@ namespace arrow {
 namespace dataset {
 
 /// \brief Finds out and returns the host systems endianness.
-/// 
+///
 /// \return 1(Little Endian), 0(Big Endian)
 char* get_endianness_() {
   int n = 1;
-  char *e = new char[1];
-  e[0] = ((*(char *)&n) == 1) + '0';
+  char* e = new char[1];
+  e[0] = ((*(char*)&n) == 1) + '0';
   return e;
 }
 
-/// \brief A union for convertions between char buffer 
-/// and a 64-bit integer. The conversion always 
+/// \brief A union for convertions between char buffer
+/// and a 64-bit integer. The conversion always
 /// happen in Little-Endian format.
 union {
   int64_t integer_;
   char bytes_[8];
 } converter_;
 
-Status int64_to_char(char *buffer, int64_t num) {
-  /// Pass the integer through the union to 
+Status int64_to_char(char* buffer, int64_t num) {
+  /// Pass the integer through the union to
   /// get the byte representation.
   converter_.integer_ = num;
   memcpy(buffer, converter_.bytes_, 8);
   return Status::OK();
 }
 
-Status char_to_int64(int32_t endianness, char *buffer, int64_t& num) {
+Status char_to_int64(int32_t endianness, char* buffer, int64_t& num) {
   if (endianness == 0) {
     /// If Big endian, convert to Little endian.
     std::reverse(buffer, buffer + 8);
   }
-  /// Pass the byte representation through the union to 
+  /// Pass the byte representation through the union to
   /// get the integer.
   memcpy(converter_.bytes_, buffer, 8);
   num = converter_.integer_;
@@ -76,7 +76,7 @@ Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
   ARROW_RETURN_NOT_OK(int64_to_char(schema_size_buffer, schema_buffer->size()));
 
   /// Pass the systems endianness.
-  char *endianness_buffer = get_endianness_();
+  char* endianness_buffer = get_endianness_();
   bl.append(endianness_buffer, 1);
 
   /// Append the filter Expression size.
@@ -98,12 +98,12 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* fil
   librados::bufferlist::iterator itr = bl.begin();
 
   /// Decode the endianness of the client.
-  char *endianness_buffer = new char[1];
+  char* endianness_buffer = new char[1];
   itr.copy(1, endianness_buffer);
   int endianness = endianness_buffer[0] - '0';
 
   int64_t filter_size = 0;
-  char *filter_size_buffer = new char[8];
+  char* filter_size_buffer = new char[8];
   itr.copy(8, filter_size_buffer);
   ARROW_RETURN_NOT_OK(char_to_int64(endianness, filter_size_buffer, filter_size));
 
@@ -111,7 +111,7 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* fil
   itr.copy(filter_size, filter_buffer);
 
   int64_t schema_size = 0;
-  char *schema_size_buffer = new char[8];
+  char* schema_size_buffer = new char[8];
   itr.copy(8, schema_size_buffer);
   ARROW_RETURN_NOT_OK(char_to_int64(endianness, schema_size_buffer, schema_size));
 

@@ -26,8 +26,8 @@
 #include "arrow/io/memory.h"
 #include "arrow/ipc/api.h"
 #include "arrow/testing/generator.h"
-#include "arrow/util/optional.h"
 #include "arrow/util/macros.h"
+#include "arrow/util/optional.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
