@@ -42,10 +42,6 @@ if(ARROW_RADOS)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} dataset_rados.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados_utils.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados.cc)
-
-  if(ARROW_BUILD_TESTS)
-    set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} mockrados.cc)
-  endif()
 endif()
 
 if(ARROW_CSV)
