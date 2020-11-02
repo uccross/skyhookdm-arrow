@@ -187,7 +187,7 @@ TEST(ClsSDK, TestEndToEnd) {
   /// Create a test pool in the Cluster.
   librados::Rados cluster;
   librados::create_one_pool_pp("test-pool", cluster);
-  
+
   /// Instantiate the RadosDataset.
   auto options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
   auto schema = arrow::schema(
