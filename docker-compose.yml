@@ -232,7 +232,8 @@ services:
     command: &cpp-command >
       /bin/bash -c "
         /arrow/ci/scripts/cpp_build.sh /arrow /build &&
-        /arrow/ci/scripts/cpp_test.sh /arrow /build"
+        /arrow/ci/scripts/integration_ceph.sh &&
+        /arrow/ci/scripts/cpp_test.sh /arrow /build" 
 
   ubuntu-cpp:
     # Usage:
