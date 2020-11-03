@@ -232,7 +232,7 @@ services:
     command: &cpp-command >
       /bin/bash -c "
         /arrow/ci/scripts/cpp_build.sh /arrow /build &&
-        /arrow/ci/scripts/integration_ceph.sh &&
+        /arrow/ci/scripts/integration_ceph.sh test-cluster /etc/ceph &&
         /arrow/ci/scripts/cpp_test.sh /arrow /build" 
 
   ubuntu-cpp:
