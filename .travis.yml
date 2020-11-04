@@ -39,7 +39,7 @@ jobs:
       env:
         ARCH: arm64v8
         ARROW_CI_MODULES: "CPP"
-        DOCKER_IMAGE_ID: ubuntu-cpp
+        DOCKER_IMAGE_ID: ubuntu-cpp-cls
         # ARROW_USE_GLOG=OFF is needed to avoid build error caused by
         # glog and CMAKE_UNITY_BUILD=ON.
         #
