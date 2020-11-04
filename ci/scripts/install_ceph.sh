@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set -e
+set -ex
 
 # only for ubuntu:20.04 right now
 apt update
