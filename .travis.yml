@@ -49,7 +49,7 @@ jobs:
         # on Travis CI.
         DOCKER_RUN_ARGS: >-
           "
-          -e ARROW_BUILD_STATIC=OFF
+          -e ARROW_BUILD_STATIC=ON
           -e ARROW_ORC=OFF
           -e ARROW_CLS=ON
           -e ARROW_S3=OFF

@@ -108,6 +108,7 @@ x-hierarchy:
     - fedora-python
   - ubuntu-cpp:
     - ubuntu-cpp-cmake32
+    - ubuntu-cpp-cls
     - ubuntu-c-glib:
       - ubuntu-ruby
     - ubuntu-lint
