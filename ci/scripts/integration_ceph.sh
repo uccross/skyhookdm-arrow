@@ -21,6 +21,8 @@ set -e
 set -u
 set -x
 
+pushd ${build_dir}
+
 TEST_DIR=$1
 CONF_DIR=$2
 echo "TEST_DIR=${TEST_DIR}"
@@ -94,3 +96,4 @@ ceph osd tree
 
 export CEPH_CONF="${CONF_DIR}/ceph.conf"
 cp debug/libcls_arrow* /usr/lib64/rados-classes/
+popd
