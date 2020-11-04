@@ -91,7 +91,7 @@ diff /etc/group ${test_dir}/group
 ceph osd tree
 
 export CEPH_CONF="/etc/ceph/ceph.conf"
-mkdir -p /usr/lib64/rados-classes/
-cp debug/libcls_arrow* /usr/lib64/rados-classes/
+mkdir -p /usr/lib/x86_64-linux-gnu/rados-classes/
+cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
 
 popd
