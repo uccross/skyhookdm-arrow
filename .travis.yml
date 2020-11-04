@@ -65,6 +65,7 @@ jobs:
           -e ARROW_BUILD_TESTS=OFF
           -e ARROW_GANDIVA=OFF
           -e ARROW_PARQUET=OFF
+          -e ARROW_CLS=ON
           "
         # The LLVM's APT repository provides only arm64 binaries.
         # We should use LLVM provided by Ubuntu.
