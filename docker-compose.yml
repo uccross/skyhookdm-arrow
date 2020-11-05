@@ -639,6 +639,7 @@ services:
     environment:
       <<: *ccache
       ARROW_ENABLE_TIMING_TESTS:  # inherit
+      ARROW_CLS: "ON"
     volumes: *ubuntu-volumes
     command: &cpp-cls-command >
       /bin/bash -c "
