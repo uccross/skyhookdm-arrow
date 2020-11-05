@@ -640,10 +640,11 @@ services:
       <<: *ccache
       ARROW_ENABLE_TIMING_TESTS:  # inherit
     volumes: *ubuntu-volumes
-    command:
-      ["/arrow/ci/scripts/cpp_build.sh /arrow /build &&
+    command: &cpp-cls-command >
+      /bin/bash -c "
+        /arrow/ci/scripts/cpp_build.sh /arrow /build &&
         /arrow/ci/scripts/integration_ceph.sh /arrow /build &&
-        /arrow/ci/scripts/cpp_test.sh /arrow /build"]
+        /arrow/ci/scripts/cpp_test.sh /arrow /build"
 
   conda-python-pandas:
     # Possible $PANDAS parameters:
