@@ -97,6 +97,27 @@ RadosDataset::RadosDataset(std::shared_ptr<Schema> schema, RadosObjectVector obj
 
 RadosDataset::~RadosDataset() { ARROW_CHECK_OK(this->Shutdown()); }
 
+Result<std::shared_ptr<RadosDataset>> RadosDataset::Make(std::shared_ptr<Schema> schema,
+                                                         std::string conf_path,
+                                                         RadosFormat format) {
+  std::shared_ptr<RadosOptions> rados_options = std::make_shared<RadosOptions>();
+  rados_options->ceph_config_path_ = conf_path;
+  rados_options->flags_ = format.flags_;
+  rados_options->cls_name_ = format.cls_name_;
+  rados_options->cls_method_ = format.cls_method_;
+  rados_options->pool_name_ = format.pool_name_;
+  rados_options->user_name_ = format.user_name_;
+  rados_options->rados_interface_ = new RadosWrapper();
+  rados_options->io_ctx_interface_ = new IoCtxWrapper();
+
+  RadosObjectVector object_vec;
+  for (std::string& id : format.object_vector_) {
+    object_vec.push_back(std::make_shared<RadosObject>(id));
+  }
+
+  return std::make_shared<RadosDataset>(schema, object_vec, rados_options);
+}
+
 Status RadosDataset::Connect() {
   int e;
   /// Initialize the cluster handle.

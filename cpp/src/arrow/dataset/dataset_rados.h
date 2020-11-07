@@ -73,6 +73,17 @@ struct ARROW_DS_EXPORT RadosOptions {
   static std::shared_ptr<RadosOptions> FromPoolName(std::string pool_name);
 };
 
+class ARROW_DS_EXPORT RadosFormat {
+ public:
+  std::vector<std::string> object_vector_;
+  std::string pool_name_;
+  std::string user_name_;
+  std::string cluster_name_;
+  uint64_t flags_;
+  std::string cls_name_;
+  std::string cls_method_;
+};
+
 /// \brief A Fragment that maps to an object stored in the Ceph object store.
 class ARROW_DS_EXPORT RadosFragment : public Fragment {
  public:
@@ -152,6 +163,15 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
   /// \brief The RadosDataset destructor destroys the RadosDataset
   /// and shutdowns the connection to the RADOS cluster.
   ~RadosDataset();
+
+  /// \brief Create a RadosDataset
+  ///
+  /// \param[in] schema the schema of the tables referred to by the dataset.
+  /// \param[in] conf_path path to ceph config file.
+  /// \param[in] format rados format wrapping information about skyhook and objects.
+  static Result<std::shared_ptr<RadosDataset>> Make(std::shared_ptr<Schema> schema,
+                                                    std::string conf_path,
+                                                    RadosFormat format);
 
   const std::shared_ptr<Schema>& schema() const { return schema_; }
 

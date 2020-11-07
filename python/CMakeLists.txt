@@ -431,6 +431,10 @@ if(PYARROW_BUILD_DATASET)
   set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _dataset)
 endif()
 
+if(PYARROW_BUILD_RADOS)
+  set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _rados)
+endif()
+
 if(PYARROW_BUILD_PARQUET)
   # Parquet
   find_package(Parquet REQUIRED)
