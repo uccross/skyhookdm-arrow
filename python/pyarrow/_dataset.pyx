@@ -271,6 +271,12 @@ cdef class Dataset(_Weakrefable):
             'filesystem': FileSystemDataset,
         }
 
+        try:
+            from pyarrow._rados import RadosDataset  # noqa
+            classes['rados'] = RadosDataset
+        except ImportError:
+            pass
+
         class_ = classes.get(type_name, None)
         if class_ is None:
             raise TypeError(type_name)
@@ -410,7 +416,6 @@ cdef class Dataset(_Weakrefable):
     def schema(self):
         """The common schema of the full Dataset"""
         return pyarrow_wrap_schema(self.dataset.schema())
-
 
 cdef class UnionDataset(Dataset):
     """A Dataset wrapping child datasets.

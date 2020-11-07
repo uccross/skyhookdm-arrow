@@ -54,6 +54,12 @@ from pyarrow._dataset import (  # noqa
     _filesystemdataset_write,
 )
 
+try:
+    from pyarrow._rados import RadosDataset, RadosFormat  # noqa
+    rados_available = True
+except ImportError:
+    rados_available = False
+
 
 def field(name):
     """Reference a named column of the dataset.
@@ -438,6 +444,30 @@ def _filesystem_dataset(source, schema=None, filesystem=None,
     return factory.finish(schema)
 
 
+def is_rados_format(format):
+    if format and rados_available:
+        if isinstance(format, str):
+            return format == 'rados'
+        return isinstance(format, RadosFormat)
+    return False
+
+
+def _rados_dataset(source, schema=None, filesystem=None,
+                   partitioning=None, format=None,
+                   partition_base_dir=None, exclude_invalid_files=None,
+                   selector_ignore_prefixes=None):
+    # format = _ensure_format(format or 'parquet')
+    # partitioning = _ensure_partitioning(partitioning)
+
+    if isinstance(source, (list, tuple)):
+        source = source[0]
+
+    if isinstance(format, str) and format == 'rados':
+        format = RadosFormat()
+
+    return RadosDataset(source, format, schema)
+
+
 def _union_dataset(children, schema=None, **kwargs):
     if any(v is not None for v in kwargs.values()):
         raise ValueError(
@@ -667,6 +697,8 @@ def dataset(source, schema=None, format=None, filesystem=None,
     )
 
     # TODO(kszucs): support InMemoryDataset for a table input
+    if(is_rados_format(format)):
+        return _rados_dataset(source, **kwargs)
     if _is_path_like(source):
         return _filesystem_dataset(source, **kwargs)
     elif isinstance(source, (tuple, list)):
