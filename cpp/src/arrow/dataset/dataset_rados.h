@@ -168,7 +168,7 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
   ///
   /// \param[in] schema the schema of the tables referred to by the dataset.
   /// \param[in] conf_path path to ceph config file.
-  /// \param[in] format rados format wrapping information about skyhook and objects.
+  /// \param[in] format rados format wrapping information about Rados CLS and objects.
   static Result<std::shared_ptr<RadosDataset>> Make(std::shared_ptr<Schema> schema,
                                                     std::string conf_path,
                                                     RadosFormat format);
