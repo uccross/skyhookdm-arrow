@@ -247,17 +247,17 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
                     .status());
 }
 
-TEST_F(TestRadosDataset, IntToCharAndCharToInt) {
-  int64_t value = 12345678;
-  char* result = new char[8];
-  int64_to_char(result, value);
+// TEST_F(TestRadosDataset, IntToCharAndCharToInt) {
+//   int64_t value = 12345678;
+//   char* result = new char[8];
+//   int64_to_char(result, value);
 
-  char* result_ = result;
-  int64_t value_ = 0;
-  char_to_int64(1, result_, value_);
+//   char* result_ = result;
+//   int64_t value_ = 0;
+//   char_to_int64(1, result_, value_);
 
-  ASSERT_EQ(value, value_);
-}
+//   ASSERT_EQ(value, value_);
+// }
 
 TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   auto filter = std::make_shared<OrExpression>("b"_ == 3 or "b"_ == 4);
