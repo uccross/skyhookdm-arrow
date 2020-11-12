@@ -272,10 +272,10 @@ cdef class Dataset(_Weakrefable):
         }
 
         try:
-            from pyarrow._rados import RadosDataset  # noqa
+            from pyarrow._rados import RadosDataset
             classes['rados'] = RadosDataset
         except ImportError:
-            pass
+            pass    #ignored
 
         class_ = classes.get(type_name, None)
         if class_ is None:
