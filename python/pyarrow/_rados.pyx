@@ -34,8 +34,8 @@ cdef class RadosDatasetFactoryOptions(_Weakrefable):
                  user_name='user',
                  cluster_name='cluster',
                  flags=0,
-                 cls_name='rados',
-                 cls_method='read'
+                 cls_name='arrow',
+                 cls_method='read_and_scan'
                  ):
         self.rados_factory_options.pool_name_ = tobytes(pool_name)
         self.rados_factory_options.object_vector_ = [tobytes(s) for s in object_list]
