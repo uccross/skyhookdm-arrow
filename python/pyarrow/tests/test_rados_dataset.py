@@ -31,8 +31,8 @@ except ImportError:
 def test_rados_dataset():
 
     dataset = ds.dataset(
-        source= "rados://localhost/ceph_cluster/test_pool?ids={}&conf_path={}".format(
-            str(['object.1', 'object.2', 'object.3']),
+        source= "rados://localhost/ceph/test-pool?ids={}&conf_path={}".format(
+            str(['obj.0', 'obj.1', 'obj.2', 'obj.3']),
             '/etc/ceph/ceph.conf'
         ),
         schema= pa.schema([
