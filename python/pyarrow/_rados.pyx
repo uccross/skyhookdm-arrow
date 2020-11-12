@@ -22,13 +22,14 @@ from pyarrow.includes.libarrow_dataset cimport *
 from pyarrow.lib import frombytes, tobytes
 from pyarrow.lib cimport *
 
-cdef class RadosFormat(_Weakrefable):
+cdef class RadosDatasetFactoryOptions(_Weakrefable):
     cdef:
-        CRadosFormat rados_format
+        CRadosDatasetFactoryOptions rados_factory_options
 
     __slots__ = ()
 
     def __init__(self, pool_name='rados_pool',
+                 conf_path='/etc/ceph/ceph.conf',
                  object_list=[],
                  user_name='user',
                  cluster_name='cluster',
@@ -36,29 +37,29 @@ cdef class RadosFormat(_Weakrefable):
                  cls_name='rados',
                  cls_method='read'
                  ):
-        self.rados_format.pool_name_ = tobytes(pool_name)
-        self.rados_format.object_vector_ = [tobytes(s) for s in object_list]
-        self.rados_format.user_name_ = tobytes(user_name)
-        self.rados_format.cluster_name_ = tobytes(cluster_name)
-        self.rados_format.flags_ = flags
-        self.rados_format.cls_name_ = tobytes(cls_name)
-        self.rados_format.cls_method_ = tobytes(cls_method)
+        self.rados_factory_options.pool_name_ = tobytes(pool_name)
+        self.rados_factory_options.object_vector_ = [tobytes(s) for s in object_list]
+        self.rados_factory_options.user_name_ = tobytes(user_name)
+        self.rados_factory_options.cluster_name_ = tobytes(cluster_name)
+        self.rados_factory_options.flags_ = flags
+        self.rados_factory_options.cls_name_ = tobytes(cls_name)
+        self.rados_factory_options.cls_method_ = tobytes(cls_method)
 
-    cdef inline CRadosFormat unwrap(self):
-        return self.rados_format
+    cdef inline CRadosDatasetFactoryOptions unwrap(self):
+        return self.rados_factory_options
 
 cdef class RadosDataset(Dataset):
     cdef:
         CRadosDataset* rados_dataset
 
-    def __init__(self, conf_path, RadosFormat format=None, Schema schema=None):
+    def __init__(self, Schema schema=None, RadosDatasetFactoryOptions rados_factory_options=None):
         cdef:
-            CRadosFormat c_format
-        if format is None:
-            format = RadosFormat()
-        c_format = format.unwrap()
+            CRadosDatasetFactoryOptions c_rados_factory_options
+        if rados_factory_options is None:
+            rados_factory_options = RadosDatasetFactoryOptions()
+        c_rados_factory_options = rados_factory_options.unwrap()
         sp_schema = pyarrow_unwrap_schema(schema)
-        result = CRadosDataset.Make(sp_schema, tobytes(conf_path), c_format)
+        result = CRadosDataset.Make(sp_schema, c_rados_factory_options)
         self.init(GetResultValue(result))
 
     cdef void init(self, const shared_ptr[CDataset]& sp):

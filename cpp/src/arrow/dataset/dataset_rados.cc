@@ -98,20 +98,19 @@ RadosDataset::RadosDataset(std::shared_ptr<Schema> schema, RadosObjectVector obj
 RadosDataset::~RadosDataset() { ARROW_CHECK_OK(this->Shutdown()); }
 
 Result<std::shared_ptr<RadosDataset>> RadosDataset::Make(std::shared_ptr<Schema> schema,
-                                                         std::string conf_path,
-                                                         RadosFormat format) {
+                                                         RadosDatasetFactoryOptions factory_option) {
   std::shared_ptr<RadosOptions> rados_options = std::make_shared<RadosOptions>();
-  rados_options->ceph_config_path_ = conf_path;
-  rados_options->flags_ = format.flags_;
-  rados_options->cls_name_ = format.cls_name_;
-  rados_options->cls_method_ = format.cls_method_;
-  rados_options->pool_name_ = format.pool_name_;
-  rados_options->user_name_ = format.user_name_;
+  rados_options->ceph_config_path_ = factory_option.conf_path_;
+  rados_options->flags_ = factory_option.flags_;
+  rados_options->cls_name_ = factory_option.cls_name_;
+  rados_options->cls_method_ = factory_option.cls_method_;
+  rados_options->pool_name_ = factory_option.pool_name_;
+  rados_options->user_name_ = factory_option.user_name_;
   rados_options->rados_interface_ = new RadosWrapper();
   rados_options->io_ctx_interface_ = new IoCtxWrapper();
 
   RadosObjectVector object_vec;
-  for (std::string& id : format.object_vector_) {
+  for (std::string& id : factory_option.object_vector_) {
     object_vec.push_back(std::make_shared<RadosObject>(id));
   }
 

@@ -247,12 +247,13 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
             vector[int] row_group_ids)
         CStatus EnsureCompleteMetadata()
 
-    cdef cppclass CRadosFormat \
-            "arrow::dataset::RadosFormat":
+    cdef cppclass CRadosDatasetFactoryOptions \
+            "arrow::dataset::RadosDatasetFactoryOptions":
         vector[c_string] object_vector_
         c_string pool_name_
         c_string user_name_
         c_string cluster_name_
+        c_string conf_path_
         uint64_t flags_
         c_string cls_name_
         c_string cls_method_
@@ -262,8 +263,7 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
         @staticmethod
         CResult[shared_ptr[CDataset]] Make "Make"(
             shared_ptr[CSchema],
-            c_string conf_path,
-            CRadosFormat format
+            CRadosDatasetFactoryOptions rados_factory_options
         )
 
     cdef cppclass CFileSystemDatasetWriteOptions \

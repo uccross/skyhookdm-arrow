@@ -73,12 +73,13 @@ struct ARROW_DS_EXPORT RadosOptions {
   static std::shared_ptr<RadosOptions> FromPoolName(std::string pool_name);
 };
 
-class ARROW_DS_EXPORT RadosFormat {
+class ARROW_DS_EXPORT RadosDatasetFactoryOptions {
  public:
   std::vector<std::string> object_vector_;
   std::string pool_name_;
   std::string user_name_;
   std::string cluster_name_;
+  std::string conf_path_;
   uint64_t flags_;
   std::string cls_name_;
   std::string cls_method_;
@@ -170,8 +171,7 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
   /// \param[in] conf_path path to ceph config file.
   /// \param[in] format rados format wrapping information about skyhook and objects.
   static Result<std::shared_ptr<RadosDataset>> Make(std::shared_ptr<Schema> schema,
-                                                    std::string conf_path,
-                                                    RadosFormat format);
+                                                    RadosDatasetFactoryOptions factory_option);
 
   const std::shared_ptr<Schema>& schema() const { return schema_; }
 
