@@ -17,6 +17,7 @@
 
 ARG base=amd64/ubuntu:18.04
 FROM ${base}
+ARG arch
 
 # pipefail is enabled for proper error detection in the `wget | apt-key add`
 # step
