@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set -ex
+set -x
 
 source_dir=${1}/cpp
 build_dir=${2}/cpp
@@ -95,5 +95,6 @@ mkdir -p /usr/lib/x86_64-linux-gnu/rados-classes/
 cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
 
 debug/arrow-cls-cls-arrow-test
+cat ${test_dir}/log/osd.log
 
 popd
