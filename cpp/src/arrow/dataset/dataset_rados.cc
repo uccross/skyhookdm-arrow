@@ -87,6 +87,30 @@ struct VectorObjectGenerator : RadosDataset::RadosObjectGenerator {
   RadosObjectVector objects_;
 };
 
+RadosDatasetFactory::Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> options) {
+  return std::make_shared<RadosDatasetFactory>(objects, options);
+}
+
+Result<std::shared_ptr<Schema>> RadosDatasetFactory::Inspect(InspectOptions options) {
+  int e = rados_options_->io_ctx_interface_->exec(
+      objects_[0]->id(), rados_options_->cls_name_.c_str(),
+      "read", in, out);
+  if (e != 0) {
+    return Status::ExecutionError("call to exec() returned non-zero exit code.");
+  }
+
+  /// Deserialize the result Table from the `out` bufferlist.
+  std::shared_ptr<Table> table;
+  ARROW_RETURN_NOT_OK(deserialize_table_from_bufferlist(&table, out));
+  return table->schema();
+}
+
+Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions options) {
+  InspectOptions inspect_options_;
+  ARROW_ASSIGN_OR_RAISE(auto schema_, Inspect(inspect_options_));
+  return std::make_shared<RadosDataset>(schema_, objects_, options_);
+}
+
 RadosDataset::RadosDataset(std::shared_ptr<Schema> schema, RadosObjectVector objects,
                            std::shared_ptr<RadosOptions> rados_options)
     : Dataset(std::move(schema)),

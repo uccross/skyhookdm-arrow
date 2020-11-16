@@ -111,6 +111,64 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   std::shared_ptr<RadosOptions> rados_options_;
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
+ public:
+  static Result<std::shared_ptr<DatasetFactory>> Make(RadosObjectVector objects, RadosOptions options);
+
+  Result<std::shared_ptr<Schema>> Inspect(
+      InspectOptions options) override;
+
+  Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
+
+ protected:
+  RadosDatasetFactory(RadosObjectVector objects, std::shared_ptr<RadosOptions> options)
+    : objects_(objects), options_(std::move(options)) {}
+  RadosObjectVector objects_;
+  std::shared_ptr<RadosOptions> options_;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /// \brief A Dataset to wrap a vector of RadosObjects and generate
 /// RadosFragments out of them.
 class ARROW_DS_EXPORT RadosDataset : public Dataset {

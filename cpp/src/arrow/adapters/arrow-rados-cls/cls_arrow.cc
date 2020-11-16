@@ -29,6 +29,7 @@ CLS_NAME(arrow)
 cls_handle_t h_class;
 cls_method_handle_t h_read_and_scan;
 cls_method_handle_t h_write;
+cls_method_handle_t h_read;
 
 /// \brief Write data to an object.
 ///
@@ -110,6 +111,20 @@ static int read_and_scan(cls_method_context_t hctx, ceph::buffer::list* in,
   }
   *out = result_bl;
 
+  return 0;
+}
+
+static int read(cls_method_context_t hctx, ceph::buffer::list* in,
+                ceph::buffer::list *out) {
+  int ret;
+  ceph::buffer::list bl;
+  ret = cls_cxx_read(hctx, 0, 0, &bl);
+  if (ret < 0) {
+    CLS_ERR("ERROR: failed to read an object");
+    return ret;
+  }
+
+  *out = bl;
   return 0;
 }
 
