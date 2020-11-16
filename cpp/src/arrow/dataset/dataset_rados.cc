@@ -41,7 +41,6 @@ std::shared_ptr<RadosOptions> RadosOptions::FromPoolName(std::string pool_name) 
   options->flags_ = 0;
   options->ceph_config_path_ = "/etc/ceph/ceph.conf";
   options->cls_name_ = "arrow";
-  options->cls_method_ = "read_and_scan";
   options->rados_interface_ = new RadosWrapper();
   options->io_ctx_interface_ = new IoCtxWrapper();
   return options;
@@ -194,7 +193,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   /// bufferlist subsequently.
   int e = rados_options_->io_ctx_interface_->exec(
       object_->id(), rados_options_->cls_name_.c_str(),
-      rados_options_->cls_method_.c_str(), in, out);
+      "read_and_scan", in, out);
   if (e != 0) {
     return Status::ExecutionError("call to exec() returned non-zero exit code.");
   }

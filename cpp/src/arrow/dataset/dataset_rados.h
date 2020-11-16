@@ -62,7 +62,6 @@ struct ARROW_DS_EXPORT RadosOptions {
   std::string ceph_config_path_;
   uint64_t flags_;
   std::string cls_name_;
-  std::string cls_method_;
 
   RadosInterface* rados_interface_;
   IoCtxInterface* io_ctx_interface_;
