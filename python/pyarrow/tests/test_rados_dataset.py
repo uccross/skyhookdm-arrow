@@ -29,15 +29,20 @@ except ImportError:
 
 @pytest.mark.rados
 def test_rados_dataset():
+    if rados and ds:
+        import urllib
+        dataset = ds.dataset(
+            source= "rados:///etc/ceph/ceph.conf?cluster=ceph&pool=test-pool&ids={}".format(
+                urllib.parse.quote(str(['obj.0', 'obj.1', 'obj.2', 'obj.3']), safe='')
+            ),
+            schema= pa.schema([
+                pa.field('f1', pa.int64()),
+                pa.field('f2', pa.int64())
+            ])
+        )
+        assert isinstance(dataset, rados.RadosDataset)
 
-    dataset = ds.dataset(
-        source= "rados://localhost/ceph/test-pool?ids={}&conf_path={}".format(
-            str(['obj.0', 'obj.1', 'obj.2', 'obj.3']),
-            '/etc/ceph/ceph.conf'
-        ),
-        schema= pa.schema([
-            pa.field('f1', pa.int64()),
-            pa.field('f2', pa.int64())
-        ])
-    )
-    assert isinstance(dataset, rados.RadosDataset)
+        table = dataset.to_table()
+        assert isinstance(table, pa.Table)
+    else:
+        pytest.skip('Rados or Dataset NOT enabled')

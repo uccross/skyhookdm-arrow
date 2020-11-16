@@ -20,7 +20,8 @@ import urllib
 import os.path
 import ast
 try:
-    from pyarrow._rados import RadosDataset, RadosDatasetFactoryOptions
+    from pyarrow._dataset import RadosDataset, RadosDatasetFactoryOptions
+    import rados, sys
 except ImportError:
     raise ImportError(
                 "The pyarrow installation is not built with support for rados."
@@ -28,34 +29,32 @@ except ImportError:
 
 _RADOS_URI_SCHEME = 'rados'
 
-def generate_uri(host='localhost', cluster='ceph', pool='test_pool', conf_path='/etc/ceph/ceph.conf', username='client.admin', object_list=[], flags=0):
-    host = urllib.parse.quote(host, safe='')
-    cluster = urllib.parse.quote(cluster, safe='')
-    pool = urllib.parse.quote(pool, safe='')
+def generate_uri(conf_path='/etc/ceph/ceph.conf', cluster='ceph', pool='test-pool', object_list=[], username=None, flags=None):
     params = {}
     params['ids'] = object_list
-    params['conf_path'] = conf_path
-    params['username'] = username
-    params['flags'] = flags
+    if username:
+        params['username'] = username
+    if flags:
+        params['flags'] = flags
+    params['pool'] = pool
+    params['cluster'] = cluster
     query = urllib.parse.urlencode(params)
-    query = '?' + query
-    return "{}://{}/{}/{}{}".format(_RADOS_URI_SCHEME, host, cluster, pool, query)
+    return "{}://{}?{}".format(_RADOS_URI_SCHEME, conf_path, query)
 
 
 def parse_uri(uri):
     if not is_valid_rados_uri(uri):
         return None
     url_object = urllib.parse.urlparse(uri)
-    host = urllib.parse.unquote(url_object.netloc)
-    path_components = _parse_path(url_object.path)
-    cluster = urllib.parse.unquote(path_components[0])
-    pool = urllib.parse.unquote(path_components[0])
     params = urllib.parse.parse_qs(url_object.query)
-    rados_factory_options = RadosDatasetFactoryOptions(cluster_name=cluster, pool_name=pool)
+    rados_factory_options = RadosDatasetFactoryOptions()
+    rados_factory_options.conf_path = url_object.netloc
+    if params['cluster']:
+        rados_factory_options.cluster_name = params['cluster'][0]
+    if params['pool']:
+        rados_factory_options.pool_name = params['pool'][0]
     if params['username']:
         rados_factory_options.user_name = params['username'][0]
-    if params['conf_path']:
-        rados_factory_options.conf_path = params['conf_path'][0]
     if params['ids']:
         ids = ast.literal_eval(params['ids'][0])
         rados_factory_options.object_list = ids
@@ -68,18 +67,16 @@ def parse_uri(uri):
 def is_valid_rados_uri(uri):
     url_object = urllib.parse.urlparse(uri)
     if url_object.scheme == _RADOS_URI_SCHEME:
-        path_components = _parse_path(url_object.path)
-        if len(path_components) == 2:
-            return True
+        params = urllib.parse.parse_qs(url_object.query)
+        if params['cluster'] and params['pool']:
+            if _is_valid_ceph_conf(url_object.netloc):
+                return True
     return False
 
-
-def _parse_path(path):
-    path_components = []
-    head = None
-    tail = path
-    while head != '':
-        tail, head = os.path.split(tail)
-        if head != '':
-            path_components.insert(0, head)
-    return path_components
+def _is_valid_ceph_conf(path):
+    try:
+        cluster = rados.Rados(conffile=path)
+        cluster.version()
+    except ImportError:
+        return False
+    return True

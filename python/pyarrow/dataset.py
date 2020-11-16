@@ -51,12 +51,12 @@ from pyarrow._dataset import (  # noqa
     UnionDataset,
     UnionDatasetFactory,
     _get_partition_keys,
-    _filesystemdataset_write,
+    _filesystemdataset_write
 )
 
 try:
-    import pyarrow._rados as rados
-    import pyarrow.rados as rados_utils
+    import pyarrow.rados as rados
+    from pyarrow._dataset import RadosDataset, RadosDatasetFactoryOptions
 except ImportError:
     rados = None
 
@@ -445,7 +445,7 @@ def _filesystem_dataset(source, schema=None, filesystem=None,
 
 
 def _is_rados(source):
-    if rados and rados_utils.is_valid_rados_uri(source[0]):
+    if rados and rados.is_valid_rados_uri(source[0]):
         return True
     return False
 
@@ -457,16 +457,10 @@ def _rados_dataset(source, schema=None, filesystem=None,
         raise ImportError(
             "The pyarrow installation is not built with support for rados."
         )
-    # format = _ensure_format(format or 'parquet')
-    # partitioning = _ensure_partitioning(partitioning)
-
     if isinstance(source, (list, tuple)):
         source = source[0]
-
-    if isinstance(format, str) and format == 'rados':
-        format = rados.RadosFormat()
-
-    return rados.RadosDataset(source, format, schema)
+    rados_factory_options = rados.parse_uri(source)
+    return RadosDataset(schema, rados_factory_options)
 
 
 def _union_dataset(children, schema=None, **kwargs):
@@ -698,7 +692,7 @@ def dataset(source, schema=None, format=None, filesystem=None,
     )
 
     # TODO(kszucs): support InMemoryDataset for a table input
-    if(_is_rados_format(source, format)):
+    if(_is_rados(source)):
         return _rados_dataset(source, **kwargs)
     if _is_path_like(source):
         return _filesystem_dataset(source, **kwargs)

@@ -35,6 +35,7 @@ RUN apt-get update -y -q && \
         libgoogle-glog-dev \
         libsnappy-dev \
         libradospp-dev \
+        python3-rados \
         rados-objclass-dev \
         libssl-dev \
         make \

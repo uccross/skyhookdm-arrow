@@ -34,6 +34,7 @@ RUN apt-get update -y -q && \
       libprotoc-dev \
       libsnappy-dev \
       libradospp-dev \
+      python3-rados \
       rados-objclass-dev \
       libthrift-dev \
       libutf8proc-dev \

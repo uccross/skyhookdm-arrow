@@ -71,6 +71,7 @@ RUN \
     libre2-dev \
     libsnappy-dev \
     libradospp-dev \
+    python3-rados \
     rados-objclass-dev \
     libssl-dev \
     libthrift-dev \

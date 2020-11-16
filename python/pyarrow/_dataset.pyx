@@ -37,6 +37,13 @@ from pyarrow._parquet cimport (
     FileMetaData, RowGroupMetaData, ColumnChunkMetaData
 )
 
+try:
+    import pyarrow._rados as rados
+    DEF USE_RADOS = True
+except ImportError:
+    rados = None
+    DEF USE_RADOS = False
+
 
 def _forbid_instantiation(klass, subclasses_instead=True):
     msg = '{} is an abstract class thus cannot be initialized.'.format(
@@ -271,11 +278,8 @@ cdef class Dataset(_Weakrefable):
             'filesystem': FileSystemDataset,
         }
 
-        try:
-            from pyarrow._rados import RadosDataset
+        IF USE_RADOS:
             classes['rados'] = RadosDataset
-        except ImportError:
-            pass    #ignored
 
         class_ = classes.get(type_name, None)
         if class_ is None:
@@ -416,6 +420,53 @@ cdef class Dataset(_Weakrefable):
     def schema(self):
         """The common schema of the full Dataset"""
         return pyarrow_wrap_schema(self.dataset.schema())
+
+IF USE_RADOS:
+    cdef class RadosDatasetFactoryOptions(_Weakrefable):
+        cdef:
+            CRadosDatasetFactoryOptions rados_factory_options
+
+        __slots__ = ()
+
+        def __init__(self, pool_name='rados_pool',
+                    conf_path='/etc/ceph/ceph.conf',
+                    object_list=[],
+                    user_name='user',
+                    cluster_name='cluster',
+                    flags=0,
+                    cls_name='arrow',
+                    cls_method='read_and_scan'
+                    ):
+            self.rados_factory_options.pool_name_ = tobytes(pool_name)
+            self.rados_factory_options.object_vector_ = [tobytes(s) for s in object_list]
+            self.rados_factory_options.user_name_ = tobytes(user_name)
+            self.rados_factory_options.cluster_name_ = tobytes(cluster_name)
+            self.rados_factory_options.flags_ = flags
+            self.rados_factory_options.cls_name_ = tobytes(cls_name)
+            self.rados_factory_options.cls_method_ = tobytes(cls_method)
+
+        cdef inline CRadosDatasetFactoryOptions unwrap(self):
+            return self.rados_factory_options
+    
+
+    cdef class RadosDataset(Dataset):
+        cdef:
+            CRadosDataset* rados_dataset
+
+        def __init__(self, Schema schema=None, RadosDatasetFactoryOptions rados_factory_options=None):
+            cdef:
+                CRadosDatasetFactoryOptions c_rados_factory_options
+            if rados_factory_options is None:
+                rados_factory_options = RadosDatasetFactoryOptions()
+            c_rados_factory_options = rados_factory_options.unwrap()
+            sp_schema = pyarrow_unwrap_schema(schema)
+            result = CRadosDataset.Make(sp_schema, c_rados_factory_options)
+            self.init(GetResultValue(result))
+
+        cdef void init(self, const shared_ptr[CDataset]& sp):
+            Dataset.init(self, sp)
+            self.rados_dataset = <CRadosDataset*> sp.get()
+
 
 cdef class UnionDataset(Dataset):
     """A Dataset wrapping child datasets.
