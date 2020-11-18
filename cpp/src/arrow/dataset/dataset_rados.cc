@@ -24,6 +24,7 @@
 
 #include "arrow/dataset/dataset_internal.h"
 #include "arrow/dataset/filter.h"
+#include "arrow/dataset/discovery.h"
 #include "arrow/table.h"
 #include "arrow/util/bit_util.h"
 #include "arrow/util/iterator.h"
@@ -86,7 +87,7 @@ struct VectorObjectGenerator : RadosDataset::RadosObjectGenerator {
   RadosObjectVector objects_;
 };
 
-RadosDatasetFactory::Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> options) {
+Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> options) {
   return std::make_shared<RadosDatasetFactory>(objects, options);
 }
 

@@ -28,6 +28,7 @@
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/rados.h"
 #include "arrow/dataset/scanner.h"
+#include "arrow/dataset/discovery.h"
 
 namespace arrow {
 namespace dataset {
@@ -110,27 +111,6 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   std::shared_ptr<RadosOptions> rados_options_;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
  public:
   static Result<std::shared_ptr<DatasetFactory>> Make(RadosObjectVector objects, RadosOptions options);
@@ -146,27 +126,6 @@ class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
   RadosObjectVector objects_;
   std::shared_ptr<RadosOptions> options_;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /// \brief A Dataset to wrap a vector of RadosObjects and generate
 /// RadosFragments out of them.

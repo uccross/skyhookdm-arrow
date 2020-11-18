@@ -138,4 +138,7 @@ void __cls_init() {
 
   cls_register_cxx_method(h_class, "write", CLS_METHOD_RD | CLS_METHOD_WR, write,
                           &h_write);
+
+  cls_register_cxx_method(h_class, "read", CLS_METHOD_RD | CLS_METHOD_WR, read,
+                          &h_read);
 }
