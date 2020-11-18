@@ -113,10 +113,10 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
 
 class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
  public:
-  static Result<std::shared_ptr<DatasetFactory>> Make(RadosObjectVector objects, RadosOptions options);
+  static Result<std::shared_ptr<DatasetFactory>> Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> options);
 
-  Result<std::shared_ptr<Schema>> Inspect(
-      InspectOptions options) override;
+  Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(
+      InspectOptions options);
 
   Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
 
