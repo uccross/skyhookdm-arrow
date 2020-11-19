@@ -432,7 +432,9 @@ if(PYARROW_BUILD_DATASET)
 endif()
 
 if(PYARROW_BUILD_RADOS)
+  set(RADOS_LINK_LIBS arrow_dataset_shared)
   set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _rados)
+  set(ARROW_RADOS ON)
 endif()
 
 if(PYARROW_BUILD_PARQUET)
@@ -617,6 +619,11 @@ endif()
 
 if(PYARROW_BUILD_PARQUET)
   target_link_libraries(_parquet PRIVATE ${PARQUET_LINK_LIBS})
+endif()
+
+if(PYARROW_BUILD_RADOS)
+  target_link_libraries(_rados PRIVATE ${RADOS_LINK_LIBS})
+  
 endif()
 
 if(PYARROW_BUILD_PLASMA)

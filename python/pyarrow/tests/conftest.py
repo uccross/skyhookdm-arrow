@@ -41,6 +41,7 @@ h.settings.load_profile(os.environ.get('HYPOTHESIS_PROFILE', 'dev'))
 groups = [
     'cython',
     'dataset',
+    'rados',
     'hypothesis',
     'fastparquet',
     'gandiva',
@@ -62,6 +63,7 @@ groups = [
 defaults = {
     'cython': False,
     'dataset': False,
+    'rados': False,
     'fastparquet': False,
     'hypothesis': False,
     'gandiva': False,
@@ -101,6 +103,13 @@ except ImportError:
 try:
     import pyarrow.dataset  # noqa
     defaults['dataset'] = True
+except ImportError:
+    pass
+
+try:
+    import pyarrow.rados  # noqa
+    if defaults['dataset']:
+        defaults['rados'] = True
 except ImportError:
     pass
 

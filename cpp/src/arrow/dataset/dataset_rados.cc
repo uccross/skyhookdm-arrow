@@ -114,7 +114,7 @@ Result<std::shared_ptr<RadosDataset>> RadosDataset::Make(std::shared_ptr<Schema>
     object_vec.push_back(std::make_shared<RadosObject>(id));
   }
 
-  return std::make_shared<RadosDataset>(schema, object_vec, rados_options);
+  return std::shared_ptr<RadosDataset>(new RadosDataset(std::move(schema), object_vec, std::move(rados_options)));
 }
 
 Status RadosDataset::Connect() {

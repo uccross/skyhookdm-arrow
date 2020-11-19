@@ -19,9 +19,9 @@
 import urllib
 import os.path
 import ast
+import rados, sys
 try:
-    from pyarrow._dataset import RadosDataset, RadosDatasetFactoryOptions
-    import rados, sys
+    from pyarrow._rados import RadosDataset, RadosDatasetFactoryOptions
 except ImportError:
     raise ImportError(
                 "The pyarrow installation is not built with support for rados."
@@ -31,7 +31,7 @@ _RADOS_URI_SCHEME = 'rados'
 
 def generate_uri(conf_path='/etc/ceph/ceph.conf', cluster='ceph', pool='test-pool', object_list=[], username=None, flags=None):
     params = {}
-    params['ids'] = object_list
+    params['ids'] = urllib.parse.quote(str(object_list), safe='')
     if username:
         params['username'] = username
     if flags:
@@ -47,20 +47,21 @@ def parse_uri(uri):
         return None
     url_object = urllib.parse.urlparse(uri)
     params = urllib.parse.parse_qs(url_object.query)
-    rados_factory_options = RadosDatasetFactoryOptions()
-    rados_factory_options.conf_path = url_object.netloc
-    if params['cluster']:
-        rados_factory_options.cluster_name = params['cluster'][0]
-    if params['pool']:
-        rados_factory_options.pool_name = params['pool'][0]
-    if params['username']:
-        rados_factory_options.user_name = params['username'][0]
-    if params['ids']:
-        ids = ast.literal_eval(params['ids'][0])
-        rados_factory_options.object_list = ids
-    if params['flags']:
-        rados_factory_options.flags = int(params['flags'][0])
-    return rados_factory_options
+    args = {}
+    args['conf_path'] = url_object.path
+    if 'cluster' in params:
+        args['cluster_name'] = params['cluster'][0]
+    if 'pool' in params:
+        args['pool_name'] = params['pool'][0]
+    if 'username' in params:
+        args['user_name'] = params['username'][0]
+    if 'ids' in params:
+        ids = ast.literal_eval(urllib.parse.unquote(params['ids'][0]))
+        args['object_list'] = ids
+    if 'flags' in params:
+        args['flags'] = int(params['flags'][0])
+    options = RadosDatasetFactoryOptions(**args)
+    return options
 
 
 

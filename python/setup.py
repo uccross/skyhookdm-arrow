@@ -105,6 +105,7 @@ class build_ext(_build_ext):
                      ('with-cuda', None, 'build the Cuda extension'),
                      ('with-flight', None, 'build the Flight extension'),
                      ('with-dataset', None, 'build the Dataset extension'),
+                     ('with-rados', None, 'build the Rados extension'),
                      ('with-parquet', None, 'build the Parquet extension'),
                      ('with-static-parquet', None, 'link parquet statically'),
                      ('with-static-boost', None, 'link boost statically'),
@@ -200,6 +201,7 @@ class build_ext(_build_ext):
         '_plasma',
         '_s3fs',
         '_hdfs',
+        '_rados',
         'gandiva']
 
     def _run_cmake(self):

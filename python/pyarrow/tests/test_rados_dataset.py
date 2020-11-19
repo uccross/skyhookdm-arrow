@@ -17,32 +17,50 @@
 
 import pyarrow as pa
 import pytest
-try:
-    import pyarrow.rados as rados
-except ImportError:
-    rados = None
 
-try:
-    import pyarrow.dataset as ds
-except ImportError:
-    ds = None
+import pyarrow.rados as rados
+import rados as librados
+import pyarrow.dataset as ds
 
 @pytest.mark.rados
 def test_rados_dataset():
-    if rados and ds:
-        import urllib
-        dataset = ds.dataset(
-            source= "rados:///etc/ceph/ceph.conf?cluster=ceph&pool=test-pool&ids={}".format(
-                urllib.parse.quote(str(['obj.0', 'obj.1', 'obj.2', 'obj.3']), safe='')
-            ),
-            schema= pa.schema([
-                pa.field('f1', pa.int64()),
-                pa.field('f2', pa.int64())
-            ])
-        )
-        assert isinstance(dataset, rados.RadosDataset)
+    import urllib
 
-        table = dataset.to_table()
-        assert isinstance(table, pa.Table)
-    else:
-        pytest.skip('Rados or Dataset NOT enabled')
+    cluster = librados.Rados(conffile='/etc/ceph/ceph.conf')
+    cluster.connect()
+    cluster.create_pool('test-pool')
+
+    dataset = ds.dataset(
+        source= "rados:///etc/ceph/ceph.conf?cluster=ceph&pool=test-pool&ids={}".format(
+            urllib.parse.quote(str(['obj.0', 'obj.1', 'obj.2', 'obj.3']), safe='')
+        ),
+        schema= pa.schema([
+            pa.field('a', pa.int8()),
+            pa.field('b', pa.float64())          
+        ])
+    )
+    assert isinstance(dataset, rados.RadosDataset)
+
+    cluster.delete_pool('test-pool')
+
+@pytest.mark.rados
+def test_rados_url():
+    import urllib
+    conf = '/etc/ceph/ceph.conf'
+    cluster = 'ceph'
+    pool = 'test-pool'
+    ids = ['obj.0', 'obj.1', 'obj.2', 'obj.3']
+    url = "rados://{}?cluster={}&pool={}&ids={}".format(
+            conf,
+            cluster,
+            pool,
+            urllib.parse.quote(str(ids), safe='')
+        )
+        
+    generated_url = rados.generate_uri(conf_path=conf, cluster=cluster, pool=pool, object_list=ids)
+
+    rados_factory_options = rados.parse_uri(generated_url)
+    assert rados_factory_options.conf_path == conf
+    assert rados_factory_options.cluster_name == cluster
+    assert rados_factory_options.pool_name == pool
+    assert rados_factory_options.object_list == ids

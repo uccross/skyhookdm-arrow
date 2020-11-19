@@ -56,7 +56,7 @@ from pyarrow._dataset import (  # noqa
 
 try:
     import pyarrow.rados as rados
-    from pyarrow._dataset import RadosDataset, RadosDatasetFactoryOptions
+    from pyarrow.rados import RadosDataset, RadosDatasetFactoryOptions
 except ImportError:
     rados = None
 
@@ -445,8 +445,13 @@ def _filesystem_dataset(source, schema=None, filesystem=None,
 
 
 def _is_rados(source):
-    if rados and rados.is_valid_rados_uri(source[0]):
-        return True
+    if isinstance(source, (list, tuple)):
+        if len(source) <= 0:
+            return False
+        source = source[0]
+    if isinstance(source, str):
+        if rados and rados.is_valid_rados_uri(source):
+            return True
     return False
 
 def _rados_dataset(source, schema=None, filesystem=None,
