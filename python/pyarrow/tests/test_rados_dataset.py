@@ -18,14 +18,13 @@
 import pyarrow as pa
 import pytest
 
-import pyarrow.rados as rados
-import rados as librados
-import pyarrow.dataset as ds
-
 @pytest.mark.rados
 def test_rados_dataset():
     import urllib
-
+    import pyarrow.rados as rados
+    import rados as librados
+    import pyarrow.dataset as ds
+    
     cluster = librados.Rados(conffile='/etc/ceph/ceph.conf')
     cluster.connect()
     cluster.create_pool('test-pool')
@@ -46,6 +45,10 @@ def test_rados_dataset():
 @pytest.mark.rados
 def test_rados_url():
     import urllib
+    import pyarrow.rados as rados
+    import rados as librados
+    import pyarrow.dataset as ds
+
     conf = '/etc/ceph/ceph.conf'
     cluster = 'ceph'
     pool = 'test-pool'
