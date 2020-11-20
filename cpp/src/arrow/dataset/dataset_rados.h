@@ -26,9 +26,9 @@
 #include <vector>
 
 #include "arrow/dataset/dataset.h"
+#include "arrow/dataset/discovery.h"
 #include "arrow/dataset/rados.h"
 #include "arrow/dataset/scanner.h"
-#include "arrow/dataset/discovery.h"
 
 namespace arrow {
 namespace dataset {
@@ -113,7 +113,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
 
 /// \brief A factory to create a RadosDataset from a vector of RadosObjects.
 ///
-/// The factory takes a vector of RadosObjects and infers the schema of the Table 
+/// The factory takes a vector of RadosObjects and infers the schema of the Table
 /// stored in the objects by scanning the first object in the list.
 class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
  public:
@@ -121,16 +121,17 @@ class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
   ///
   /// \param[in] objects a vector of RadosObjects.
   /// \param[in] rados_options the connection information to the RADOS cluster.
-  static Result<std::shared_ptr<DatasetFactory>> Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options);
+  static Result<std::shared_ptr<DatasetFactory>> Make(
+      RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options);
 
-  Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(
-      InspectOptions options);
+  Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(InspectOptions options);
 
   Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
 
  protected:
-  RadosDatasetFactory(RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options)
-    : objects_(objects), rados_options_(std::move(rados_options)) {}
+  RadosDatasetFactory(RadosObjectVector objects,
+                      std::shared_ptr<RadosOptions> rados_options)
+      : objects_(objects), rados_options_(std::move(rados_options)) {}
   RadosObjectVector objects_;
   std::shared_ptr<RadosOptions> rados_options_;
 };

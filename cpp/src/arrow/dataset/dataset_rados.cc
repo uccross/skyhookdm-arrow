@@ -23,8 +23,8 @@
 #include <utility>
 
 #include "arrow/dataset/dataset_internal.h"
-#include "arrow/dataset/filter.h"
 #include "arrow/dataset/discovery.h"
+#include "arrow/dataset/filter.h"
 #include "arrow/table.h"
 #include "arrow/util/bit_util.h"
 #include "arrow/util/iterator.h"
@@ -87,15 +87,17 @@ struct VectorObjectGenerator : RadosDataset::RadosObjectGenerator {
   RadosObjectVector objects_;
 };
 
-Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options) {
-  return std::shared_ptr<DatasetFactory>(new RadosDatasetFactory(std::move(objects), std::move(rados_options)));
+Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
+    RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options) {
+  return std::shared_ptr<DatasetFactory>(
+      new RadosDatasetFactory(std::move(objects), std::move(rados_options)));
 }
 
-Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(InspectOptions options) {
+Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
+    InspectOptions options) {
   librados::bufferlist in, out;
-  int e = options_->io_ctx_interface_->exec(
-      objects_[0]->id(), options_->cls_name_.c_str(),
-      "read", in, out);
+  int e = options_->io_ctx_interface_->exec(objects_[0]->id(),
+                                            options_->cls_name_.c_str(), "read", in, out);
   if (e != 0) {
     return Status::ExecutionError("call to exec() returned non-zero exit code.");
   }
@@ -194,8 +196,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   /// down to the storage. The resultant Table will be available inside the `out`
   /// bufferlist subsequently.
   int e = rados_options_->io_ctx_interface_->exec(
-      object_->id(), rados_options_->cls_name_.c_str(),
-      "read_and_scan", in, out);
+      object_->id(), rados_options_->cls_name_.c_str(), "read_and_scan", in, out);
   if (e != 0) {
     return Status::ExecutionError("call to exec() returned non-zero exit code.");
   }

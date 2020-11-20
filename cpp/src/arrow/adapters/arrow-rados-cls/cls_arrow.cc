@@ -115,7 +115,7 @@ static int read_and_scan(cls_method_context_t hctx, ceph::buffer::list* in,
 }
 
 static int read(cls_method_context_t hctx, ceph::buffer::list* in,
-                ceph::buffer::list *out) {
+                ceph::buffer::list* out) {
   int ret;
   ceph::buffer::list bl;
   ret = cls_cxx_read(hctx, 0, 0, &bl);
@@ -139,6 +139,5 @@ void __cls_init() {
   cls_register_cxx_method(h_class, "write", CLS_METHOD_RD | CLS_METHOD_WR, write,
                           &h_write);
 
-  cls_register_cxx_method(h_class, "read", CLS_METHOD_RD | CLS_METHOD_WR, read,
-                          &h_read);
+  cls_register_cxx_method(h_class, "read", CLS_METHOD_RD | CLS_METHOD_WR, read, &h_read);
 }
