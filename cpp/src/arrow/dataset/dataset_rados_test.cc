@@ -188,6 +188,10 @@ TEST_F(TestRadosFragment, Scan) {
 
 class TestRadosDataset : public DatasetFixtureMixin {};
 
+TEST_F(TestRadosDataset, Factory) {
+  
+}
+
 TEST_F(TestRadosDataset, GetFragments) {
   constexpr int64_t kNumberBatches = 24;
 
