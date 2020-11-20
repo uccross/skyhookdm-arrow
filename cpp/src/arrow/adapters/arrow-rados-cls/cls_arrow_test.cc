@@ -197,8 +197,10 @@ TEST(ClsSDK, TestEndToEnd) {
   for (int i = 0; i < 4; i++)
     objects.push_back(
         std::make_shared<arrow::dataset::RadosObject>("obj." + std::to_string(i)));
-  auto rados_ds =
-      std::make_shared<arrow::dataset::RadosDataset>(schema, objects, options);
+
+  arrow::dataset::FinishOptions finish_options;
+  auto rados_ds_factory = arrow::dataset::RadosDatasetFactory::Make(objects, options).ValueOrDie();
+  auto rados_ds = rados_ds_factory->Finish(finish_options).ValueOrDie();
 
   /// Prepare RecordBatches and Write the fragments.
   auto record_batches = create_test_record_batches();
