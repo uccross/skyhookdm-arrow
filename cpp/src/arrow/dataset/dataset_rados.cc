@@ -97,7 +97,7 @@ Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas
     InspectOptions options) {
   librados::bufferlist in, out;
   int e = rados_options_->io_ctx_interface_->exec(objects_[0]->id(),
-                                            rados_options_->cls_name_.c_str(), "read", in, out);
+      rados_options_->cls_name_.c_str(), "read", in, out);
   if (e != 0) {
     return Status::ExecutionError("call to exec() returned non-zero exit code.");
   }
