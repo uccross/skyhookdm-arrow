@@ -87,8 +87,8 @@ struct VectorObjectGenerator : RadosDataset::RadosObjectGenerator {
   RadosObjectVector objects_;
 };
 
-Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> options) {
-  return std::shared_ptr<DatasetFactory>(new RadosDatasetFactory(std::move(objects), std::move(options)));
+Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options) {
+  return std::shared_ptr<DatasetFactory>(new RadosDatasetFactory(std::move(objects), std::move(rados_options)));
 }
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(InspectOptions options) {

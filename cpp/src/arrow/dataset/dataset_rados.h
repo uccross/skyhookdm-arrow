@@ -111,9 +111,17 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   std::shared_ptr<RadosOptions> rados_options_;
 };
 
+/// \brief A factory to create a RadosDataset from a vector of RadosObjects.
+///
+/// The factory takes a vector of RadosObjects and infers the schema of the Table 
+/// stored in the objects by scanning the first object in the list.
 class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
  public:
-  static Result<std::shared_ptr<DatasetFactory>> Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> options);
+  /// \brief Build a RadosDataset from a vector of RadosObjects.
+  ///
+  /// \param[in] objects a vector of RadosObjects.
+  /// \param[in] rados_options the connection information to the RADOS cluster.
+  static Result<std::shared_ptr<DatasetFactory>> Make(RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options);
 
   Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(
       InspectOptions options);
@@ -121,10 +129,10 @@ class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
   Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
 
  protected:
-  RadosDatasetFactory(RadosObjectVector objects, std::shared_ptr<RadosOptions> options)
-    : objects_(objects), options_(std::move(options)) {}
+  RadosDatasetFactory(RadosObjectVector objects, std::shared_ptr<RadosOptions> rados_options)
+    : objects_(objects), rados_options_(std::move(rados_options)) {}
   RadosObjectVector objects_;
-  std::shared_ptr<RadosOptions> options_;
+  std::shared_ptr<RadosOptions> rados_options_;
 };
 
 /// \brief A Dataset to wrap a vector of RadosObjects and generate
