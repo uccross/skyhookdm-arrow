@@ -197,7 +197,7 @@ def _apply_options(cmd, options):
 @click.option("--with-s3", default=None, type=BOOL,
               help="Build Arrow with S3 support.")
 @click.option("--with-rados", default=None, type=BOOL,
-              help="Build Arrow with Rados support.")
+              help="Build Arrow with RADOS support.")
 # Compressions
 @click.option("--with-brotli", default=None, type=BOOL,
               help="Build Arrow with brotli compression.")

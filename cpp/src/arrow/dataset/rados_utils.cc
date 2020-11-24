@@ -30,7 +30,7 @@ union {
   char bytes_[8];
 } converter_;
 
-Status int64_to_char(char* buffer, int64_t num) {
+Status Int64ToChar(char* buffer, int64_t num) {
   /// Pass the integer through the union to
   /// get the byte representation.
   num = BitUtil::ToLittleEndian(num);
@@ -39,7 +39,7 @@ Status int64_to_char(char* buffer, int64_t num) {
   return Status::OK();
 }
 
-Status char_to_int64(char* buffer, int64_t& num) {
+Status CharToInt64(char* buffer, int64_t& num) {
   /// Pass the byte representation through the union to
   /// get the integer.
   memcpy(converter_.bytes_, buffer, 8);
@@ -47,20 +47,20 @@ Status char_to_int64(char* buffer, int64_t& num) {
   return Status::OK();
 }
 
-Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
-                                            std::shared_ptr<Schema> schema,
-                                            librados::bufferlist& bl) {
+Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
+                                        std::shared_ptr<Schema> schema,
+                                        librados::bufferlist& bl) {
   /// Serialize the filter Expression and the Schema.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, filter->Serialize());
   ARROW_ASSIGN_OR_RAISE(auto schema_buffer, ipc::SerializeSchema(*schema));
 
   /// Convert filter Expression size to buffer.
   char* filter_size_buffer = new char[8];
-  ARROW_RETURN_NOT_OK(int64_to_char(filter_size_buffer, filter_buffer->size()));
+  ARROW_RETURN_NOT_OK(Int64ToChar(filter_size_buffer, filter_buffer->size()));
 
   /// Convert Schema size to buffer.
   char* schema_size_buffer = new char[8];
-  ARROW_RETURN_NOT_OK(int64_to_char(schema_size_buffer, schema_buffer->size()));
+  ARROW_RETURN_NOT_OK(Int64ToChar(schema_size_buffer, schema_buffer->size()));
 
   /// Append the filter Expression size.
   bl.append(filter_size_buffer, 8);
@@ -75,15 +75,15 @@ Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
   return Status::OK();
 }
 
-Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* filter,
-                                                std::shared_ptr<Schema>* schema,
-                                                librados::bufferlist& bl) {
+Status DeserializeScanRequestFromBufferlist(std::shared_ptr<Expression>* filter,
+                                            std::shared_ptr<Schema>* schema,
+                                            librados::bufferlist& bl) {
   librados::bufferlist::iterator itr = bl.begin();
 
   int64_t filter_size = 0;
   char* filter_size_buffer = new char[8];
   itr.copy(8, filter_size_buffer);
-  ARROW_RETURN_NOT_OK(char_to_int64(filter_size_buffer, filter_size));
+  ARROW_RETURN_NOT_OK(CharToInt64(filter_size_buffer, filter_size));
 
   char* filter_buffer = new char[filter_size];
   itr.copy(filter_size, filter_buffer);
@@ -91,7 +91,7 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* fil
   int64_t schema_size = 0;
   char* schema_size_buffer = new char[8];
   itr.copy(8, schema_size_buffer);
-  ARROW_RETURN_NOT_OK(char_to_int64(schema_size_buffer, schema_size));
+  ARROW_RETURN_NOT_OK(CharToInt64(schema_size_buffer, schema_size));
 
   char* schema_buffer = new char[schema_size];
   itr.copy(schema_size, schema_buffer);
@@ -109,8 +109,8 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* fil
   return Status::OK();
 }
 
-Status serialize_table_to_bufferlist(std::shared_ptr<Table>& table,
-                                     librados::bufferlist& bl) {
+Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
+                                  librados::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
   const auto options = ipc::IpcWriteOptions::Defaults();
   ARROW_ASSIGN_OR_RAISE(
@@ -124,8 +124,8 @@ Status serialize_table_to_bufferlist(std::shared_ptr<Table>& table,
   return Status::OK();
 }
 
-Status deserialize_table_from_bufferlist(std::shared_ptr<Table>* table,
-                                         librados::bufferlist& bl) {
+Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
+                                      librados::bufferlist& bl) {
   io::BufferReader reader((uint8_t*)bl.c_str(), bl.length());
   ARROW_ASSIGN_OR_RAISE(auto record_batch_reader,
                         ipc::RecordBatchStreamReader::Open(&reader));
@@ -135,8 +135,8 @@ Status deserialize_table_from_bufferlist(std::shared_ptr<Table>* table,
   return Status::OK();
 }
 
-Status scan_batches(std::shared_ptr<Expression>& filter, std::shared_ptr<Schema>& schema,
-                    RecordBatchVector& batches, std::shared_ptr<Table>* table) {
+Status ScanBatches(std::shared_ptr<Expression>& filter, std::shared_ptr<Schema>& schema,
+                   RecordBatchVector& batches, std::shared_ptr<Table>* table) {
   std::shared_ptr<ScanContext> scan_context = std::make_shared<ScanContext>();
   std::shared_ptr<InMemoryFragment> fragment =
       std::make_shared<InMemoryFragment>(batches);
@@ -152,8 +152,8 @@ Status scan_batches(std::shared_ptr<Expression>& filter, std::shared_ptr<Schema>
   return Status::OK();
 }
 
-Status extract_batches_from_bufferlist(RecordBatchVector* batches,
-                                       librados::bufferlist& bl) {
+Status ExtractBatchesFromBufferlist(RecordBatchVector* batches,
+                                    librados::bufferlist& bl) {
   std::shared_ptr<Buffer> buffer =
       std::make_shared<Buffer>((uint8_t*)bl.c_str(), bl.length());
   std::shared_ptr<io::BufferReader> buffer_reader =
