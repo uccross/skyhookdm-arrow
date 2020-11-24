@@ -95,7 +95,7 @@ arrow::RecordBatchVector create_test_record_batches() {
   return batches;
 }
 
-TEST(ClsSDK, TestWriteAndReadTable) {
+TEST(TestClsSDK, WriteAndReadTable) {
   librados::Rados cluster;
   std::string pool_name = librados::get_temp_pool_name();
   ASSERT_EQ("", librados::create_one_pool_pp(pool_name, cluster));
@@ -123,7 +123,7 @@ TEST(ClsSDK, TestWriteAndReadTable) {
   // ASSERT_EQ(0, destroy_one_pool_pp(pool_name, cluster));
 }
 
-TEST(ClsSDK, TestProjection) {
+TEST(TestClsSDK, Projection) {
   librados::Rados cluster;
   std::string pool_name = librados::get_temp_pool_name();
   ASSERT_EQ("", librados::create_one_pool_pp(pool_name, cluster));
@@ -156,7 +156,7 @@ TEST(ClsSDK, TestProjection) {
   // ASSERT_EQ(0, destroy_one_pool_pp(pool_name, cluster));
 }
 
-TEST(ClsSDK, TestSelection) {
+TEST(TestClsSDK, Selection) {
   librados::Rados cluster;
   std::string pool_name = librados::get_temp_pool_name();
   ASSERT_EQ("", librados::create_one_pool_pp(pool_name, cluster));
@@ -183,13 +183,15 @@ TEST(ClsSDK, TestSelection) {
   // ASSERT_EQ(0, destroy_one_pool_pp(pool_name, cluster));
 }
 
-TEST(ClsSDK, TestEndToEnd) {
+TEST(TestClsSDK, EndToEnd) {
   /// Create a test pool in the Cluster.
   librados::Rados cluster;
   librados::create_one_pool_pp("test-pool", cluster);
 
   /// Instantiate the RadosDataset.
-  auto options = arrow::dataset::RadosOptions::FromPoolName("test-pool");
+  auto cluster_ = std::make_shared<arrow::dataset::RadosCluster>("test-pool");
+  cluster_->Connect();
+
   auto schema = arrow::schema(
       {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
        arrow::field("cost_components", arrow::list(arrow::float64()))});
@@ -198,12 +200,12 @@ TEST(ClsSDK, TestEndToEnd) {
     objects.push_back(
         std::make_shared<arrow::dataset::RadosObject>("obj." + std::to_string(i)));
   auto rados_ds =
-      std::make_shared<arrow::dataset::RadosDataset>(schema, objects, options);
+      std::make_shared<arrow::dataset::RadosDataset>(schema, objects, cluster_);
 
   /// Prepare RecordBatches and Write the fragments.
   auto record_batches = create_test_record_batches();
   for (int i = 0; i < 4; i++) {
-    arrow::dataset::RadosFragment::WriteFragment(record_batches, options, objects[i]);
+    arrow::dataset::RadosFragment::WriteFragment(record_batches, cluster_, objects[i]);
   }
 
   /// Perform filter and projection on the RadosDataset.
