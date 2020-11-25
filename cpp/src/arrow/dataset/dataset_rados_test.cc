@@ -149,7 +149,7 @@ TEST_F(TestRadosScanTask, Execute) {
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
   auto object = std::make_shared<RadosObject>("object.1");
-  auto cluster =  std::make_shared<RadosCluster>("test-pool");
+  auto cluster =  std::make_shared<RadosCluster>("test-pool", "/etc/ceph/ceph.conf");
 
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -173,7 +173,7 @@ TEST_F(TestRadosFragment, Scan) {
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
   auto object = std::make_shared<RadosObject>("object.1");
-  auto cluster = std::make_shared<RadosCluster>("test-pool");
+  auto cluster = std::make_shared<RadosCluster>("test-pool", "/etc/ceph/ceph.conf");
 
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -200,7 +200,7 @@ TEST_F(TestRadosDataset, GetFragments) {
   auto batch = generate_test_record_batch();
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
-  auto cluster = std::make_shared<RadosCluster>("test-pool");
+  auto cluster = std::make_shared<RadosCluster>("test-pool", "/etc/ceph/ceph.conf");
 
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -219,7 +219,7 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
   RadosObjectVector object_vector{std::make_shared<RadosObject>("object.1"),
                                   std::make_shared<RadosObject>("object.2")};
 
-  auto cluster = std::make_shared<RadosCluster>("test-pool");
+  auto cluster = std::make_shared<RadosCluster>("test-pool", "/etc/ceph/ceph.conf");
 
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();
@@ -298,7 +298,7 @@ TEST_F(TestRadosDataset, EndToEnd) {
   auto batch = generate_test_record_batch();
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
-  auto cluster = std::make_shared<RadosCluster>("test-pool");
+  auto cluster = std::make_shared<RadosCluster>("test-pool", "/etc/ceph/ceph.conf");
 
   auto mock_rados_interface = new MockRados();
   auto mock_ioctx_interface = new MockIoCtx();

@@ -67,12 +67,12 @@ using RadosObjectIterator = Iterator<std::shared_ptr<RadosObject>>;
 ///
 class ARROW_DS_EXPORT RadosCluster {
   public:
-    RadosCluster(std::string pool_name) {
+    RadosCluster(std::string pool_name, std::string ceph_config_path) {
       pool_name_ = pool_name;
       user_name_ = "client.admin";
       cluster_name_ = "ceph";
       flags_ = 0;
-      ceph_config_path_ = "/etc/ceph/ceph.conf";
+      ceph_config_path_ = ceph_config_path;
       cls_name_ = "arrow";
       rados_interface_ = new RadosWrapper();
       io_ctx_interface_ = new IoCtxWrapper();

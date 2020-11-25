@@ -97,7 +97,9 @@ arrow::dataset::RadosObjectVector CreateTestObjectVector(std::string id) {
 }
 
 std::shared_ptr<arrow::dataset::RadosCluster> CreateTestClusterHandle() {
-  auto cluster = std::make_shared<arrow::dataset::RadosCluster>("test-pool");
+  librados::Rados cluster_;
+  librados::create_one_pool_pp("test-pool", cluster_);
+  auto cluster = std::make_shared<arrow::dataset::RadosCluster>("test-pool", "/etc/ceph/ceph.conf");
   cluster->Connect();
   return cluster;
 }
@@ -189,7 +191,7 @@ TEST(TestClsSDK, EndToEnd) {
   arrow::dataset::RadosObjectVector objects;
   for (int i = 0; i < 4; i++) {
     std::string id = "test.obj." + std::to_string(i);
-    auto object = std::make_shared<arrow::dataset::RadosObject>(id);
+    auto object = CreateTestObjectVector(id)[0];
     objects.push_back(object);
     arrow::dataset::RadosFragment::WriteFragment(batches, cluster, object);
   }
