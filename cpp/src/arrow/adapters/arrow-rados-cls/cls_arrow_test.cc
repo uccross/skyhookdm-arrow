@@ -115,7 +115,7 @@ TEST(TestClsSDK, WriteAndReadTable) {
        arrow::field("cost_components", arrow::list(arrow::float64()))});
 
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
-  ASSERT_EQ(0, ioctx.exec("test_object_1", "arrow", "read_and_scan", in_, out_));
+  ASSERT_EQ(0, ioctx.exec("test_object_1", "arrow", "scan", in_, out_));
   std::shared_ptr<arrow::Table> table_;
   arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
   ASSERT_EQ(table->Equals(*table_), 1);
@@ -144,7 +144,7 @@ TEST(TestClsSDK, Projection) {
 
   auto table_projected = table->RemoveColumn(1).ValueOrDie();
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
-  ASSERT_EQ(0, ioctx.exec("test_object_2", "arrow", "read_and_scan", in_, out_));
+  ASSERT_EQ(0, ioctx.exec("test_object_2", "arrow", "scan", in_, out_));
   std::shared_ptr<arrow::Table> table_;
   arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
 
@@ -176,7 +176,7 @@ TEST(TestClsSDK, Selection) {
       {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
        arrow::field("cost_components", arrow::list(arrow::float64()))});
   arrow::dataset::serialize_scan_request_to_bufferlist(filter, schema, in_);
-  ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "read_and_scan", in_, out_));
+  ASSERT_EQ(0, ioctx.exec("test_object_3", "arrow", "scan", in_, out_));
   std::shared_ptr<arrow::Table> table_;
   arrow::dataset::deserialize_table_from_bufferlist(&table_, out_);
   ASSERT_EQ(table_->num_rows(), 2);
@@ -184,29 +184,33 @@ TEST(TestClsSDK, Selection) {
 }
 
 TEST(TestClsSDK, EndToEnd) {
-  /// Create a test pool in the Cluster.
+  /// Create a test pool in the cluster.
   librados::Rados cluster;
   librados::create_one_pool_pp("test-pool", cluster);
 
-  /// Instantiate the RadosDataset.
+  /// Instantiate the cluster handle.
   auto cluster_ = std::make_shared<arrow::dataset::RadosCluster>("test-pool");
   cluster_->Connect();
 
-  auto schema = arrow::schema(
-      {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
-       arrow::field("cost_components", arrow::list(arrow::float64()))});
+  /// Define the object ids.
   arrow::dataset::RadosObjectVector objects;
   for (int i = 0; i < 4; i++)
     objects.push_back(
         std::make_shared<arrow::dataset::RadosObject>("obj." + std::to_string(i)));
-  auto rados_ds =
-      std::make_shared<arrow::dataset::RadosDataset>(schema, objects, cluster_);
 
   /// Prepare RecordBatches and Write the fragments.
   auto record_batches = create_test_record_batches();
   for (int i = 0; i < 4; i++) {
     arrow::dataset::RadosFragment::WriteFragment(record_batches, cluster_, objects[i]);
   }
+
+  auto schema = arrow::schema(
+      {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
+       arrow::field("cost_components", arrow::list(arrow::float64()))});
+  
+  arrow::dataset::FinishOptions finish_options;
+  auto rados_ds_factory = arrow::dataset::RadosDatasetFactory::Make(objects, cluster_).ValueOrDie();
+  auto rados_ds = rados_ds_factory->Finish(finish_options).ValueOrDie();
 
   /// Perform filter and projection on the RadosDataset.
   auto rados_scanner_builder = rados_ds->NewScan().ValueOrDie();

@@ -29,6 +29,7 @@
 #include "arrow/dataset/rados.h"
 #include "arrow/dataset/scanner.h"
 #include "arrow/util/iterator.h"
+#include "arrow/dataset/discovery.h"
 
 
 namespace arrow {
@@ -233,6 +234,31 @@ class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
 
  protected:
   std::shared_ptr<RadosObject> object_;
+  std::shared_ptr<RadosCluster> cluster_;
+};
+
+/// \brief A factory to create a RadosDataset from a vector of RadosObjects.
+///
+/// The factory takes a vector of RadosObjects and infers the schema of the Table
+/// stored in the objects by scanning the first object in the list.
+class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
+ public:
+  /// \brief Build a RadosDataset from a vector of RadosObjects.
+  ///
+  /// \param[in] objects a vector of RadosObjects.
+  /// \param[in] cluster the connection information to the RADOS cluster.
+  static Result<std::shared_ptr<DatasetFactory>> Make(
+      RadosObjectVector objects, std::shared_ptr<RadosCluster> cluster);
+
+  Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(InspectOptions options);
+
+  Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
+
+ protected:
+  RadosDatasetFactory(RadosObjectVector objects,
+                      std::shared_ptr<RadosCluster> cluster)
+      : objects_(objects), cluster_(std::move(cluster)) {}
+  RadosObjectVector objects_;
   std::shared_ptr<RadosCluster> cluster_;
 };
 

@@ -65,6 +65,35 @@ Result<std::shared_ptr<Schema>> RadosFragment::ReadPhysicalSchemaImpl() {
   return physical_schema_;
 }
 
+Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
+  RadosObjectVector objects, std::shared_ptr<RadosCluster> cluster) {
+return std::shared_ptr<DatasetFactory>(
+    new RadosDatasetFactory(std::move(objects), std::move(cluster)));
+}
+
+Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
+    InspectOptions options) {
+  librados::bufferlist in, out;
+  int e = cluster_->io_ctx_interface_->exec(
+      objects_[0]->id(), cluster_->cls_name_.c_str(), "read", in, out);
+  if (e != 0) {
+    return Status::ExecutionError("call to exec() returned non-zero exit code.");
+  }
+
+  /// Deserialize the result Table from the `out` bufferlist.
+  std::shared_ptr<Table> table;
+  std::vector<std::shared_ptr<Schema>> schemas;
+  ARROW_RETURN_NOT_OK(deserialize_table_from_bufferlist(&table, out));
+  schemas.push_back(table->schema());
+  return schemas;
+}
+
+Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions options) {
+  InspectOptions inspect_options_;
+  ARROW_ASSIGN_OR_RAISE(auto schemas_, InspectSchemas(inspect_options_));
+  return std::make_shared<RadosDataset>(schemas_[0], objects_, cluster_);
+}
+
 Status RadosCluster::Connect() {
   int e;
   /// Initialize the cluster handle.
@@ -137,7 +166,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   /// bufferlist subsequently.
   int e = cluster_->io_ctx_interface_->exec(
       object_->id(), cluster_->cls_name_.c_str(),
-      "read_and_scan", in, out);
+      "scan", in, out);
   if (e != 0) {
     return Status::ExecutionError("call to exec() returned non-zero exit code.");
   }
