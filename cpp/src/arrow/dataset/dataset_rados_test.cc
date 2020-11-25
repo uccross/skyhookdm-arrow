@@ -101,7 +101,7 @@ class ARROW_DS_EXPORT MockIoCtx : public IoCtxInterface {
     // Generate a random table and write it to a bufferlist
     librados::bufferlist result;
     auto table = generate_test_table();
-    serialize_table_to_bufferlist(table, result);
+    SerializeTableToBufferlist(table, result);
 
     EXPECT_CALL(*this, read(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(testing::SetArgReferee<1>(result), testing::Return(0)));
@@ -250,11 +250,11 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
 TEST_F(TestRadosDataset, IntToCharAndCharToInt) {
   int64_t value = 12345678;
   char* result = new char[8];
-  int64_to_char(result, value);
+  Int64ToChar(result, value);
 
   char* result_ = result;
   int64_t value_ = 0;
-  char_to_int64(result_, value_);
+  CharToInt64(result_, value_);
 
   ASSERT_EQ(value, value_);
 }
@@ -263,12 +263,12 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   auto filter = std::make_shared<OrExpression>("b"_ == 3 or "b"_ == 4);
   auto schema = arrow::schema({field("i32", int32()), field("f64", float64())});
   librados::bufferlist bl;
-  serialize_scan_request_to_bufferlist(filter, schema, bl);
+  SerializeScanRequestToBufferlist(filter, schema, bl);
 
   librados::bufferlist bl__ = std::move(bl);
   std::shared_ptr<Expression> filter__;
   std::shared_ptr<Schema> schema__;
-  deserialize_scan_request_from_bufferlist(&filter__, &schema__, bl__);
+  DeserializeScanRequestFromBufferlist(&filter__, &schema__, bl__);
 
   ASSERT_TRUE(filter__->Equals(*filter));
   ASSERT_TRUE(schema__->Equals(schema));
@@ -277,11 +277,11 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
 TEST_F(TestRadosDataset, SerializeDeserializeTable) {
   auto table = generate_test_table();
   librados::bufferlist bl;
-  serialize_table_to_bufferlist(table, bl);
+  SerializeTableToBufferlist(table, bl);
 
   librados::bufferlist bl__(bl);
   std::shared_ptr<Table> table__;
-  deserialize_table_from_bufferlist(&table__, bl__);
+  DeserializeTableFromBufferlist(&table__, bl__);
 
   ASSERT_TRUE(table__->Equals(*table));
 }

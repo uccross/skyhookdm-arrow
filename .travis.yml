@@ -71,7 +71,7 @@ jobs:
         LLVM: "10"
         UBUNTU: "20.04"
 
-    - name: "C++ on ARM (with Rados CLS)"
+    - name: "C++ on ARM (with RADOS CLS)"
       os: linux
       arch: arm64
       env:

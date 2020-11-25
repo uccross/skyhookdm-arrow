@@ -205,12 +205,6 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
       std::shared_ptr<Expression> predicate = scalar(true)) override;
   std::shared_ptr<RadosObjectGenerator> get_objects_;
   std::shared_ptr<RadosCluster> cluster_;
-
-  /// \brief Connect to the Rados cluster.
-  Status Connect();
-
-  /// \brief Shutdown the connection to the Rados cluster.
-  Status Shutdown();
 };
 
 /// \brief A ScanTask to push down operations to the CLS for

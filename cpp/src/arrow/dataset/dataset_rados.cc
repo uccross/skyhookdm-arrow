@@ -19,7 +19,6 @@
 #include "arrow/dataset/rados_utils.h"
 #include "arrow/dataset/scanner.h"
 
-#include <iostream>
 #include <memory>
 #include <utility>
 
@@ -40,7 +39,7 @@ Status RadosFragment::WriteFragment(RecordBatchVector& batches,
   ARROW_ASSIGN_OR_RAISE(auto table, Table::FromRecordBatches(batches));
 
   librados::bufferlist in, out;
-  RETURN_NOT_OK(serialize_table_to_bufferlist(table, in));
+  RETURN_NOT_OK(SerializeTableToBufferlist(table, in));
 
   int e = cluster->io_ctx_interface_->exec(
       object->id(), cluster->cls_name_.c_str(), "write", in, out);
@@ -57,7 +56,6 @@ Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> option
   ScanTaskVector v{std::make_shared<RadosScanTask>(std::move(options), std::move(context),
                                                    std::move(object_),
                                                    std::move(cluster_))};
-
   return MakeVectorIterator(v);
 }
 
@@ -83,7 +81,7 @@ Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas
   /// Deserialize the result Table from the `out` bufferlist.
   std::shared_ptr<Table> table;
   std::vector<std::shared_ptr<Schema>> schemas;
-  ARROW_RETURN_NOT_OK(deserialize_table_from_bufferlist(&table, out));
+  ARROW_RETURN_NOT_OK(DeserializeTableFromBufferlist(&table, out));
   schemas.push_back(table->schema());
   return schemas;
 }
@@ -158,7 +156,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
 
   /// Serialize the filter Expression and projection Schema into
   /// a librados bufferlist.
-  ARROW_RETURN_NOT_OK(serialize_scan_request_to_bufferlist(
+  ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
       options_->filter, options_->projector.schema(), in));
 
   /// Trigger a CLS function and pass the serialized operations
@@ -173,7 +171,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
 
   /// Deserialize the result Table from the `out` bufferlist.
   std::shared_ptr<Table> result_table;
-  ARROW_RETURN_NOT_OK(deserialize_table_from_bufferlist(&result_table, out));
+  ARROW_RETURN_NOT_OK(DeserializeTableFromBufferlist(&result_table, out));
 
   /// Verify whether the Schema of the resultant Table is what was asked for,
   if (!options_->schema()->Equals(*(result_table->schema()))) {
