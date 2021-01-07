@@ -29,27 +29,11 @@
 #include "arrow/util/iterator.h"
 #include "arrow/util/logging.h"
 #include "arrow/util/make_unique.h"
+#include "arrow/filesystem/filesystem.h"
+#include "arrow/filesystem/path_util.h"
 
 namespace arrow {
 namespace dataset {
-
-Status RadosFragment::WriteFragment(RecordBatchVector& batches,
-                                    std::shared_ptr<RadosCluster> cluster,
-                                    std::shared_ptr<RadosObject> object) {
-  ARROW_ASSIGN_OR_RAISE(auto table, Table::FromRecordBatches(batches));
-
-  librados::bufferlist in, out;
-  RETURN_NOT_OK(serialize_table_to_bufferlist(table, in));
-
-  int e = cluster->io_ctx_interface_->exec(object->id(), cluster->cls_name_.c_str(),
-                                           "write", in, out);
-  if (e != 0) {
-    return Status::ExecutionError(
-        "call to exec() in RadosFragment::WriteFragment() returned non-zero exit code.");
-  }
-
-  return Status::OK();
-}
 
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
@@ -62,10 +46,20 @@ Result<std::shared_ptr<Schema>> RadosFragment::ReadPhysicalSchemaImpl() {
   return physical_schema_;
 }
 
+// Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
+//     RadosObjectVector objects, std::shared_ptr<RadosCluster> cluster) {
+//   return std::shared_ptr<DatasetFactory>(
+//       new RadosDatasetFactory(std::move(objects), std::move(cluster)));
+// }
+
 Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
-    RadosObjectVector objects, std::shared_ptr<RadosCluster> cluster) {
-  return std::shared_ptr<DatasetFactory>(
-      new RadosDatasetFactory(std::move(objects), std::move(cluster)));
+    RadosObjectVector objects, RadosDatasetFactoryOptions options) {
+  // Create a cluster out of the factory options and connect to the cluster.
+  std::shared_ptr<RadosCluster> cluster = std::make_shared<RadosCluster>(options.pool_name_, options.ceph_config_path_);
+  cluster->Connect();
+
+  return std::shared_ptr<DatasetFactory>(new RadosDatasetFactory(
+    std::move(objects), std::move(cluster), std::move(options)));
 }
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
@@ -88,7 +82,21 @@ Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas
 Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions options) {
   InspectOptions inspect_options_;
   ARROW_ASSIGN_OR_RAISE(auto schemas_, InspectSchemas(inspect_options_));
-  return std::make_shared<RadosDataset>(schemas_[0], objects_, cluster_);
+  auto schema = schemas_[0];
+
+  std::shared_ptr<Partitioning> partitioning = options_.partitioning.partitioning();
+  if (partitioning == nullptr) {
+    auto factory = options_.partitioning.factory();
+    ARROW_ASSIGN_OR_RAISE(partitioning, factory->Finish(schema));
+  }
+
+  RadosFragmentVector fragments;
+  for (auto &object : objects_) {
+    auto fixed_path = StripPrefixAndFilename(object->id(), options_.partition_base_dir);
+    ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
+    fragments.push_back(std::make_shared<RadosFragment>(schema, object, cluster_, partition));
+  }
+  return RadosDataset::Make(schema, fragments, cluster_);
 }
 
 Status RadosCluster::Connect() {
@@ -129,61 +137,46 @@ Status RadosCluster::Disconnect() {
 Result<std::shared_ptr<Dataset>> RadosDataset::ReplaceSchema(
     std::shared_ptr<Schema> schema) const {
   RETURN_NOT_OK(CheckProjectable(*schema_, *schema));
-  return std::make_shared<RadosDataset>(std::move(schema), get_objects_,
+  return RadosDataset::Make(std::move(schema),
+                                        std::move(fragments_),
                                         std::move(cluster_));
 }
 
-Result<std::shared_ptr<Dataset>> RadosDataset::Make(
-    RadosDatasetFactoryOptions factory_option) {
-  auto cluster = std::make_shared<RadosCluster>(factory_option.pool_name_,
-                                                factory_option.ceph_config_path_);
-  cluster->flags_ = factory_option.flags_;
-  cluster->cls_name_ = factory_option.cls_name_;
-  cluster->user_name_ = factory_option.user_name_;
-  cluster->cluster_name_ = factory_option.cluster_name_;
-  cluster->rados_interface_ = new RadosWrapper();
-  cluster->io_ctx_interface_ = new IoCtxWrapper();
-  cluster->Connect();
-
-  RadosObjectVector objects;
-  for (std::string& id : factory_option.objects_) {
-    objects.push_back(std::make_shared<RadosObject>(id));
-  }
-
-  FinishOptions options;
-  ARROW_ASSIGN_OR_RAISE(auto factory, RadosDatasetFactory::Make(objects, cluster));
-  ARROW_ASSIGN_OR_RAISE(auto dataset, factory->Finish(options));
-  return dataset;
+Result<std::shared_ptr<Dataset>> RadosDataset::Make(std::shared_ptr<Schema> schema, 
+                                                    RadosFragmentVector fragments,
+                                                    std::shared_ptr<RadosCluster> cluster) {
+  return std::shared_ptr<Dataset>(new RadosDataset(schema, fragments, cluster));
 }
 
 Status RadosDataset::Write(RecordBatchVector& batches,
-                           RadosDatasetFactoryOptions factory_option,
+                           RadosDatasetFactoryOptions options,
                            std::string object_id) {
-  auto cluster = std::make_shared<RadosCluster>(factory_option.pool_name_,
-                                                factory_option.ceph_config_path_);
-  cluster->flags_ = factory_option.flags_;
-  cluster->cls_name_ = factory_option.cls_name_;
-  cluster->user_name_ = factory_option.user_name_;
-  cluster->cluster_name_ = factory_option.cluster_name_;
-  cluster->rados_interface_ = new RadosWrapper();
-  cluster->io_ctx_interface_ = new IoCtxWrapper();
+  ARROW_ASSIGN_OR_RAISE(auto table, Table::FromRecordBatches(batches));
+
+  librados::bufferlist in, out;
+  RETURN_NOT_OK(serialize_table_to_bufferlist(table, in));
+
+  auto cluster = std::make_shared<RadosCluster>(options.pool_name_, options.ceph_config_path_);
   cluster->Connect();
-  auto rados_object = std::make_shared<RadosObject>(object_id);
-  return RadosFragment::WriteFragment(batches, cluster, rados_object);
+
+  int e = cluster->io_ctx_interface_->exec(object_id, cluster->cls_name_.c_str(),
+                                           "write", in, out);
+  if (e != 0) {
+    return Status::ExecutionError(
+        "call to exec() in RadosDataset::Write() returned non-zero exit code.");
+  }
+  return Status::OK();
 }
 
-FragmentIterator RadosDataset::GetFragmentsImpl(std::shared_ptr<Expression>) {
-  auto schema = this->schema();
-  auto cluster = this->cluster();
-
-  auto create_fragment =
-      [schema, cluster](
-          std::shared_ptr<RadosObject> object) -> Result<std::shared_ptr<Fragment>> {
-    return std::make_shared<RadosFragment>(std::move(schema), std::move(object),
-                                           std::move(cluster));
-  };
-
-  return MakeMaybeMapIterator(std::move(create_fragment), get_objects_->Get());
+FragmentIterator RadosDataset::GetFragmentsImpl(std::shared_ptr<Expression> predicate) {
+  FragmentVector fragments;
+  for (const auto& fragment : fragments_) {
+    bool satisfies = predicate->IsSatisfiableWith(fragment->partition_expression());
+    if (satisfies) {
+      fragments.push_back(fragment);
+    }
+  }
+  return MakeVectorIterator(std::move(fragments));
 }
 
 Result<RecordBatchIterator> RadosScanTask::Execute() {
