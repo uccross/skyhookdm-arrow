@@ -202,15 +202,8 @@ class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
 /// stored in the objects by scanning the first object in the list.
 class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
  public:
-  /// \brief Build a RadosDataset from a vector of RadosObjects.
-  ///
-  /// \param[in] objects a vector of RadosObjects.
-  /// \param[in] cluster the connection information to the RADOS cluster.
-  // static Result<std::shared_ptr<DatasetFactory>> Make(
-  //     RadosObjectVector objects, std::shared_ptr<RadosCluster> cluster);
-
-  static Result<std::shared_ptr<DatasetFactory>> Make(
-      RadosObjectVector objects, RadosDatasetFactoryOptions options);
+  static Result<std::shared_ptr<DatasetFactory>> Make(RadosDatasetFactoryOptions options, 
+                                                      RadosObjectVector objects = std::vector<std::shared_ptr<RadosObject>>{});
 
   Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(InspectOptions options);
 

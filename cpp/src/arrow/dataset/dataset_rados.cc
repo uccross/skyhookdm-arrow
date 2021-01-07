@@ -46,20 +46,32 @@ Result<std::shared_ptr<Schema>> RadosFragment::ReadPhysicalSchemaImpl() {
   return physical_schema_;
 }
 
-// Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
-//     RadosObjectVector objects, std::shared_ptr<RadosCluster> cluster) {
-//   return std::shared_ptr<DatasetFactory>(
-//       new RadosDatasetFactory(std::move(objects), std::move(cluster)));
-// }
-
 Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
-    RadosObjectVector objects, RadosDatasetFactoryOptions options) {
-  // Create a cluster out of the factory options and connect to the cluster.
-  std::shared_ptr<RadosCluster> cluster = std::make_shared<RadosCluster>(options.pool_name_, options.ceph_config_path_);
+  RadosDatasetFactoryOptions options, RadosObjectVector objects) {
+
+  auto cluster = std::make_shared<RadosCluster>(options.pool_name_, options.ceph_config_path_);
   cluster->Connect();
 
-  return std::shared_ptr<DatasetFactory>(new RadosDatasetFactory(
-    std::move(objects), std::move(cluster), std::move(options)));
+  RadosObjectVector discovered_objects;
+
+  if (objects.size() > 0) {
+    discovered_objects = objects;
+  } else {
+    auto objects = cluster->io_ctx_interface_->list();
+
+    for (auto &object_id : objects) {
+      if (fs::internal::IsAncestorOf(options.partition_base_dir, object_id)) {
+        discovered_objects.push_back(std::make_shared<RadosObject>(object_id));
+      }
+    }
+  }
+
+  if (discovered_objects.empty()) {
+      RETURN_NOT_OK(Status::Invalid("No objects found."));
+  }
+
+  return std::shared_ptr<DatasetFactory>(
+      new RadosDatasetFactory(std::move(discovered_objects), std::move(cluster), std::move(options)));
 }
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
