@@ -126,7 +126,10 @@ TEST(TestClsSDK, WriteAndScanTable) {
 
   /// Build the Dataset.
   arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(factory_options, std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object}).ValueOrDie();
+  auto factory = arrow::dataset::RadosDatasetFactory::Make(
+                     factory_options,
+                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+                     .ValueOrDie();
   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
   /// Build the Scanner.
@@ -151,7 +154,10 @@ TEST(TestClsSDK, Projection) {
 
   /// Build the Dataset.
   arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(factory_options, std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object}).ValueOrDie();
+  auto factory = arrow::dataset::RadosDatasetFactory::Make(
+                     factory_options,
+                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+                     .ValueOrDie();
   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
   /// Build the Scanner.
@@ -179,7 +185,10 @@ TEST(TestClsSDK, Selection) {
 
   /// Build the Dataset.
   arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(factory_options, std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object}).ValueOrDie();
+  auto factory = arrow::dataset::RadosDatasetFactory::Make(
+                     factory_options,
+                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+                     .ValueOrDie();
   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
   /// Build the Scanner.
@@ -245,9 +254,10 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto factory_options = CreateTestRadosFactoryOptions();
 
   /// Prepare RecordBatches and Write the fragments.
-  for (int j = 1; j <= 9 ; j++) {
+  for (int j = 1; j <= 9; j++) {
     for (int i = 0; i < 4; i++) {
-      std::string object_id = "/dataset/" + std::to_string(j) + "/data_" + std::to_string(i) + ".arrow";
+      std::string object_id =
+          "/dataset/" + std::to_string(j) + "/data_" + std::to_string(i) + ".arrow";
       arrow::dataset::RadosDataset::Write(batches, factory_options, object_id);
     }
   }
@@ -258,16 +268,16 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
 
   /// Create a RadosDataset and apply Scan operations.
   arrow::dataset::FinishOptions finish_options;
-  auto factory =
-      arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
+  auto factory = arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
   auto ds = factory->Finish(finish_options).ValueOrDie();
-  
+
   auto builder = ds->NewScan().ValueOrDie();
-  
-  std::shared_ptr<arrow::dataset::Expression> expr = ("id"_ == 6 and "cost"_ > double(1.5)).Copy();
+
+  std::shared_ptr<arrow::dataset::Expression> expr =
+      ("id"_ == 6 and "cost"_ > double(1.5)).Copy();
   builder->Filter(expr);
   builder->Project(std::vector<std::string>{"cost", "id"});
-  
+
   auto scanner = builder->Finish().ValueOrDie();
   auto table = scanner->ToTable().ValueOrDie();
 }

@@ -109,7 +109,8 @@ class ARROW_DS_EXPORT MockIoCtx : public IoCtxInterface {
 
     EXPECT_CALL(*this, exec(testing::_, testing::_, testing::_, testing::_, testing::_))
         .WillRepeatedly(DoAll(testing::SetArgReferee<4>(result), testing::Return(0)));
-    EXPECT_CALL(*this, list()).WillOnce(testing::Return(std::vector<std::string>{"sample"}));
+    EXPECT_CALL(*this, list())
+        .WillOnce(testing::Return(std::vector<std::string>{"sample"}));
     return Status::OK();
   }
 };
@@ -207,7 +208,8 @@ TEST_F(TestRadosDataset, GetFragments) {
 
   RadosFragmentVector fragments;
   for (int i = 0; i < 3; i++) {
-      fragments.push_back(std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
+    fragments.push_back(
+        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
   }
 
   auto batch = generate_test_record_batch();
@@ -228,10 +230,11 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
 
   RadosObjectVector object_vector{std::make_shared<RadosObject>("object.1"),
                                   std::make_shared<RadosObject>("object.2")};
-  
+
   RadosFragmentVector fragments;
   for (int i = 0; i < 2; i++) {
-      fragments.push_back(std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
+    fragments.push_back(
+        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
   }
 
   auto dataset = RadosDataset::Make(schema_, fragments, cluster).ValueOrDie();
@@ -309,7 +312,8 @@ TEST_F(TestRadosDataset, EndToEnd) {
                                   std::make_shared<RadosObject>("object.3")};
   RadosFragmentVector fragments;
   for (int i = 0; i < 3; i++) {
-      fragments.push_back(std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
+    fragments.push_back(
+        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
   }
 
   auto batch = generate_test_record_batch();

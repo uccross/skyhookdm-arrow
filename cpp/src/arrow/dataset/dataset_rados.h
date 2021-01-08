@@ -106,9 +106,9 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   /// to which this Fragment maps to.
   /// \param[in] object the RadosObject that this Fragment wraps.
   /// \param[in] cluster the connection information to the RADOS interface.
-  /// \param[in] partition_expression the partition expression associated with this fragment.
-  RadosFragment(std::shared_ptr<Schema> schema, 
-                std::shared_ptr<RadosObject> object,
+  /// \param[in] partition_expression the partition expression associated with this
+  /// fragment.
+  RadosFragment(std::shared_ptr<Schema> schema, std::shared_ptr<RadosObject> object,
                 std::shared_ptr<RadosCluster> cluster,
                 std::shared_ptr<Expression> partition_expression = scalar(true))
       : Fragment(scalar(true), std::move(schema)),
@@ -140,13 +140,12 @@ using RadosFragmentVector = std::vector<std::shared_ptr<RadosFragment>>;
 class ARROW_DS_EXPORT RadosDataset : public Dataset {
  public:
   /// \brief Builder function to build a RadosDataset.
-  static Result<std::shared_ptr<Dataset>> Make(std::shared_ptr<Schema> schema, 
+  static Result<std::shared_ptr<Dataset>> Make(std::shared_ptr<Schema> schema,
                                                RadosFragmentVector fragments,
                                                std::shared_ptr<RadosCluster> cluster);
 
   /// \brief Write to a RadosDataset.
-  static Status Write(RecordBatchVector& batches,
-                      RadosDatasetFactoryOptions options,
+  static Status Write(RecordBatchVector& batches, RadosDatasetFactoryOptions options,
                       std::string object_id);
 
   const std::shared_ptr<Schema>& schema() const { return schema_; }
@@ -160,12 +159,9 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
       std::shared_ptr<Schema> schema) const override;
 
  protected:
-  RadosDataset(std::shared_ptr<Schema> schema, 
-                RadosFragmentVector fragments,
-                std::shared_ptr<RadosCluster> cluster)
-        : Dataset(std::move(schema)),
-          fragments_(fragments),
-          cluster_(std::move(cluster)) {}
+  RadosDataset(std::shared_ptr<Schema> schema, RadosFragmentVector fragments,
+               std::shared_ptr<RadosCluster> cluster)
+      : Dataset(std::move(schema)), fragments_(fragments), cluster_(std::move(cluster)) {}
   /// \brief Generates RadosFragments from the Dataset.
   FragmentIterator GetFragmentsImpl(
       std::shared_ptr<Expression> predicate = scalar(true)) override;
@@ -203,16 +199,16 @@ class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
 /// stored in the objects by scanning the first object in the list.
 class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
  public:
-  static Result<std::shared_ptr<DatasetFactory>> Make(RadosDatasetFactoryOptions options, 
-                                                      RadosObjectVector objects = std::vector<std::shared_ptr<RadosObject>>{});
+  static Result<std::shared_ptr<DatasetFactory>> Make(
+      RadosDatasetFactoryOptions options,
+      RadosObjectVector objects = std::vector<std::shared_ptr<RadosObject>>{});
 
   Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas(InspectOptions options);
 
   Result<std::shared_ptr<Dataset>> Finish(FinishOptions options) override;
 
  protected:
-  RadosDatasetFactory(RadosObjectVector objects, 
-                      std::shared_ptr<RadosCluster> cluster, 
+  RadosDatasetFactory(RadosObjectVector objects, std::shared_ptr<RadosCluster> cluster,
                       RadosDatasetFactoryOptions options)
       : objects_(objects), cluster_(std::move(cluster)), options_(std::move(options)) {}
   RadosObjectVector objects_;
