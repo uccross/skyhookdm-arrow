@@ -18,9 +18,10 @@
 #include <errno.h>
 #include <iostream>
 
-#include <rados/librados.hpp>
 #include <rados/objclass.h>
+#include <rados/librados.hpp>
 
+#include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/dataset_rados.h"
@@ -28,7 +29,6 @@
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
-#include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "gtest/gtest.h"
 
 using arrow::dataset::string_literals::operator"" _;
@@ -239,8 +239,8 @@ TEST(TestClsSDK, WriteAndScanTable) {
 //       {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
 //        arrow::field("cost_components", arrow::list(arrow::float64()))});
 
-//   auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema, batches_);
-//   auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
+//   auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema,
+//   batches_); auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
 //   inmemory_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
 //   inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
 //   auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
@@ -264,13 +264,15 @@ TEST(TestClsSDK, WriteAndScanTable) {
 //   }
 
 //   factory_options.partition_base_dir = "/dataset";
-//   factory_options.partitioning = std::make_shared<arrow::dataset::DirectoryPartitioning>(
+//   factory_options.partitioning =
+//   std::make_shared<arrow::dataset::DirectoryPartitioning>(
 //       arrow::schema({arrow::field("id", arrow::int32())}));
 
 //   /// Create a RadosDataset and apply Scan operations.
 //   arrow::dataset::FinishOptions finish_options;
-//   auto factory = arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
-//   auto ds = factory->Finish(finish_options).ValueOrDie();
+//   auto factory =
+//   arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie(); auto ds =
+//   factory->Finish(finish_options).ValueOrDie();
 
 //   auto builder = ds->NewScan().ValueOrDie();
 

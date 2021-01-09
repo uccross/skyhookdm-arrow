@@ -76,8 +76,8 @@ Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
 }
 
 Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
-                                                std::shared_ptr<Schema>* schema,
-                                                librados::bufferlist& bl) {
+                                            std::shared_ptr<Schema>* schema,
+                                            librados::bufferlist& bl) {
   librados::bufferlist::iterator itr = bl.begin();
 
   int64_t filter_size = 0;
@@ -110,7 +110,7 @@ Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
 }
 
 Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
-                                     librados::bufferlist& bl) {
+                                  librados::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
   const auto options = ipc::IpcWriteOptions::Defaults();
   ARROW_ASSIGN_OR_RAISE(
@@ -136,7 +136,7 @@ Status deserialize_table_from_bufferlist(std::shared_ptr<Table>* table,
 }
 
 Status DeserializeBatchesFromBufferlist(RecordBatchVector* batches,
-                                       librados::bufferlist& bl) {
+                                        librados::bufferlist& bl) {
   std::shared_ptr<Buffer> buffer =
       std::make_shared<Buffer>((uint8_t*)bl.c_str(), bl.length());
   std::shared_ptr<io::BufferReader> buffer_reader =
