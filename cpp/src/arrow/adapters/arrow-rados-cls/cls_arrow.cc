@@ -16,12 +16,16 @@
 // under the License.
 
 #include <rados/objclass.h>
-#include <rados/librados.hpp>
 
 #include "arrow/api.h"
-#include "arrow/dataset/rados_utils.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
+#include "arrow/dataset/rados_utils.h"
+#include "arrow/dataset/dataset_rados.h"
+#include "arrow/dataset/file_parquet.h"
+#include "parquet/file_reader.h"
+#include "parquet/arrow/reader.h"
+#include "parquet/api/reader.h"
 
 CLS_VER(1, 0)
 CLS_NAME(arrow)
@@ -30,6 +34,151 @@ cls_handle_t h_class;
 cls_method_handle_t h_read;
 cls_method_handle_t h_write;
 cls_method_handle_t h_scan;
+
+class RandomAccessObject : public arrow::io::RandomAccessFile {
+  public:
+    RandomAccessObject(cls_method_context_t hctx) {
+      hctx_ = hctx;
+    }
+
+    arrow::Status Init() {
+      uint64_t size;
+      int e = cls_cxx_stat(hctx_, &size, NULL);
+      if (e == 0) {
+        content_length_ = size;
+        return arrow::Status::OK();
+      } else {
+        return arrow::Status::ExecutionError("Can't read the object");
+      }
+    }
+
+    arrow::Status CheckClosed() const {
+      if (closed_) {
+        return arrow::Status::Invalid("Operation on closed stream");
+      }
+      return arrow::Status::OK();
+    }
+
+    arrow::Status CheckPosition(int64_t position, const char* action) const {
+      if (position < 0) {
+        return arrow::Status::Invalid("Cannot ", action, " from negative position");
+      }
+      if (position > content_length_) {
+        return arrow::Status::IOError("Cannot ", action, " past end of file");
+      }
+      return arrow::Status::OK();
+    }
+
+    arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) { return 0; }
+
+    arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) {
+      RETURN_NOT_OK(CheckClosed());
+      RETURN_NOT_OK(CheckPosition(position, "read"));
+
+      // No need to allocate more than the remaining number of bytes
+      nbytes = std::min(nbytes, content_length_ - position);
+
+      if (nbytes > 0) {
+        librados::bufferlist bl;
+        cls_cxx_read(hctx_, position, nbytes, &bl);
+        return std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
+      }
+      return std::make_shared<arrow::Buffer>("");
+    }
+
+    arrow::Result<std::shared_ptr<arrow::Buffer>> Read(int64_t nbytes)  {
+      ARROW_ASSIGN_OR_RAISE(auto buffer, ReadAt(pos_, nbytes));
+      pos_ += buffer->size();
+      return std::move(buffer);
+    }
+
+    arrow::Result<int64_t> Read(int64_t nbytes, void* out)  {
+      ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(pos_, nbytes, out));
+      pos_ += bytes_read;
+      return bytes_read;
+    }
+
+    arrow::Result<int64_t> GetSize()  {
+      RETURN_NOT_OK(CheckClosed());
+      return content_length_;
+    }
+
+    arrow::Status Seek(int64_t position)  {
+      RETURN_NOT_OK(CheckClosed());
+      RETURN_NOT_OK(CheckPosition(position, "seek"));
+
+      pos_ = position;
+      return arrow::Status::OK();
+    }
+
+    arrow::Result<int64_t> Tell() const {
+      RETURN_NOT_OK(CheckClosed());
+      return pos_;
+    }
+
+    arrow::Status Close() {
+      closed_ = true;
+      return arrow::Status::OK();
+    }
+
+    bool closed() const { return closed_; }
+
+  protected:
+    cls_method_context_t hctx_;
+    bool closed_ = false;
+    int64_t pos_ = 0;
+    int64_t content_length_ = -1;
+};
+
+static arrow::Status ScanParquetObject(cls_method_context_t hctx,
+                         std::shared_ptr<arrow::dataset::Expression> filter,
+                         std::shared_ptr<arrow::Schema> schema,
+                         std::shared_ptr<arrow::Table> &t) {
+  // auto source = std::make_shared<RandomAccessObject>(hctx);
+  // source->Init(); 
+
+  // std::unique_ptr<parquet::arrow::FileReader> reader;
+  // parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader);
+
+  // std::shared_ptr<arrow::Schema> table_schema;
+  // reader->GetSchema(&table_schema);
+
+  // int64_t num_cols = reader->parquet_reader()->metadata()->num_columns();
+
+  // arrow::ChunkedArrayVector columns(num_cols, nullptr);
+
+  // for (int j = 0; j < num_cols; j++) {
+  //   reader->ReadColumn(j, &columns[j]);
+  // }
+  return arrow::Status::OK();
+}
+
+static arrow::Status ScanIpcObject(cls_method_context_t hctx,  
+                     std::shared_ptr<arrow::dataset::Expression> filter,
+                     std::shared_ptr<arrow::Schema> schema,
+                     std::shared_ptr<arrow::Table> &t) {
+  ceph::buffer::list bl;
+  int ret = cls_cxx_read(hctx, 0, 0, &bl);
+  if (ret < 0) {
+    return arrow::Status::ExecutionError("READ_FAILED");
+  }
+
+  arrow::RecordBatchVector batches;
+  ARROW_RETURN_NOT_OK(arrow::dataset::DeserializeBatchesFromBufferlist(&batches, bl));
+
+  auto ctx = std::make_shared<arrow::dataset::ScanContext>();
+  auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
+  auto schema_ = batches[0]->schema();
+
+  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema_, fragment, ctx);
+  ARROW_RETURN_NOT_OK(builder->Filter(filter));
+  ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
+  ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
+  ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
+
+  t = table;
+  return arrow::Status::OK();
+}
 
 /// \brief Read an entire object.
 ///
@@ -83,52 +232,18 @@ static int write(cls_method_context_t hctx, ceph::buffer::list* in,
 /// \param[in] out the output bufferlist.
 static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
                 ceph::buffer::list* out) {
-  int ret;
-  arrow::Status arrow_ret;
-
-  CLS_LOG(0, "deserializing scan request from the [in] bufferlist");
   std::shared_ptr<arrow::dataset::Expression> filter;
   std::shared_ptr<arrow::Schema> schema;
-  arrow_ret =
-      arrow::dataset::deserialize_scan_request_from_bufferlist(&filter, &schema, *in);
-  if (!arrow_ret.ok()) {
-    CLS_ERR("ERROR: failed to extract expression and schema");
-    return -1;
-  }
+  if (!arrow::dataset::DeserializeScanOptionsFromBufferlist(&filter, &schema, *in).ok()) return -1;
 
-  CLS_LOG(0, "reading the the entire object into a bufferlist");
+  std::shared_ptr<arrow::Table> table;
+  if (!ScanIpcObject(hctx, filter, schema, table).ok()) return -1;
+  if (!ScanParquetObject(hctx, filter, schema, table).ok()) return -1;
+
   ceph::buffer::list bl;
-  ret = cls_cxx_read(hctx, 0, 0, &bl);
-  if (ret < 0) {
-    CLS_ERR("ERROR: failed to read an object");
-    return ret;
-  }
+  if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
-  CLS_LOG(0, "reading the vector of record batches from the bufferlist");
-  arrow::RecordBatchVector batches;
-  arrow_ret = arrow::dataset::extract_batches_from_bufferlist(&batches, bl);
-  if (!arrow_ret.ok()) {
-    CLS_ERR("ERROR: failed to extract record batch vector from bufferlist");
-    return -1;
-  }
-
-  CLS_LOG(0, "applying scan operations over the vector of record batches");
-  std::shared_ptr<arrow::Table> result_table;
-  arrow_ret = arrow::dataset::scan_batches(filter, schema, batches, &result_table);
-  if (!arrow_ret.ok()) {
-    CLS_ERR("ERROR: failed to scan vector of record batches");
-    return -1;
-  }
-
-  CLS_LOG(0, "writing the resultant table into the [out] bufferlist");
-  ceph::buffer::list result_bl;
-  arrow_ret = arrow::dataset::serialize_table_to_bufferlist(result_table, result_bl);
-  if (!arrow_ret.ok()) {
-    CLS_ERR("ERROR: failed to write table to bufferlist");
-    return -1;
-  }
-  *out = result_bl;
-
+  *out = bl;
   return 0;
 }
 

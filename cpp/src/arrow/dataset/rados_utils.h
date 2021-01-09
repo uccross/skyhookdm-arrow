@@ -59,7 +59,7 @@ ARROW_DS_EXPORT Status serialize_scan_request_to_bufferlist(
 /// \param[in] schema a pointer to write the deserialized projection Schema.
 /// \param[in] bl a bufferlist to read the sequence of bytes comprising of the
 /// serialized Schema and Expression.
-ARROW_DS_EXPORT Status deserialize_scan_request_from_bufferlist(
+ARROW_DS_EXPORT Status DeserializeScanOptionsFromBufferlist(
     std::shared_ptr<Expression>* filter, std::shared_ptr<Schema>* schema,
     librados::bufferlist& bl);
 
@@ -67,7 +67,7 @@ ARROW_DS_EXPORT Status deserialize_scan_request_from_bufferlist(
 ///
 /// \param[in] table the Table to serialize to a bufferlist.
 /// \param[in] bl the bufferlist to write the Table to.
-ARROW_DS_EXPORT Status serialize_table_to_bufferlist(std::shared_ptr<Table>& table,
+ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
                                                      librados::bufferlist& bl);
 
 /// \brief Deserialize the Table from a bufferlist.
@@ -77,23 +77,12 @@ ARROW_DS_EXPORT Status serialize_table_to_bufferlist(std::shared_ptr<Table>& tab
 ARROW_DS_EXPORT Status deserialize_table_from_bufferlist(std::shared_ptr<Table>* table,
                                                          librados::bufferlist& bl);
 
-/// \brief Takes a vector of RecordBatches, wrap them with an InMemoryFragment
-/// and applies scan operations on them.
-///
-/// \param[in] filter the filter Expression to apply to the fragment .
-/// \param[in] schema the schema of the projection to apply.
-/// \param[in] batches the RecordBatches to scan.
-/// \param[in] table the resultant table after the scan.
-ARROW_DS_EXPORT Status scan_batches(std::shared_ptr<Expression>& filter,
-                                    std::shared_ptr<Schema>& schema,
-                                    RecordBatchVector& batches,
-                                    std::shared_ptr<Table>* table);
 
 /// \brief Read RecordBatches from a bufferlist.
 ///
 /// \param[in] batches a pointer to a vector to store the read RecordBatches.
 /// \param[in] bl the bufferlist to read the Record Batch vector from.
-ARROW_DS_EXPORT Status extract_batches_from_bufferlist(RecordBatchVector* batches,
+ARROW_DS_EXPORT Status DeserializeBatchesFromBufferlist(RecordBatchVector* batches,
                                                        librados::bufferlist& bl);
 }  // namespace dataset
 }  // namespace arrow

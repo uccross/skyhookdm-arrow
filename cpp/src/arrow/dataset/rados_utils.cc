@@ -75,7 +75,7 @@ Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
   return Status::OK();
 }
 
-Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* filter,
+Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
                                                 std::shared_ptr<Schema>* schema,
                                                 librados::bufferlist& bl) {
   librados::bufferlist::iterator itr = bl.begin();
@@ -109,7 +109,7 @@ Status deserialize_scan_request_from_bufferlist(std::shared_ptr<Expression>* fil
   return Status::OK();
 }
 
-Status serialize_table_to_bufferlist(std::shared_ptr<Table>& table,
+Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
                                      librados::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
   const auto options = ipc::IpcWriteOptions::Defaults();
@@ -135,24 +135,7 @@ Status deserialize_table_from_bufferlist(std::shared_ptr<Table>* table,
   return Status::OK();
 }
 
-Status scan_batches(std::shared_ptr<Expression>& filter, std::shared_ptr<Schema>& schema,
-                    RecordBatchVector& batches, std::shared_ptr<Table>* table) {
-  std::shared_ptr<ScanContext> scan_context = std::make_shared<ScanContext>();
-  std::shared_ptr<InMemoryFragment> fragment =
-      std::make_shared<InMemoryFragment>(batches);
-  auto batch_schema = batches[0]->schema();
-  std::shared_ptr<ScannerBuilder> builder =
-      std::make_shared<ScannerBuilder>(batch_schema, fragment, scan_context);
-  ARROW_RETURN_NOT_OK(builder->Filter(filter));
-  ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
-  ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
-  ARROW_ASSIGN_OR_RAISE(auto table_, scanner->ToTable());
-
-  *table = table_;
-  return Status::OK();
-}
-
-Status extract_batches_from_bufferlist(RecordBatchVector* batches,
+Status DeserializeBatchesFromBufferlist(RecordBatchVector* batches,
                                        librados::bufferlist& bl) {
   std::shared_ptr<Buffer> buffer =
       std::make_shared<Buffer>((uint8_t*)bl.c_str(), bl.length());

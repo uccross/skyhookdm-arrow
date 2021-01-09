@@ -19,6 +19,7 @@
 #include <iostream>
 
 #include <rados/librados.hpp>
+#include <rados/objclass.h>
 
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
@@ -27,7 +28,6 @@
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
-
 #include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "gtest/gtest.h"
 
