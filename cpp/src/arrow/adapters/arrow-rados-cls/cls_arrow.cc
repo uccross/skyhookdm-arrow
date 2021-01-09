@@ -131,47 +131,35 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     int64_t content_length_ = -1;
 };
 
-// static arrow::Status ScanParquetObject(cls_method_context_t hctx,
-//                          std::shared_ptr<arrow::dataset::Expression> filter,
-//                          std::shared_ptr<arrow::Schema> schema,
-//                          std::shared_ptr<arrow::Table> &t) {
-//   // auto source = std::make_shared<RandomAccessObject>(hctx);
-//   // source->Init(); 
+static arrow::Status ScanParquetObject(cls_method_context_t hctx,
+                         std::shared_ptr<arrow::dataset::Expression> filter,
+                         std::shared_ptr<arrow::Schema> schema,
+                         std::shared_ptr<arrow::Table> &t) {
+  auto source = std::make_shared<RandomAccessObject>(hctx);
+  source->Init(); 
 
-//   // std::unique_ptr<parquet::arrow::FileReader> reader;
-//   // parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader);
+  std::unique_ptr<parquet::arrow::FileReader> reader;
+  parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader);
 
-//   // std::shared_ptr<arrow::Schema> table_schema;
-//   // reader->GetSchema(&table_schema);
+  std::shared_ptr<arrow::Schema> schema_;
+  reader->GetSchema(&schema_);
 
-//   // int64_t num_cols = reader->parquet_reader()->metadata()->num_columns();
+  int64_t num_cols = reader->parquet_reader()->metadata()->num_columns();
+  int64_t num_rows = reader->parquet_reader()->metadata()->num_rows();
 
-//   // arrow::ChunkedArrayVector columns(num_cols, nullptr);
-
-//   // for (int j = 0; j < num_cols; j++) {
-//   //   reader->ReadColumn(j, &columns[j]);
-//   // }
-//   return arrow::Status::OK();
-// }
-
-static arrow::Status ScanIpcObject(cls_method_context_t hctx,  
-                     std::shared_ptr<arrow::dataset::Expression> filter,
-                     std::shared_ptr<arrow::Schema> schema,
-                     std::shared_ptr<arrow::Table> &t) {
-  ceph::buffer::list bl;
-  int ret = cls_cxx_read(hctx, 0, 0, &bl);
-  if (ret < 0) {
-    return arrow::Status::ExecutionError("READ_FAILED");
+  arrow::ChunkedArrayVector columns(num_cols, nullptr);
+  for (int j = 0; j < num_cols; j++) {
+    reader->ReadColumn(j, &columns[j]);
   }
-
+  std::shared_ptr<arrow::Table> deserialized_table = arrow::Table::Make(schema_, columns, num_rows);
+  std::shared_ptr<arrow::TableBatchReader> table_reader = std::make_shared<arrow::TableBatchReader>(*deserialized_table);
   arrow::RecordBatchVector batches;
-  ARROW_RETURN_NOT_OK(arrow::dataset::DeserializeBatchesFromBufferlist(&batches, bl));
+  ARROW_RETURN_NOT_OK(table_reader->ReadAll(&batches));
 
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
   auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
-  auto schema_ = batches[0]->schema();
-
   auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema_, fragment, ctx);
+
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
@@ -180,6 +168,33 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
   t = table;
   return arrow::Status::OK();
 }
+
+// static arrow::Status ScanIpcObject(cls_method_context_t hctx,  
+//                      std::shared_ptr<arrow::dataset::Expression> filter,
+//                      std::shared_ptr<arrow::Schema> schema,
+//                      std::shared_ptr<arrow::Table> &t) {
+//   ceph::buffer::list bl;
+//   int ret = cls_cxx_read(hctx, 0, 0, &bl);
+//   if (ret < 0) {
+//     return arrow::Status::ExecutionError("READ_FAILED");
+//   }
+
+//   arrow::RecordBatchVector batches;
+//   ARROW_RETURN_NOT_OK(arrow::dataset::DeserializeBatchesFromBufferlist(&batches, bl));
+
+//   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
+//   auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
+//   auto schema_ = batches[0]->schema();
+
+//   auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema_, fragment, ctx);
+//   ARROW_RETURN_NOT_OK(builder->Filter(filter));
+//   ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
+//   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
+//   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
+
+//   t = table;
+//   return arrow::Status::OK();
+// }
 
 static int read_parquet_schema(cls_method_context_t hctx, 
                 ceph::buffer::list* in, ceph::buffer::list* out) {
@@ -242,8 +257,8 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   if (!arrow::dataset::DeserializeScanOptionsFromBufferlist(&filter, &schema, *in).ok()) return -1;
 
   std::shared_ptr<arrow::Table> table;
-  if (!ScanIpcObject(hctx, filter, schema, table).ok()) return -1;
-  // if (!ScanParquetObject(hctx, filter, schema, table).ok()) return -1;
+  // if (!ScanIpcObject(hctx, filter, schema, table).ok()) return -1;
+  if (!ScanParquetObject(hctx, filter, schema, table).ok()) return -1;
 
   ceph::buffer::list bl;
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;

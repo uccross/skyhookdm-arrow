@@ -77,7 +77,7 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
     InspectOptions options) {
 
-  int8_t object_contents_type = 1; // 1) ipc 2) parquet
+  int8_t object_contents_type = 2; // 1) ipc 2) parquet
   std::string object_id = objects_[0]->id();
   librados::bufferlist in, out;
   int e;
@@ -224,7 +224,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   int e = cluster_->io_ctx_interface_->exec(object_->id(), cluster_->cls_name_.c_str(),
                                             "scan", in, out);
   if (e != 0) {
-    return Status::ExecutionError("call to exec() returned non-zero exit code.");
+    return Status::ExecutionError("call to exec() in RadosScanTask::Execute() returned non-zero exit code.");
   }
 
   /// Deserialize the result Table from the `out` bufferlist.
