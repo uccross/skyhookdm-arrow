@@ -140,6 +140,7 @@ TEST(TestClsSDK, WriteAndScanTable) {
 
   /// Execute Scan and Validate.
   auto result_table = scanner->ToTable().ValueOrDie();
+  std::cout << result_table->ToString();
   ASSERT_EQ(table->Equals(*result_table), 1);
 }
 

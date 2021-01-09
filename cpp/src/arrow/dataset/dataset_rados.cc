@@ -76,18 +76,37 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
     InspectOptions options) {
-  librados::bufferlist in, out;
-  int e = cluster_->io_ctx_interface_->exec(objects_[0]->id(),
-                                            cluster_->cls_name_.c_str(), "read", in, out);
-  if (e != 0) {
-    return Status::ExecutionError("call to exec() returned non-zero exit code.");
-  }
 
-  /// Deserialize the result Table from the `out` bufferlist.
-  std::shared_ptr<Table> table;
+  int8_t object_contents_type = 1; // 1) ipc 2) parquet
+  std::string object_id = objects_[0]->id();
+  librados::bufferlist in, out;
+  int e;
+
+  switch (object_contents_type)
+  {
+    case 1:
+      e = cluster_->io_ctx_interface_->exec(object_id, cluster_->cls_name_.c_str(), "read_ipc_schema", in, out);
+      if (e != 0) {
+        return Status::ExecutionError("call to exec() returned non-zero exit code.");
+      }
+      break;
+
+    case 2:
+      e = cluster_->io_ctx_interface_->exec(object_id, cluster_->cls_name_.c_str(), "read_parquet_schema", in, out);
+      if (e != 0) {
+        return Status::ExecutionError("call to exec() returned non-zero exit code.");
+      }
+      break;
+    
+    default:
+      break;
+  }
+  
   std::vector<std::shared_ptr<Schema>> schemas;
-  ARROW_RETURN_NOT_OK(deserialize_table_from_bufferlist(&table, out));
-  schemas.push_back(table->schema());
+  ipc::DictionaryMemo empty_memo;
+  io::BufferReader schema_reader((uint8_t*)out.c_str(), out.length());
+  ARROW_ASSIGN_OR_RAISE(auto schema, ipc::ReadSchema(&schema_reader, &empty_memo));
+  schemas.push_back(schema);
   return schemas;
 }
 

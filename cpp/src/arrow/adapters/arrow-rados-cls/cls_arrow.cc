@@ -31,7 +31,8 @@ CLS_VER(1, 0)
 CLS_NAME(arrow)
 
 cls_handle_t h_class;
-cls_method_handle_t h_read;
+cls_method_handle_t h_read_ipc_schema;
+cls_method_handle_t h_read_parquet_schema;
 cls_method_handle_t h_write;
 cls_method_handle_t h_scan;
 
@@ -130,28 +131,28 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     int64_t content_length_ = -1;
 };
 
-static arrow::Status ScanParquetObject(cls_method_context_t hctx,
-                         std::shared_ptr<arrow::dataset::Expression> filter,
-                         std::shared_ptr<arrow::Schema> schema,
-                         std::shared_ptr<arrow::Table> &t) {
-  // auto source = std::make_shared<RandomAccessObject>(hctx);
-  // source->Init(); 
+// static arrow::Status ScanParquetObject(cls_method_context_t hctx,
+//                          std::shared_ptr<arrow::dataset::Expression> filter,
+//                          std::shared_ptr<arrow::Schema> schema,
+//                          std::shared_ptr<arrow::Table> &t) {
+//   // auto source = std::make_shared<RandomAccessObject>(hctx);
+//   // source->Init(); 
 
-  // std::unique_ptr<parquet::arrow::FileReader> reader;
-  // parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader);
+//   // std::unique_ptr<parquet::arrow::FileReader> reader;
+//   // parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader);
 
-  // std::shared_ptr<arrow::Schema> table_schema;
-  // reader->GetSchema(&table_schema);
+//   // std::shared_ptr<arrow::Schema> table_schema;
+//   // reader->GetSchema(&table_schema);
 
-  // int64_t num_cols = reader->parquet_reader()->metadata()->num_columns();
+//   // int64_t num_cols = reader->parquet_reader()->metadata()->num_columns();
 
-  // arrow::ChunkedArrayVector columns(num_cols, nullptr);
+//   // arrow::ChunkedArrayVector columns(num_cols, nullptr);
 
-  // for (int j = 0; j < num_cols; j++) {
-  //   reader->ReadColumn(j, &columns[j]);
-  // }
-  return arrow::Status::OK();
-}
+//   // for (int j = 0; j < num_cols; j++) {
+//   //   reader->ReadColumn(j, &columns[j]);
+//   // }
+//   return arrow::Status::OK();
+// }
 
 static arrow::Status ScanIpcObject(cls_method_context_t hctx,  
                      std::shared_ptr<arrow::dataset::Expression> filter,
@@ -180,30 +181,40 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
   return arrow::Status::OK();
 }
 
-/// \brief Read an entire object.
-///
-/// \param[in] hctx the function execution context.
-/// \param[in] in the input bufferlist.
-/// \param[in] out the output bufferlist.
-static int read(cls_method_context_t hctx, ceph::buffer::list* in,
-                ceph::buffer::list* out) {
-  int ret;
-  ceph::buffer::list bl;
-  ret = cls_cxx_read(hctx, 0, 0, &bl);
-  if (ret < 0) {
-    CLS_ERR("ERROR: failed to read an object");
-    return ret;
-  }
+static int read_parquet_schema(cls_method_context_t hctx, 
+                ceph::buffer::list* in, ceph::buffer::list* out) {
+  std::shared_ptr<RandomAccessObject> source = std::make_shared<RandomAccessObject>(hctx);
+  if(!source->Init().ok()) return -1; 
 
-  *out = bl;
+  std::unique_ptr<parquet::arrow::FileReader> reader;
+  if(!parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader).ok()) return -1;
+
+  std::shared_ptr<arrow::Schema> schema;
+  if(!reader->GetSchema(&schema).ok()) return -1;
+
+  std::shared_ptr<arrow::Buffer> buffer = arrow::ipc::SerializeSchema(*schema).ValueOrDie();
+  ceph::buffer::list result;
+  result.append((char*)buffer->data(), buffer->size());
+  *out = result;
   return 0;
 }
 
-/// \brief Write data to an object.
-///
-/// \param[in] hctx the function execution context.
-/// \param[in] in the input bufferlist.
-/// \param[in] out the output bufferlist.
+static int read_ipc_schema(cls_method_context_t hctx, ceph::buffer::list* in,
+                ceph::buffer::list* out) {
+  ceph::buffer::list bl;
+  if (cls_cxx_read(hctx, 0, 0, &bl) < 0) return -1;
+
+  std::shared_ptr<arrow::Table> table;
+  if(!arrow::dataset::deserialize_table_from_bufferlist(&table, bl).ok()) return -1;
+
+  std::shared_ptr<arrow::Schema> schema = table->schema();
+  std::shared_ptr<arrow::Buffer> buffer = arrow::ipc::SerializeSchema(*schema).ValueOrDie();
+  ceph::buffer::list result;
+  result.append((char*)buffer->data(), buffer->size());
+  *out = result;
+  return 0;
+}
+
 static int write(cls_method_context_t hctx, ceph::buffer::list* in,
                  ceph::buffer::list* out) {
   int ret;
@@ -224,12 +235,6 @@ static int write(cls_method_context_t hctx, ceph::buffer::list* in,
   return 0;
 }
 
-/// \brief Read record batches from an object and
-/// apply the pushed down scan operations on them.
-///
-/// \param[in] hctx the function execution context.
-/// \param[in] in the input bufferlist.
-/// \param[in] out the output bufferlist.
 static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
                 ceph::buffer::list* out) {
   std::shared_ptr<arrow::dataset::Expression> filter;
@@ -238,7 +243,7 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
 
   std::shared_ptr<arrow::Table> table;
   if (!ScanIpcObject(hctx, filter, schema, table).ok()) return -1;
-  if (!ScanParquetObject(hctx, filter, schema, table).ok()) return -1;
+  // if (!ScanParquetObject(hctx, filter, schema, table).ok()) return -1;
 
   ceph::buffer::list bl;
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
@@ -252,8 +257,8 @@ void __cls_init() {
 
   cls_register("arrow", &h_class);
 
-  cls_register_cxx_method(h_class, "read", CLS_METHOD_RD | CLS_METHOD_WR, read, &h_read);
-  cls_register_cxx_method(h_class, "write", CLS_METHOD_RD | CLS_METHOD_WR, write,
-                          &h_write);
+  cls_register_cxx_method(h_class, "read_ipc_schema", CLS_METHOD_RD | CLS_METHOD_WR, read_ipc_schema, &h_read_ipc_schema);
+  cls_register_cxx_method(h_class, "read_parquet_schema", CLS_METHOD_RD | CLS_METHOD_WR, read_parquet_schema, &h_read_parquet_schema);
+  cls_register_cxx_method(h_class, "write", CLS_METHOD_RD | CLS_METHOD_WR, write, &h_write);
   cls_register_cxx_method(h_class, "scan", CLS_METHOD_RD | CLS_METHOD_WR, scan, &h_scan);
 }
