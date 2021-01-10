@@ -134,8 +134,9 @@ TEST(TestClsSDK, WriteAndScanTable) {
 
   /// Build the Scanner.
   auto scanner_builder = dataset->NewScan().ValueOrDie();
-  scanner_builder->Filter(arrow::dataset::scalar(true));
-  scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
+  auto expr = ("salary"_ > double(285000)).Copy();
+  scanner_builder->Filter(expr);
+  scanner_builder->Project(std::vector<std::string>{"country", "salary"});
   auto scanner = scanner_builder->Finish().ValueOrDie();
 
   /// Execute Scan and Validate.

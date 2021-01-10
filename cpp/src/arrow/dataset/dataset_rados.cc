@@ -126,7 +126,7 @@ Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions optio
     auto fixed_path = StripPrefixAndFilename(object->id(), options_.partition_base_dir);
     ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
     fragments.push_back(
-        std::make_shared<RadosFragment>(schema, object, cluster_, partition));
+        std::make_shared<RadosFragment>(schema, object, cluster_, 2, partition));
   }
   return RadosDataset::Make(schema, fragments, cluster_);
 }
@@ -215,7 +215,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
 
   /// Serialize the filter Expression and projection Schema into
   /// a librados bufferlist.
-  ARROW_RETURN_NOT_OK(serialize_scan_request_to_bufferlist(
+  ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
       options_->filter, options_->projector.schema(), in));
 
   /// Trigger a CLS function and pass the serialized operations
@@ -230,7 +230,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
 
   /// Deserialize the result Table from the `out` bufferlist.
   std::shared_ptr<Table> result_table;
-  ARROW_RETURN_NOT_OK(deserialize_table_from_bufferlist(&result_table, out));
+  ARROW_RETURN_NOT_OK(DeserializeTableFromBufferlist(&result_table, out));
 
   /// Verify whether the Schema of the resultant Table is what was asked for,
   if (!options_->schema()->Equals(*(result_table->schema()))) {

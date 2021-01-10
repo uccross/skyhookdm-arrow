@@ -184,7 +184,7 @@ TEST_F(TestRadosFragment, Scan) {
   cluster->rados_interface_ = mock_rados_interface;
   cluster->io_ctx_interface_ = mock_ioctx_interface;
 
-  RadosFragment fragment(schema_, object, cluster);
+  RadosFragment fragment(schema_, object, cluster, 1);
 
   AssertFragmentEquals(reader.get(), &fragment, 4);
 }
@@ -209,7 +209,7 @@ TEST_F(TestRadosDataset, GetFragments) {
   RadosFragmentVector fragments;
   for (int i = 0; i < 3; i++) {
     fragments.push_back(
-        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
+        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster, 1));
   }
 
   auto batch = generate_test_record_batch();
@@ -234,7 +234,7 @@ TEST_F(TestRadosDataset, ReplaceSchema) {
   RadosFragmentVector fragments;
   for (int i = 0; i < 2; i++) {
     fragments.push_back(
-        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
+        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster, 1));
   }
 
   auto dataset = RadosDataset::Make(schema_, fragments, cluster).ValueOrDie();
@@ -273,7 +273,7 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   auto filter = std::make_shared<OrExpression>("b"_ == 3 or "b"_ == 4);
   auto schema = arrow::schema({field("i32", int32()), field("f64", float64())});
   librados::bufferlist bl;
-  serialize_scan_request_to_bufferlist(filter, schema, bl);
+  SerializeScanRequestToBufferlist(filter, schema, bl);
 
   librados::bufferlist bl__ = std::move(bl);
   std::shared_ptr<Expression> filter__;
@@ -291,7 +291,7 @@ TEST_F(TestRadosDataset, SerializeDeserializeTable) {
 
   librados::bufferlist bl__(bl);
   std::shared_ptr<Table> table__;
-  deserialize_table_from_bufferlist(&table__, bl__);
+  DeserializeTableFromBufferlist(&table__, bl__);
 
   ASSERT_TRUE(table__->Equals(*table));
 }
@@ -313,7 +313,7 @@ TEST_F(TestRadosDataset, EndToEnd) {
   RadosFragmentVector fragments;
   for (int i = 0; i < 3; i++) {
     fragments.push_back(
-        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster));
+        std::make_shared<RadosFragment>(schema_, object_vector[i], cluster, 1));
   }
 
   auto batch = generate_test_record_batch();

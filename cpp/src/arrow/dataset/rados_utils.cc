@@ -47,7 +47,7 @@ Status char_to_int64(char* buffer, int64_t& num) {
   return Status::OK();
 }
 
-Status serialize_scan_request_to_bufferlist(std::shared_ptr<Expression> filter,
+Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
                                             std::shared_ptr<Schema> schema,
                                             librados::bufferlist& bl) {
   /// Serialize the filter Expression and the Schema.
@@ -124,7 +124,7 @@ Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
   return Status::OK();
 }
 
-Status deserialize_table_from_bufferlist(std::shared_ptr<Table>* table,
+Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
                                          librados::bufferlist& bl) {
   io::BufferReader reader((uint8_t*)bl.c_str(), bl.length());
   ARROW_ASSIGN_OR_RAISE(auto record_batch_reader,

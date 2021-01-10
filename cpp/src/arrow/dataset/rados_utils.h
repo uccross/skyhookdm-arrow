@@ -49,7 +49,7 @@ ARROW_DS_EXPORT Status char_to_int64(char* buffer, int64_t& num);
 /// \param[in] schema the Schema of the projection to apply on a RadosDataset.
 /// \param[in] bl a bufferlist to write the sequence of bytes to
 /// comprising of the serialized Expression and Schema.
-ARROW_DS_EXPORT Status serialize_scan_request_to_bufferlist(
+ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
     std::shared_ptr<Expression> filter, std::shared_ptr<Schema> schema,
     librados::bufferlist& bl);
 
@@ -74,7 +74,7 @@ ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
 ///
 /// \param[in] table a pointer to write the deserialized Table.
 /// \param[in] bl the bufferlist to read the Table from.
-ARROW_DS_EXPORT Status deserialize_table_from_bufferlist(std::shared_ptr<Table>* table,
+ARROW_DS_EXPORT Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
                                                          librados::bufferlist& bl);
 
 /// \brief Read RecordBatches from a bufferlist.

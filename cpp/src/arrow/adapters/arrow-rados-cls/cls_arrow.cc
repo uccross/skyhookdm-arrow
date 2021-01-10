@@ -140,18 +140,19 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   ARROW_RETURN_NOT_OK(
       parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader));
 
-  std::shared_ptr<arrow::Schema> schema_;
-  ARROW_RETURN_NOT_OK(reader->GetSchema(&schema_));
+  std::shared_ptr<arrow::Schema> table_schema;
+  ARROW_RETURN_NOT_OK(reader->GetSchema(&table_schema));
 
-  int64_t num_cols = reader->parquet_reader()->metadata()->num_columns();
+  int64_t num_cols = schema->num_fields();
   int64_t num_rows = reader->parquet_reader()->metadata()->num_rows();
 
   arrow::ChunkedArrayVector columns(num_cols, nullptr);
   for (int j = 0; j < num_cols; j++) {
-    ARROW_RETURN_NOT_OK(reader->ReadColumn(j, &columns[j]));
+    int32_t field_idx = table_schema->GetFieldIndex(schema->field_names()[j]);
+    ARROW_RETURN_NOT_OK(reader->ReadColumn(field_idx, &columns[j]));
   }
   std::shared_ptr<arrow::Table> deserialized_table =
-      arrow::Table::Make(schema_, columns, num_rows);
+      arrow::Table::Make(schema, columns, num_rows);
   std::shared_ptr<arrow::TableBatchReader> table_reader =
       std::make_shared<arrow::TableBatchReader>(*deserialized_table);
   arrow::RecordBatchVector batches;
@@ -159,10 +160,9 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
   auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
-  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema_, fragment, ctx);
+  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema, fragment, ctx);
 
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
-  ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
 
@@ -221,7 +221,7 @@ static int read_ipc_schema(cls_method_context_t hctx, ceph::buffer::list* in,
   if (cls_cxx_read(hctx, 0, 0, &bl) < 0) return -1;
 
   std::shared_ptr<arrow::Table> table;
-  if (!arrow::dataset::deserialize_table_from_bufferlist(&table, bl).ok()) return -1;
+  if (!arrow::dataset::DeserializeTableFromBufferlist(&table, bl).ok()) return -1;
 
   std::shared_ptr<arrow::Schema> schema = table->schema();
   std::shared_ptr<arrow::Buffer> buffer =
@@ -234,21 +234,8 @@ static int read_ipc_schema(cls_method_context_t hctx, ceph::buffer::list* in,
 
 static int write(cls_method_context_t hctx, ceph::buffer::list* in,
                  ceph::buffer::list* out) {
-  int ret;
-  CLS_LOG(0, "create an object");
-  ret = cls_cxx_create(hctx, false);
-  if (ret < 0) {
-    CLS_ERR("ERROR: failed to create an object");
-    return ret;
-  }
-
-  CLS_LOG(0, "write data into the object");
-  ret = cls_cxx_write(hctx, 0, in->length(), in);
-  if (ret < 0) {
-    CLS_ERR("ERROR: failed to write to object");
-    return ret;
-  }
-
+  if (cls_cxx_create(hctx, false) < 0) return -1;
+  if (cls_cxx_write(hctx, 0, in->length(), in) < 0) return -1;
   return 0;
 }
 
