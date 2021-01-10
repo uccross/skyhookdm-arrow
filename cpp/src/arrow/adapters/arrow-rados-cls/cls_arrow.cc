@@ -183,9 +183,9 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
 
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
   auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
-  auto schema_ = batches[0]->schema();
+  auto table_schema = batches[0]->schema();
 
-  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema_, fragment, ctx);
+  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(table_schema, fragment, ctx);
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
@@ -246,12 +246,12 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   if (!arrow::dataset::DeserializeScanOptionsFromBufferlist(&filter, &schema, *in).ok())
     return -1;
 
-  int8_t object_content_type = 2;  // 1) ipc 2) parquet
+  int8_t format = 2;  // 1) ipc 2) parquet
 
   std::shared_ptr<arrow::Table> table;
-  if (object_content_type == 1) {
+  if (format == 1) {
     if (!ScanIpcObject(hctx, filter, schema, table).ok()) return -1;
-  } else if (object_content_type == 2) {
+  } else if (format == 2) {
     if (!ScanParquetObject(hctx, filter, schema, table).ok()) return -1;
   } else {
     return -1;
