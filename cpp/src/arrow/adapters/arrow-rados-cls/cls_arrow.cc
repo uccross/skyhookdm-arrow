@@ -253,7 +253,7 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   std::shared_ptr<arrow::dataset::Expression> filter;
   std::shared_ptr<arrow::Schema> schema;
   int64_t format;
-  if (!arrow::dataset::DeserializeScanOptionsFromBufferlist(&filter, &schema, &format, *in).ok())
+  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(&filter, &schema, &format, *in).ok())
     return -1;
 
   std::shared_ptr<arrow::Table> table;

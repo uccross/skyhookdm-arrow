@@ -62,7 +62,7 @@ ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
 /// \param[in] schema a pointer to write the deserialized projection Schema.
 /// \param[in] bl a bufferlist to read the sequence of bytes comprising of the
 /// serialized Schema and Expression.
-ARROW_DS_EXPORT Status DeserializeScanOptionsFromBufferlist(
+ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(
     std::shared_ptr<Expression>* filter, std::shared_ptr<Schema>* schema, int64_t *format,
     librados::bufferlist& bl);
 

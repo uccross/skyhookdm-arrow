@@ -279,7 +279,7 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   std::shared_ptr<Expression> filter__;
   std::shared_ptr<Schema> schema__;
   int64_t format__;
-  DeserializeScanOptionsFromBufferlist(&filter__, &schema__, &format__, bl__);
+  DeserializeScanRequestFromBufferlist(&filter__, &schema__, &format__, bl__);
 
   ASSERT_TRUE(filter__->Equals(*filter));
   ASSERT_TRUE(schema__->Equals(schema));

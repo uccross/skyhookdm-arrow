@@ -81,7 +81,7 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
   return Status::OK();
 }
 
-Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
+Status DeserializeScanRequestFromBufferlist(std::shared_ptr<Expression>* filter,
                                             std::shared_ptr<Schema>* schema,
                                             int64_t *format,
                                             librados::bufferlist& bl) {
