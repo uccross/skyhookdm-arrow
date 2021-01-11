@@ -37,6 +37,7 @@ namespace dataset {
 
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
+  options->format = format_;
   ScanTaskVector v{std::make_shared<RadosScanTask>(
       std::move(options), std::move(context), std::move(object_), std::move(cluster_))};
   return MakeVectorIterator(v);
@@ -76,12 +77,11 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
     InspectOptions options) {
-  int8_t object_contents_type = 2;  // 1) ipc 2) parquet
   std::string object_id = objects_[0]->id();
   librados::bufferlist in, out;
   int e;
 
-  switch (object_contents_type) {
+  switch (options_.format_) {
     case 1:
       e = cluster_->io_ctx_interface_->exec(object_id, cluster_->cls_name_.c_str(),
                                             "read_ipc_schema", in, out);
@@ -126,7 +126,7 @@ Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions optio
     auto fixed_path = StripPrefixAndFilename(object->id(), options_.partition_base_dir);
     ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
     fragments.push_back(
-        std::make_shared<RadosFragment>(schema, object, cluster_, 2, partition));
+        std::make_shared<RadosFragment>(schema, object, cluster_, options_.format_, partition));
   }
   return RadosDataset::Make(schema, fragments, cluster_);
 }
@@ -216,7 +216,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   /// Serialize the filter Expression and projection Schema into
   /// a librados bufferlist.
   ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
-      options_->filter, options_->projector.schema(), in));
+      options_->filter, options_->projector.schema(), options_->format, in));
 
   /// Trigger a CLS function and pass the serialized operations
   /// down to the storage. The resultant Table will be available inside the `out`

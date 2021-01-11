@@ -42,6 +42,7 @@ class ARROW_DS_EXPORT RadosDatasetFactoryOptions : public FileSystemFactoryOptio
   std::string ceph_config_path_;
   uint64_t flags_;
   std::string cls_name_;
+  int64_t format_ = 2;
 };
 
 /// \brief An abstraction to encapsulate information about a
@@ -110,7 +111,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   /// fragment.
   RadosFragment(std::shared_ptr<Schema> schema, std::shared_ptr<RadosObject> object,
                 std::shared_ptr<RadosCluster> cluster,
-                int8_t format,
+                int64_t format,
                 std::shared_ptr<Expression> partition_expression = scalar(true))
       : Fragment(scalar(true), std::move(schema)),
         object_(std::move(object)),
@@ -128,7 +129,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   Result<std::shared_ptr<Schema>> ReadPhysicalSchemaImpl() override;
   std::shared_ptr<RadosObject> object_;
   std::shared_ptr<RadosCluster> cluster_;
-  int8_t format_;
+  int64_t format_;
 };
 
 /// \brief A vector of RadosObjects.

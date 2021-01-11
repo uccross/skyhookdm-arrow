@@ -49,6 +49,7 @@ Status char_to_int64(char* buffer, int64_t& num) {
 
 Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
                                             std::shared_ptr<Schema> schema,
+                                            int64_t format,
                                             librados::bufferlist& bl) {
   /// Serialize the filter Expression and the Schema.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, filter->Serialize());
@@ -62,6 +63,9 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
   char* schema_size_buffer = new char[8];
   ARROW_RETURN_NOT_OK(int64_to_char(schema_size_buffer, schema_buffer->size()));
 
+  char *format_buffer = new char[8];
+  ARROW_RETURN_NOT_OK(int64_to_char(format_buffer, format));
+
   /// Append the filter Expression size.
   bl.append(filter_size_buffer, 8);
   /// Append the filter Expression data.
@@ -72,11 +76,14 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
   /// Append the Schema data.
   bl.append((char*)schema_buffer->data(), schema_buffer->size());
 
+  bl.append(format_buffer, 8);
+
   return Status::OK();
 }
 
 Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
                                             std::shared_ptr<Schema>* schema,
+                                            int64_t *format,
                                             librados::bufferlist& bl) {
   librados::bufferlist::iterator itr = bl.begin();
 
@@ -96,6 +103,11 @@ Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
   char* schema_buffer = new char[schema_size];
   itr.copy(schema_size, schema_buffer);
 
+  int64_t format_ = 0; 
+  char *format_buffer = new char[8];
+  itr.copy(8, format_buffer);
+  ARROW_RETURN_NOT_OK(char_to_int64(format_buffer, format_));
+
   ARROW_ASSIGN_OR_RAISE(auto filter_, Expression::Deserialize(
                                           Buffer((uint8_t*)filter_buffer, filter_size)));
   *filter = filter_;
@@ -105,6 +117,8 @@ Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
 
   ARROW_ASSIGN_OR_RAISE(auto schema_, ipc::ReadSchema(&schema_reader, &empty_memo));
   *schema = schema_;
+
+  *format = format_;
 
   return Status::OK();
 }

@@ -273,12 +273,13 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   auto filter = std::make_shared<OrExpression>("b"_ == 3 or "b"_ == 4);
   auto schema = arrow::schema({field("i32", int32()), field("f64", float64())});
   librados::bufferlist bl;
-  SerializeScanRequestToBufferlist(filter, schema, bl);
+  SerializeScanRequestToBufferlist(filter, schema, 2, bl);
 
   librados::bufferlist bl__ = std::move(bl);
   std::shared_ptr<Expression> filter__;
   std::shared_ptr<Schema> schema__;
-  DeserializeScanOptionsFromBufferlist(&filter__, &schema__, bl__);
+  int64_t format__;
+  DeserializeScanOptionsFromBufferlist(&filter__, &schema__, &format__, bl__);
 
   ASSERT_TRUE(filter__->Equals(*filter));
   ASSERT_TRUE(schema__->Equals(schema));

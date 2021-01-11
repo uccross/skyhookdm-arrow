@@ -92,6 +92,8 @@ class ARROW_DS_EXPORT ScanOptions {
   // sub-selection optimization.
   std::vector<std::string> MaterializedFields() const;
 
+  int64_t format;
+
  private:
   explicit ScanOptions(std::shared_ptr<Schema> schema);
 };
