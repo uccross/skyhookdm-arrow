@@ -120,6 +120,35 @@ TEST(TestClsSDK, WriteAndScanTableIPC) {
   auto table = CreateTestTable();
   auto object = CreateTestObject("test.obj.1");
   auto factory_options = CreateTestRadosFactoryOptions();
+  factory_options.format_ = 1;
+
+  /// Write the Fragment.
+  arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
+
+  /// Build the Dataset.
+  arrow::dataset::FinishOptions finish_options;
+  auto factory = arrow::dataset::RadosDatasetFactory::Make(
+                     factory_options,
+                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+                     .ValueOrDie();
+  auto dataset = factory->Finish(finish_options).ValueOrDie();
+
+  /// Build the Scanner.
+  auto scanner_builder = dataset->NewScan().ValueOrDie();
+  scanner_builder->Filter(arrow::dataset::scalar(true));
+  scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
+  auto scanner = scanner_builder->Finish().ValueOrDie();
+
+  /// Execute Scan and Validate.
+  auto result_table = scanner->ToTable().ValueOrDie();
+  ASSERT_EQ(table->Equals(*result_table), 1);
+}
+
+TEST(TestClsSDK, WriteAndScanTableParquet) {
+  auto batches = CreateTestRecordBatches();
+  auto table = CreateTestTable();
+  auto object = CreateTestObject("test.obj.1");
+  auto factory_options = CreateTestRadosFactoryOptions();
   factory_options.format_ = 2;
 
   /// Write the Fragment.
