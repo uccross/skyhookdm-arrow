@@ -285,35 +285,31 @@ TEST(TestClsSDK, EndToEnd) {
 TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto batches = CreateTestRecordBatches();
   auto factory_options = CreateTestRadosFactoryOptions();
-  factory_options.format_ = 1;
+  factory_options.format_ = 2;
 
-  /// Prepare RecordBatches and Write the fragments.
-  for (int j = 1; j <= 9; j++) {
-    for (int i = 0; i < 4; i++) {
-      std::string object_id =
-          "/dataset/" + std::to_string(j) + "/data_" + std::to_string(i) + ".arrow";
-      arrow::dataset::RadosDataset::Write(batches, factory_options, object_id);
-    }
-  }
-
-  factory_options.partition_base_dir = "/dataset";
+  factory_options.partition_base_dir = "/workspace/nyc/";
   factory_options.partitioning =
-  std::make_shared<arrow::dataset::DirectoryPartitioning>(
-      arrow::schema({arrow::field("id", arrow::int32())}));
+  std::make_shared<arrow::dataset::HivePartitioning>(
+      arrow::schema(
+        {
+          arrow::field("payment_type", arrow::int64()), 
+          arrow::field("VendorID", arrow::int64())
+        }));
 
   /// Create a RadosDataset and apply Scan operations.
   arrow::dataset::FinishOptions finish_options;
   auto factory =
-  arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie(); auto ds =
-  factory->Finish(finish_options).ValueOrDie();
+  arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie(); 
+  auto ds = factory->Finish(finish_options).ValueOrDie();
 
   auto builder = ds->NewScan().ValueOrDie();
 
   std::shared_ptr<arrow::dataset::Expression> expr =
-      ("id"_ == 6 and "cost"_ > double(1.5)).Copy();
+      ("payment_type"_ == 4).Copy();
   builder->Filter(expr);
-  builder->Project(std::vector<std::string>{"cost", "id"});
+  builder->Project(std::vector<std::string>{"fare_amount", "passenger_count", "VendorID"});
 
   auto scanner = builder->Finish().ValueOrDie();
   auto table = scanner->ToTable().ValueOrDie();
+  std::cout << table->ToString();
 }
