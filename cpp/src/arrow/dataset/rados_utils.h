@@ -33,6 +33,9 @@
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/macros.h"
+#include "parquet/arrow/writer.h"
+#include "parquet/exception.h"
+
 
 namespace arrow {
 namespace dataset {
@@ -67,8 +70,12 @@ ARROW_DS_EXPORT Status DeserializeScanOptionsFromBufferlist(
 ///
 /// \param[in] table the Table to serialize to a bufferlist.
 /// \param[in] bl the bufferlist to write the Table to.
-ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
+ARROW_DS_EXPORT Status SerializeTableToIPCStream(std::shared_ptr<Table>& table,
                                                   librados::bufferlist& bl);
+
+
+ARROW_DS_EXPORT Status SerializeTableToParquetStream(std::shared_ptr<Table>& table,
+                                                     librados::bufferlist& bl);
 
 /// \brief Deserialize the Table from a bufferlist.
 ///
@@ -77,11 +84,5 @@ ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
 ARROW_DS_EXPORT Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
                                                          librados::bufferlist& bl);
 
-/// \brief Read RecordBatches from a bufferlist.
-///
-/// \param[in] batches a pointer to a vector to store the read RecordBatches.
-/// \param[in] bl the bufferlist to read the Record Batch vector from.
-ARROW_DS_EXPORT Status DeserializeBatchesFromBufferlist(RecordBatchVector* batches,
-                                                        librados::bufferlist& bl);
 }  // namespace dataset
 }  // namespace arrow

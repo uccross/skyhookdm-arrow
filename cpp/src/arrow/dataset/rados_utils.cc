@@ -123,15 +123,28 @@ Status DeserializeScanOptionsFromBufferlist(std::shared_ptr<Expression>* filter,
   return Status::OK();
 }
 
-Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
+Status SerializeTableToIPCStream(std::shared_ptr<Table>& table,
                                   librados::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
+  
   const auto options = ipc::IpcWriteOptions::Defaults();
   ARROW_ASSIGN_OR_RAISE(
       auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
 
   ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
   ARROW_RETURN_NOT_OK(writer->Close());
+
+  ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
+  bl.append((char*)buffer->data(), buffer->size());
+  return Status::OK();
+}
+
+Status SerializeTableToParquetStream(std::shared_ptr<Table>& table,
+                                     librados::bufferlist& bl) {
+  ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
+
+  PARQUET_THROW_NOT_OK(
+    parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), buffer_output_stream, 1));
 
   ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
   bl.append((char*)buffer->data(), buffer->size());
@@ -146,18 +159,6 @@ Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
   ARROW_ASSIGN_OR_RAISE(auto table_,
                         Table::FromRecordBatchReader(record_batch_reader.get()));
   *table = table_;
-  return Status::OK();
-}
-
-Status DeserializeBatchesFromBufferlist(RecordBatchVector* batches,
-                                        librados::bufferlist& bl) {
-  std::shared_ptr<Buffer> buffer =
-      std::make_shared<Buffer>((uint8_t*)bl.c_str(), bl.length());
-  std::shared_ptr<io::BufferReader> buffer_reader =
-      std::make_shared<io::BufferReader>(buffer);
-  ARROW_ASSIGN_OR_RAISE(auto record_batch_reader,
-                        ipc::RecordBatchStreamReader::Open(buffer_reader));
-  ARROW_RETURN_NOT_OK(record_batch_reader->ReadAll(batches));
   return Status::OK();
 }
 

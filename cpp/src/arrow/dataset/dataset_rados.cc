@@ -184,7 +184,9 @@ Status RadosDataset::Write(RecordBatchVector& batches, RadosDatasetFactoryOption
   ARROW_ASSIGN_OR_RAISE(auto table, Table::FromRecordBatches(batches));
 
   librados::bufferlist in, out;
-  RETURN_NOT_OK(SerializeTableToBufferlist(table, in));
+
+  if (options.format_ == 1) RETURN_NOT_OK(SerializeTableToIPCStream(table, in));
+  if (options.format_ == 2) RETURN_NOT_OK(SerializeTableToParquetStream(table, in));
 
   auto cluster =
       std::make_shared<RadosCluster>(options.pool_name_, options.ceph_config_path_);

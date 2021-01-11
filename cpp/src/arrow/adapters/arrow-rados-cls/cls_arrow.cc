@@ -181,7 +181,14 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
     return arrow::Status::ExecutionError("READ_FAILED");
 
   arrow::RecordBatchVector batches;
-  ARROW_RETURN_NOT_OK(arrow::dataset::DeserializeBatchesFromBufferlist(&batches, bl));
+  std::shared_ptr<arrow::Buffer> buffer =
+      std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
+  std::shared_ptr<arrow::io::BufferReader> buffer_reader =
+      std::make_shared<arrow::io::BufferReader>(buffer);
+  /// We can change this to RecordBatchFileReader later, to read from Arrow/Feather files.
+  ARROW_ASSIGN_OR_RAISE(auto record_batch_reader,
+                        arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
+  ARROW_RETURN_NOT_OK(record_batch_reader->ReadAll(&batches));
 
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
   auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
@@ -259,7 +266,7 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   }
 
   ceph::buffer::list bl;
-  if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
+  if (!arrow::dataset::SerializeTableToIPCStream(table, bl).ok()) return -1;
 
   *out = bl;
   return 0;

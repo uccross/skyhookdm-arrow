@@ -115,18 +115,18 @@ arrow::dataset::RadosDatasetFactoryOptions CreateTestRadosFactoryOptions() {
   return factory_options;
 }
 
-TEST(TestClsSDK, WriteAndScanTable) {
+TEST(TestClsSDK, WriteAndScanTableIPC) {
   auto batches = CreateTestRecordBatches();
   auto table = CreateTestTable();
   auto object = CreateTestObject("test.obj.1");
   auto factory_options = CreateTestRadosFactoryOptions();
+  factory_options.format_ = 2;
 
   /// Write the Fragment.
   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
   /// Build the Dataset.
   arrow::dataset::FinishOptions finish_options;
-  factory_options.format_ = 1;
   auto factory = arrow::dataset::RadosDatasetFactory::Make(
                      factory_options,
                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
@@ -135,9 +135,8 @@ TEST(TestClsSDK, WriteAndScanTable) {
 
   /// Build the Scanner.
   auto scanner_builder = dataset->NewScan().ValueOrDie();
-  auto expr = ("VendorID"_ >= 1).Copy();
   scanner_builder->Filter(arrow::dataset::scalar(true));
-  scanner_builder->Project(std::vector<std::string>{"VendorID", "passenger_count"});
+  scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
   auto scanner = scanner_builder->Finish().ValueOrDie();
 
   /// Execute Scan and Validate.
@@ -150,13 +149,13 @@ TEST(TestClsSDK, Projection) {
   auto table = CreateTestTable();
   auto object = CreateTestObject("test.obj.2");
   auto factory_options = CreateTestRadosFactoryOptions();
+  factory_options.format_ = 1;
 
   /// Write the Fragment.
   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
   /// Build the Dataset.
   arrow::dataset::FinishOptions finish_options;
-  factory_options.format_ = 1;
   auto factory = arrow::dataset::RadosDatasetFactory::Make(
                      factory_options,
                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
@@ -182,13 +181,13 @@ TEST(TestClsSDK, Selection) {
   auto table = CreateTestTable();
   auto object = CreateTestObject("test.obj.3");
   auto factory_options = CreateTestRadosFactoryOptions();
+  factory_options.format_ = 1;
 
   /// Write the Fragment.
   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
   /// Build the Dataset.
   arrow::dataset::FinishOptions finish_options;
-  factory_options.format_ = 1;
   auto factory = arrow::dataset::RadosDatasetFactory::Make(
                      factory_options,
                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
@@ -210,6 +209,7 @@ TEST(TestClsSDK, Selection) {
 TEST(TestClsSDK, EndToEnd) {
   auto batches = CreateTestRecordBatches();
   auto factory_options = CreateTestRadosFactoryOptions();
+  factory_options.format_ = 1;
 
   /// Prepare RecordBatches and Write the fragments.
   for (int i = 0; i < 4; i++) {
@@ -220,7 +220,6 @@ TEST(TestClsSDK, EndToEnd) {
   /// Create a RadosDataset and apply Scan operations.
   arrow::dataset::FinishOptions finish_options;
   factory_options.partition_base_dir = "/ds";
-  factory_options.format_ = 1;
   auto rados_ds_factory =
       arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
   auto rados_ds = rados_ds_factory->Finish(finish_options).ValueOrDie();
@@ -257,6 +256,7 @@ TEST(TestClsSDK, EndToEnd) {
 TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto batches = CreateTestRecordBatches();
   auto factory_options = CreateTestRadosFactoryOptions();
+  factory_options.format_ = 1;
 
   /// Prepare RecordBatches and Write the fragments.
   for (int j = 1; j <= 9; j++) {
@@ -267,7 +267,6 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
     }
   }
 
-  factory_options.format_ = 1;
   factory_options.partition_base_dir = "/dataset";
   factory_options.partitioning =
   std::make_shared<arrow::dataset::DirectoryPartitioning>(

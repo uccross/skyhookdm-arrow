@@ -102,7 +102,7 @@ class ARROW_DS_EXPORT MockIoCtx : public IoCtxInterface {
     // Generate a random table and write it to a bufferlist
     librados::bufferlist result;
     auto table = generate_test_table();
-    SerializeTableToBufferlist(table, result);
+    SerializeTableToIPCStream(table, result);
 
     EXPECT_CALL(*this, read(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(testing::SetArgReferee<1>(result), testing::Return(0)));
@@ -288,7 +288,7 @@ TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
 TEST_F(TestRadosDataset, SerializeDeserializeTable) {
   auto table = generate_test_table();
   librados::bufferlist bl;
-  SerializeTableToBufferlist(table, bl);
+  SerializeTableToIPCStream(table, bl);
 
   librados::bufferlist bl__(bl);
   std::shared_ptr<Table> table__;
