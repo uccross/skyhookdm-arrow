@@ -100,6 +100,7 @@ ceph osd pool create test-pool 32 32 replicated
 
 # download and write the partitioned nyctaxi dataset in parquet format
 wget -O nyc.zip https://github.com/JayjeetAtGithub/zips/blob/main/nyc.zip?raw=true
+apt install -y unzip
 unzip nyc.zip
 wget https://github.com/JayjeetAtGithub/zips/raw/main/ppw.py
 python3 ppw.py
