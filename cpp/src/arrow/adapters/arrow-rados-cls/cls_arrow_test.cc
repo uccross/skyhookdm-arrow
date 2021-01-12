@@ -287,7 +287,7 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto factory_options = CreateTestRadosFactoryOptions();
   factory_options.format_ = 2;
 
-  factory_options.partition_base_dir = "/workspace/nyc/";
+  factory_options.partition_base_dir = "nyc/";
   factory_options.partitioning =
   std::make_shared<arrow::dataset::HivePartitioning>(
       arrow::schema(
