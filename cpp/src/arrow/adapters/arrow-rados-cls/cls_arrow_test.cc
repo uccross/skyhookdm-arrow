@@ -423,7 +423,4 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   std::cout << table->ToString() << "\n";
   std::cout << table->num_columns() << "\n";
   std::cout << table->num_rows() << "\n";
-
-
-  std::cout << table->column(0)->ToString() << "\n";
 }
