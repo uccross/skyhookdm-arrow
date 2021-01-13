@@ -422,9 +422,9 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   builder->Filter(filter);
   auto scanner = builder->Finish().ValueOrDie();
 
-  auto table_from_partitioned_parquet = scanner->ToTable().ValueOrDie();
-  std::cout << table_from_partitioned_parquet->ToString() << "\n";
+  auto table = scanner->ToTable().ValueOrDie();
+  std::cout << table->ToString() << "\n";
 
-  ASSERT_EQ(table_from_local_parquet_file->num_columns(), 4);
-  ASSERT_EQ(table_from_local_parquet_file->num_rows(), 5651);
+  ASSERT_EQ(table->num_columns(), 4);
+  ASSERT_EQ(table->num_rows(), 5651);
 }
