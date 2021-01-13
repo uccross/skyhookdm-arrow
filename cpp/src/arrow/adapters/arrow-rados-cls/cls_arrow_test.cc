@@ -30,6 +30,7 @@
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
 #include "gtest/gtest.h"
+#include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
 
 using arrow::dataset::string_literals::operator"" _;
@@ -397,7 +398,7 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto factory_options = CreateTestRadosFactoryOptions();
   factory_options.format_ = 2;
 
-  factory_options.partition_base_dir = "nyc/";
+  factory_options.partition_base_dir = "/workspace/nyc/";
   factory_options.partitioning =
   std::make_shared<arrow::dataset::HivePartitioning>(
       arrow::schema(
@@ -431,5 +432,5 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   std::shared_ptr<arrow::Table> table_from_local_parquet_file;
   reader->ReadTable(&table_from_local_parquet_file);
 
-  ASSERT_EQ(table_from_local_parquet_file->Equals(*table), 1);
+  ASSERT_EQ(table_from_local_parquet_file->Equals(*table_from_partitioned_parquet), 1);
 }
