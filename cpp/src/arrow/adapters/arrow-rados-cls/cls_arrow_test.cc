@@ -425,13 +425,6 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto table_from_partitioned_parquet = scanner->ToTable().ValueOrDie();
   std::cout << table_from_partitioned_parquet->ToString() << "\n";
 
-  auto infile = arrow::io::ReadableFile::Open("nyc.parquet", arrow::default_memory_pool()).ValueOrDie();
-
-  std::unique_ptr<parquet::arrow::FileReader> reader;
-  parquet::arrow::OpenFile(infile, arrow::default_memory_pool(), &reader);
-  std::shared_ptr<arrow::Table> table_from_local_parquet_file;
-  reader->ReadTable(&table_from_local_parquet_file);
-
-  ASSERT_EQ(table_from_local_parquet_file->num_columns(), table_from_partitioned_parquet->num_columns());
-  ASSERT_EQ(table_from_local_parquet_file->num_rows(), table_from_partitioned_parquet->num_rows());
+  ASSERT_EQ(table_from_local_parquet_file->num_columns(), 4);
+  ASSERT_EQ(table_from_local_parquet_file->num_rows(), 5651);
 }
