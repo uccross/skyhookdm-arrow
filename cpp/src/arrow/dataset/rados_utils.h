@@ -36,7 +36,6 @@
 #include "parquet/arrow/writer.h"
 #include "parquet/exception.h"
 
-
 namespace arrow {
 namespace dataset {
 
@@ -53,8 +52,8 @@ ARROW_DS_EXPORT Status char_to_int64(char* buffer, int64_t& num);
 /// \param[in] bl a bufferlist to write the sequence of bytes to
 /// comprising of the serialized Expression and Schema.
 ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
-    std::shared_ptr<Expression> filter, std::shared_ptr<Expression> partition_expression, std::shared_ptr<Schema> schema, int64_t format,
-    librados::bufferlist& bl);
+    std::shared_ptr<Expression> filter, std::shared_ptr<Expression> partition_expression,
+    std::shared_ptr<Schema> schema, int64_t format, librados::bufferlist& bl);
 
 /// \brief Deserialize Expression and Schema from a bufferlist.
 ///
@@ -63,16 +62,15 @@ ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
 /// \param[in] bl a bufferlist to read the sequence of bytes comprising of the
 /// serialized Schema and Expression.
 ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(
-    std::shared_ptr<Expression>* filter, std::shared_ptr<Expression> *part_expr, std::shared_ptr<Schema>* schema, int64_t *format,
-    librados::bufferlist& bl);
+    std::shared_ptr<Expression>* filter, std::shared_ptr<Expression>* part_expr,
+    std::shared_ptr<Schema>* schema, int64_t* format, librados::bufferlist& bl);
 
 /// \brief Serialize a Table to a bufferlist.
 ///
 /// \param[in] table the Table to serialize to a bufferlist.
 /// \param[in] bl the bufferlist to write the Table to.
 ARROW_DS_EXPORT Status SerializeTableToIPCStream(std::shared_ptr<Table>& table,
-                                                  librados::bufferlist& bl);
-
+                                                 librados::bufferlist& bl);
 
 ARROW_DS_EXPORT Status SerializeTableToParquetStream(std::shared_ptr<Table>& table,
                                                      librados::bufferlist& bl);
@@ -82,7 +80,7 @@ ARROW_DS_EXPORT Status SerializeTableToParquetStream(std::shared_ptr<Table>& tab
 /// \param[in] table a pointer to write the deserialized Table.
 /// \param[in] bl the bufferlist to read the Table from.
 ARROW_DS_EXPORT Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
-                                                         librados::bufferlist& bl);
+                                                      librados::bufferlist& bl);
 
 }  // namespace dataset
 }  // namespace arrow

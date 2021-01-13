@@ -335,8 +335,8 @@ TEST(TestClsSDK, EndToEndIPC) {
       {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
        arrow::field("cost_components", arrow::list(arrow::float64()))});
 
-  auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema,
-  batches_); auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
+  auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema, batches_);
+  auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
   inmemory_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
   inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
   auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
@@ -382,8 +382,8 @@ TEST(TestClsSDK, EndToEndParquet) {
       {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
        arrow::field("cost_components", arrow::list(arrow::float64()))});
 
-  auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema,
-  batches_); auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
+  auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema, batches_);
+  auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
   inmemory_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
   inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
   auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
@@ -399,25 +399,21 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   factory_options.format_ = 2;
 
   factory_options.partition_base_dir = "nyc/";
-  factory_options.partitioning =
-  std::make_shared<arrow::dataset::HivePartitioning>(
-      arrow::schema(
-        {
-          arrow::field("payment_type", arrow::int64()), 
-          arrow::field("VendorID", arrow::int64())
-        }));
+  factory_options.partitioning = std::make_shared<arrow::dataset::HivePartitioning>(
+      arrow::schema({arrow::field("payment_type", arrow::int64()),
+                     arrow::field("VendorID", arrow::int64())}));
 
   /// Create a RadosDataset and apply Scan operations.
   arrow::dataset::FinishOptions finish_options;
-  auto factory =
-  arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie(); 
+  auto factory = arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
   auto ds = factory->Finish(finish_options).ValueOrDie();
-  
+
   auto builder = ds->NewScan().ValueOrDie();
 
-  auto projection = std::vector<std::string>{"DOLocationID", "PULocationID", "passenger_count", "payment_type"};
+  auto projection = std::vector<std::string>{"DOLocationID", "PULocationID",
+                                             "passenger_count", "payment_type"};
   auto filter = ("payment_type"_ == int64_t(1) && "passenger_count"_ > int64_t(4)).Copy();
-  
+
   builder->Project(projection);
   builder->Filter(filter);
   auto scanner = builder->Finish().ValueOrDie();

@@ -39,7 +39,7 @@ Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> option
                                              std::shared_ptr<ScanContext> context) {
   options->format = format_;
   options->partition_expression = partition_expression_;
- 
+
   ScanTaskVector v{std::make_shared<RadosScanTask>(
       std::move(options), std::move(context), std::move(object_), std::move(cluster_))};
   return MakeVectorIterator(v);
@@ -133,8 +133,8 @@ Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions optio
   for (auto& object : objects_) {
     auto fixed_path = StripPrefixAndFilename(object->id(), options_.partition_base_dir);
     ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
-    fragments.push_back(
-        std::make_shared<RadosFragment>(schema, object, cluster_, options_.format_, partition));
+    fragments.push_back(std::make_shared<RadosFragment>(schema, object, cluster_,
+                                                        options_.format_, partition));
   }
   return RadosDataset::Make(schema, fragments, cluster_);
 }
@@ -226,7 +226,8 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   /// Serialize the filter Expression and projection Schema into
   /// a librados bufferlist.
   ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
-      options_->filter, options_->partition_expression, options_->projector.schema(), options_->format, in));
+      options_->filter, options_->partition_expression, options_->projector.schema(),
+      options_->format, in));
 
   /// Trigger a CLS function and pass the serialized operations
   /// down to the storage. The resultant Table will be available inside the `out`

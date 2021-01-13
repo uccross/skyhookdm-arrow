@@ -129,11 +129,10 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   int64_t content_length_ = -1;
 };
 
-static arrow::Status ScanParquetObject(cls_method_context_t hctx,
-                                       std::shared_ptr<arrow::dataset::Expression> filter,
-                                       std::shared_ptr<arrow::dataset::Expression> partition_expression,
-                                       std::shared_ptr<arrow::Schema> schema,
-                                       std::shared_ptr<arrow::Table>& t) {
+static arrow::Status ScanParquetObject(
+    cls_method_context_t hctx, std::shared_ptr<arrow::dataset::Expression> filter,
+    std::shared_ptr<arrow::dataset::Expression> partition_expression,
+    std::shared_ptr<arrow::Schema> schema, std::shared_ptr<arrow::Table>& t) {
   auto file = std::make_shared<RandomAccessObject>(hctx);
   ARROW_RETURN_NOT_OK(file->Init());
 
@@ -147,7 +146,8 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   ARROW_RETURN_NOT_OK(reader->GetSchema(&table_schema));
 
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
-  ARROW_ASSIGN_OR_RAISE(auto fragment, format->MakeFragment(source, partition_expression, table_schema));
+  ARROW_ASSIGN_OR_RAISE(auto fragment,
+                        format->MakeFragment(source, partition_expression, table_schema));
 
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
   auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema, fragment, ctx);
@@ -161,11 +161,10 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   return arrow::Status::OK();
 }
 
-static arrow::Status ScanIpcObject(cls_method_context_t hctx,
-                                   std::shared_ptr<arrow::dataset::Expression> filter,
-                                   std::shared_ptr<arrow::dataset::Expression> partition_expression,
-                                   std::shared_ptr<arrow::Schema> schema,
-                                   std::shared_ptr<arrow::Table>& t) {
+static arrow::Status ScanIpcObject(
+    cls_method_context_t hctx, std::shared_ptr<arrow::dataset::Expression> filter,
+    std::shared_ptr<arrow::dataset::Expression> partition_expression,
+    std::shared_ptr<arrow::Schema> schema, std::shared_ptr<arrow::Table>& t) {
   ceph::buffer::list bl;
   if (cls_cxx_read(hctx, 0, 0, &bl) < 0)
     return arrow::Status::ExecutionError("READ_FAILED");
@@ -184,7 +183,8 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
   auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
   auto table_schema = batches[0]->schema();
 
-  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(table_schema, fragment, ctx);
+  auto builder =
+      std::make_shared<arrow::dataset::ScannerBuilder>(table_schema, fragment, ctx);
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
@@ -244,14 +244,17 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   std::shared_ptr<arrow::dataset::Expression> partition_expression;
   std::shared_ptr<arrow::Schema> schema;
   int64_t format;
-  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(&filter, &partition_expression, &schema, &format, *in).ok())
+  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
+           &filter, &partition_expression, &schema, &format, *in)
+           .ok())
     return -1;
 
   std::shared_ptr<arrow::Table> table;
   if (format == 1) {
     if (!ScanIpcObject(hctx, filter, partition_expression, schema, table).ok()) return -1;
   } else if (format == 2) {
-    if (!ScanParquetObject(hctx, filter, partition_expression, schema, table).ok()) return -1;
+    if (!ScanParquetObject(hctx, filter, partition_expression, schema, table).ok())
+      return -1;
   } else {
     return -1;
   }

@@ -110,8 +110,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   /// \param[in] partition_expression the partition expression associated with this
   /// fragment.
   RadosFragment(std::shared_ptr<Schema> schema, std::shared_ptr<RadosObject> object,
-                std::shared_ptr<RadosCluster> cluster,
-                int64_t format,
+                std::shared_ptr<RadosCluster> cluster, int64_t format,
                 std::shared_ptr<Expression> partition_expression = scalar(true))
       : Fragment(partition_expression, std::move(schema)),
         object_(std::move(object)),
