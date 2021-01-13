@@ -38,7 +38,9 @@ namespace dataset {
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
   options->format = format_;
-  options->filter = options->filter->Assume(partition_expression_);
+  // options->filter = options->filter->Assume(partition_expression_);
+  options->partition_expression = partition_expression_;
+ 
   ScanTaskVector v{std::make_shared<RadosScanTask>(
       std::move(options), std::move(context), std::move(object_), std::move(cluster_))};
   return MakeVectorIterator(v);
@@ -225,7 +227,7 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   /// Serialize the filter Expression and projection Schema into
   /// a librados bufferlist.
   ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
-      options_->filter, options_->projector.schema(), options_->format, in));
+      options_->filter, options_->partition_expression, options_->projector.schema(), options_->format, in));
 
   /// Trigger a CLS function and pass the serialized operations
   /// down to the storage. The resultant Table will be available inside the `out`

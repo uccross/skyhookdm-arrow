@@ -64,6 +64,9 @@ class ARROW_DS_EXPORT ScanOptions {
   // Filter
   std::shared_ptr<Expression> filter = scalar(true);
 
+  // Partition expression
+  std::shared_ptr<Expression> partition_expression = scalar(true);
+
   // Evaluator for Filter
   std::shared_ptr<ExpressionEvaluator> evaluator;
 
@@ -92,6 +95,7 @@ class ARROW_DS_EXPORT ScanOptions {
   // sub-selection optimization.
   std::vector<std::string> MaterializedFields() const;
 
+  // The file format (ipc/parquet)
   int64_t format;
 
  private:

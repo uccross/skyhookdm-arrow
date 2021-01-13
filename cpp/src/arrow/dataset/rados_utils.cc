@@ -48,16 +48,22 @@ Status char_to_int64(char* buffer, int64_t& num) {
 }
 
 Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
-                                            std::shared_ptr<Schema> schema,
-                                            int64_t format,
-                                            librados::bufferlist& bl) {
+                                        std::shared_ptr<Expression> partition_expression,
+                                        std::shared_ptr<Schema> schema,
+                                        int64_t format,
+                                        librados::bufferlist& bl) {
   /// Serialize the filter Expression and the Schema.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, filter->Serialize());
+  ARROW_ASSIGN_OR_RAISE(auto partition_expression_buffer, partition_expression->Serialize());
   ARROW_ASSIGN_OR_RAISE(auto schema_buffer, ipc::SerializeSchema(*schema));
 
   /// Convert filter Expression size to buffer.
   char* filter_size_buffer = new char[8];
   ARROW_RETURN_NOT_OK(int64_to_char(filter_size_buffer, filter_buffer->size()));
+
+  /// Convert partition expression size to buffer.
+  char *partition_expression_size_buffer = new char[8];
+  ARROW_RETURN_NOT_OK(int64_to_char(partition_expression_size_buffer, partition_expression_buffer->size()));
 
   /// Convert Schema size to buffer.
   char* schema_size_buffer = new char[8];
@@ -71,6 +77,11 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
   /// Append the filter Expression data.
   bl.append((char*)filter_buffer->data(), filter_buffer->size());
 
+  /// Append the partition Expression size.
+  bl.append(partition_expression_size_buffer, 8);
+  /// Append the partition Expression data.
+  bl.append((char*)partition_expression_buffer->data(), partition_expression_buffer->size());
+
   /// Append the Schema size.
   bl.append(schema_size_buffer, 8);
   /// Append the Schema data.
@@ -82,6 +93,7 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
 }
 
 Status DeserializeScanRequestFromBufferlist(std::shared_ptr<Expression>* filter,
+                                            std::shared_ptr<Expression>* part_expr,
                                             std::shared_ptr<Schema>* schema,
                                             int64_t *format,
                                             librados::bufferlist& bl) {
@@ -94,6 +106,14 @@ Status DeserializeScanRequestFromBufferlist(std::shared_ptr<Expression>* filter,
 
   char* filter_buffer = new char[filter_size];
   itr.copy(filter_size, filter_buffer);
+
+  int64_t part_expr_size = 0;
+  char* part_expr_size_buffer = new char[8];
+  itr.copy(8, part_expr_size_buffer);
+  ARROW_RETURN_NOT_OK(char_to_int64(part_expr_size_buffer, part_expr_size));
+
+  char* part_expr_buffer = new char[part_expr_size];
+  itr.copy(part_expr_size, part_expr_buffer);
 
   int64_t schema_size = 0;
   char* schema_size_buffer = new char[8];
@@ -111,6 +131,10 @@ Status DeserializeScanRequestFromBufferlist(std::shared_ptr<Expression>* filter,
   ARROW_ASSIGN_OR_RAISE(auto filter_, Expression::Deserialize(
                                           Buffer((uint8_t*)filter_buffer, filter_size)));
   *filter = filter_;
+
+  ARROW_ASSIGN_OR_RAISE(auto part_expr_, Expression::Deserialize(
+                                          Buffer((uint8_t*)part_expr_buffer, part_expr_size)));
+  *part_expr = part_expr_;
 
   ipc::DictionaryMemo empty_memo;
   io::BufferReader schema_reader((uint8_t*)schema_buffer, schema_size);

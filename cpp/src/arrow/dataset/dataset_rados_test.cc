@@ -271,17 +271,20 @@ TEST_F(TestRadosDataset, IntToCharAndCharToInt) {
 
 TEST_F(TestRadosDataset, SerializeDeserializeScanRequest) {
   auto filter = std::make_shared<OrExpression>("b"_ == 3 or "b"_ == 4);
+  auto partition_expr = std::make_shared<OrExpression>("c"_ == 10 or "c"_ == 12);
   auto schema = arrow::schema({field("i32", int32()), field("f64", float64())});
   librados::bufferlist bl;
-  SerializeScanRequestToBufferlist(filter, schema, 2, bl);
+  SerializeScanRequestToBufferlist(filter, partition_expr, schema, 2, bl);
 
   librados::bufferlist bl__ = std::move(bl);
   std::shared_ptr<Expression> filter__;
+  std::shared_ptr<Expression> partition_expr__;
   std::shared_ptr<Schema> schema__;
   int64_t format__;
-  DeserializeScanRequestFromBufferlist(&filter__, &schema__, &format__, bl__);
+  DeserializeScanRequestFromBufferlist(&filter__, &partition_expr__, &schema__, &format__, bl__);
 
   ASSERT_TRUE(filter__->Equals(*filter));
+  ASSERT_TRUE(partition_expr__->Equals(*partition_expr));
   ASSERT_TRUE(schema__->Equals(schema));
 }
 
