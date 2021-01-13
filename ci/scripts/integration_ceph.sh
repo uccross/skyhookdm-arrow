@@ -105,6 +105,8 @@ unzip nyc.zip
 wget https://github.com/JayjeetAtGithub/zips/raw/main/ppw.py
 python3 ppw.py
 
+wget -O nyc.parquet https://github.com/JayjeetAtGithub/zips/blob/main/nyc.parquet?raw=true
+
 TESTS=debug/arrow-cls-cls-arrow-test
 if [ -f "$TESTS" ]; then
     debug/arrow-cls-cls-arrow-test
