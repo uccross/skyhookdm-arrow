@@ -145,12 +145,11 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
   int64_t num_cols = schema->num_fields();
   int64_t num_rows = reader->parquet_reader()->metadata()->num_rows();
-
+  
   arrow::ChunkedArrayVector columns(num_cols, nullptr);
   for (int j = 0; j < num_cols; j++) {
     int32_t field_idx = table_schema->GetFieldIndex(schema->field_names()[j]);
     ARROW_RETURN_NOT_OK(reader->ReadColumn(field_idx, &columns[j]));
-    CLS_LOG(0, "col: %s", columns[j]->ToString());
   }
   std::shared_ptr<arrow::Table> deserialized_table =
       arrow::Table::Make(schema, columns, num_rows);
@@ -158,8 +157,6 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
       std::make_shared<arrow::TableBatchReader>(*deserialized_table);
   arrow::RecordBatchVector batches;
   ARROW_RETURN_NOT_OK(table_reader->ReadAll(&batches));
-  CLS_LOG(0, "size: %s", std::to_string(batches.size()));
-
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
   auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
   auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema, fragment, ctx);

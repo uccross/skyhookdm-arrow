@@ -113,7 +113,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
                 std::shared_ptr<RadosCluster> cluster,
                 int64_t format,
                 std::shared_ptr<Expression> partition_expression = scalar(true))
-      : Fragment(scalar(true), std::move(schema)),
+      : Fragment(partition_expression, std::move(schema)),
         object_(std::move(object)),
         cluster_(std::move(cluster)),
         format_(format) {}

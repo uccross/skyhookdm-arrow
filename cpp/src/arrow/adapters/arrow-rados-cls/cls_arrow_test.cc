@@ -115,179 +115,288 @@ arrow::dataset::RadosDatasetFactoryOptions CreateTestRadosFactoryOptions() {
   return factory_options;
 }
 
-TEST(TestClsSDK, WriteAndScanTableIPC) {
-  auto batches = CreateTestRecordBatches();
-  auto table = CreateTestTable();
-  auto object = CreateTestObject("test.obj.1");
-  auto factory_options = CreateTestRadosFactoryOptions();
-  factory_options.format_ = 1;
+// TEST(TestClsSDK, WriteAndScanTableIPC) {
+//   auto batches = CreateTestRecordBatches();
+//   auto table = CreateTestTable();
+//   auto object = CreateTestObject("test.obj.1");
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 1;
 
-  /// Write the Fragment.
-  arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
+//   /// Write the Fragment.
+//   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
-  /// Build the Dataset.
-  arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(
-                     factory_options,
-                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
-                     .ValueOrDie();
-  auto dataset = factory->Finish(finish_options).ValueOrDie();
+//   /// Build the Dataset.
+//   arrow::dataset::FinishOptions finish_options;
+//   auto factory = arrow::dataset::RadosDatasetFactory::Make(
+//                      factory_options,
+//                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+//                      .ValueOrDie();
+//   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
-  /// Build the Scanner.
-  auto scanner_builder = dataset->NewScan().ValueOrDie();
-  scanner_builder->Filter(arrow::dataset::scalar(true));
-  scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
-  auto scanner = scanner_builder->Finish().ValueOrDie();
+//   /// Build the Scanner.
+//   auto scanner_builder = dataset->NewScan().ValueOrDie();
+//   scanner_builder->Filter(arrow::dataset::scalar(true));
+//   scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
+//   auto scanner = scanner_builder->Finish().ValueOrDie();
 
-  /// Execute Scan and Validate.
-  auto result_table = scanner->ToTable().ValueOrDie();
-  ASSERT_EQ(table->Equals(*result_table), 1);
-}
+//   /// Execute Scan and Validate.
+//   auto result_table = scanner->ToTable().ValueOrDie();
+//   ASSERT_EQ(table->Equals(*result_table), 1);
+// }
 
-TEST(TestClsSDK, WriteAndScanTableParquet) {
-  auto batches = CreateTestRecordBatches();
-  auto table = CreateTestTable();
-  auto object = CreateTestObject("test.obj.1");
-  auto factory_options = CreateTestRadosFactoryOptions();
-  factory_options.format_ = 2;
+// TEST(TestClsSDK, WriteAndScanTableParquet) {
+//   auto batches = CreateTestRecordBatches();
+//   auto table = CreateTestTable();
+//   auto object = CreateTestObject("test.obj.1");
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 2;
 
-  /// Write the Fragment.
-  arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
+//   /// Write the Fragment.
+//   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
-  /// Build the Dataset.
-  arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(
-                     factory_options,
-                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
-                     .ValueOrDie();
-  auto dataset = factory->Finish(finish_options).ValueOrDie();
+//   /// Build the Dataset.
+//   arrow::dataset::FinishOptions finish_options;
+//   auto factory = arrow::dataset::RadosDatasetFactory::Make(
+//                      factory_options,
+//                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+//                      .ValueOrDie();
+//   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
-  /// Build the Scanner.
-  auto scanner_builder = dataset->NewScan().ValueOrDie();
-  scanner_builder->Filter(arrow::dataset::scalar(true));
-  scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
-  auto scanner = scanner_builder->Finish().ValueOrDie();
+//   /// Build the Scanner.
+//   auto scanner_builder = dataset->NewScan().ValueOrDie();
+//   scanner_builder->Filter(arrow::dataset::scalar(true));
+//   scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
+//   auto scanner = scanner_builder->Finish().ValueOrDie();
 
-  /// Execute Scan and Validate.
-  auto result_table = scanner->ToTable().ValueOrDie();
-  ASSERT_EQ(table->Equals(*result_table), 1);
-}
+//   /// Execute Scan and Validate.
+//   auto result_table = scanner->ToTable().ValueOrDie();
+//   ASSERT_EQ(table->Equals(*result_table), 1);
+// }
 
-TEST(TestClsSDK, Projection) {
-  auto batches = CreateTestRecordBatches();
-  auto table = CreateTestTable();
-  auto object = CreateTestObject("test.obj.2");
-  auto factory_options = CreateTestRadosFactoryOptions();
-  factory_options.format_ = 1;
+// TEST(TestClsSDK, ProjectionIPC) {
+//   auto batches = CreateTestRecordBatches();
+//   auto table = CreateTestTable();
+//   auto object = CreateTestObject("test.obj.2");
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 1;
 
-  /// Write the Fragment.
-  arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
+//   /// Write the Fragment.
+//   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
-  /// Build the Dataset.
-  arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(
-                     factory_options,
-                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
-                     .ValueOrDie();
-  auto dataset = factory->Finish(finish_options).ValueOrDie();
+//   /// Build the Dataset.
+//   arrow::dataset::FinishOptions finish_options;
+//   auto factory = arrow::dataset::RadosDatasetFactory::Make(
+//                      factory_options,
+//                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+//                      .ValueOrDie();
+//   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
-  /// Build the Scanner.
-  auto scanner_builder = dataset->NewScan().ValueOrDie();
-  scanner_builder->Filter(arrow::dataset::scalar(true));
-  scanner_builder->Project(std::vector<std::string>{"id", "cost_components"});
-  auto scanner = scanner_builder->Finish().ValueOrDie();
+//   /// Build the Scanner.
+//   auto scanner_builder = dataset->NewScan().ValueOrDie();
+//   scanner_builder->Filter(arrow::dataset::scalar(true));
+//   scanner_builder->Project(std::vector<std::string>{"id", "cost_components"});
+//   auto scanner = scanner_builder->Finish().ValueOrDie();
 
-  /// Execute Scan and Validate.
-  auto result_table = scanner->ToTable().ValueOrDie();
-  auto table_projected = table->RemoveColumn(1).ValueOrDie();
-  ASSERT_EQ(table->Equals(*result_table), 0);
-  ASSERT_EQ(table_projected->Equals(*result_table), 1);
-  ASSERT_EQ(result_table->num_columns(), 2);
-}
+//   /// Execute Scan and Validate.
+//   auto result_table = scanner->ToTable().ValueOrDie();
+//   auto table_projected = table->RemoveColumn(1).ValueOrDie();
+//   ASSERT_EQ(table->Equals(*result_table), 0);
+//   ASSERT_EQ(table_projected->Equals(*result_table), 1);
+//   ASSERT_EQ(result_table->num_columns(), 2);
+// }
 
-TEST(TestClsSDK, Selection) {
-  auto batches = CreateTestRecordBatches();
-  auto table = CreateTestTable();
-  auto object = CreateTestObject("test.obj.3");
-  auto factory_options = CreateTestRadosFactoryOptions();
-  factory_options.format_ = 1;
+// TEST(TestClsSDK, ProjectionParquet) {
+//   auto batches = CreateTestRecordBatches();
+//   auto table = CreateTestTable();
+//   auto object = CreateTestObject("test.obj.2");
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 2;
 
-  /// Write the Fragment.
-  arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
+//   /// Write the Fragment.
+//   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
-  /// Build the Dataset.
-  arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(
-                     factory_options,
-                     std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
-                     .ValueOrDie();
-  auto dataset = factory->Finish(finish_options).ValueOrDie();
+//   /// Build the Dataset.
+//   arrow::dataset::FinishOptions finish_options;
+//   auto factory = arrow::dataset::RadosDatasetFactory::Make(
+//                      factory_options,
+//                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+//                      .ValueOrDie();
+//   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
-  /// Build the Scanner.
-  auto scanner_builder = dataset->NewScan().ValueOrDie();
-  auto filter = ("id"_ == int32_t(8) || "id"_ == int32_t(7)).Copy();
-  scanner_builder->Filter(filter);
-  scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
-  auto scanner = scanner_builder->Finish().ValueOrDie();
+//   /// Build the Scanner.
+//   auto scanner_builder = dataset->NewScan().ValueOrDie();
+//   scanner_builder->Filter(arrow::dataset::scalar(true));
+//   scanner_builder->Project(std::vector<std::string>{"id", "cost_components"});
+//   auto scanner = scanner_builder->Finish().ValueOrDie();
 
-  /// Execute Scan and Validate.
-  auto result_table = scanner->ToTable().ValueOrDie();
-  ASSERT_EQ(result_table->num_rows(), 2);
-}
+//   /// Execute Scan and Validate.
+//   auto result_table = scanner->ToTable().ValueOrDie();
+//   auto table_projected = table->RemoveColumn(1).ValueOrDie();
+//   ASSERT_EQ(table->Equals(*result_table), 0);
+//   ASSERT_EQ(table_projected->Equals(*result_table), 1);
+//   ASSERT_EQ(result_table->num_columns(), 2);
+// }
 
-TEST(TestClsSDK, EndToEnd) {
-  auto batches = CreateTestRecordBatches();
-  auto factory_options = CreateTestRadosFactoryOptions();
-  factory_options.format_ = 1;
+// TEST(TestClsSDK, SelectionIPC) {
+//   auto batches = CreateTestRecordBatches();
+//   auto table = CreateTestTable();
+//   auto object = CreateTestObject("test.obj.3");
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 1;
 
-  /// Prepare RecordBatches and Write the fragments.
-  for (int i = 0; i < 4; i++) {
-    std::string object_id = "/ds/test.obj." + std::to_string(i);
-    arrow::dataset::RadosDataset::Write(batches, factory_options, object_id);
-  }
+//   /// Write the Fragment.
+//   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
 
-  /// Create a RadosDataset and apply Scan operations.
-  arrow::dataset::FinishOptions finish_options;
-  factory_options.partition_base_dir = "/ds";
-  auto rados_ds_factory =
-      arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
-  auto rados_ds = rados_ds_factory->Finish(finish_options).ValueOrDie();
-  auto rados_scanner_builder = rados_ds->NewScan().ValueOrDie();
-  rados_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
-  rados_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
-  auto rados_scanner = rados_scanner_builder->Finish().ValueOrDie();
-  auto result_table = rados_scanner->ToTable().ValueOrDie();
+//   /// Build the Dataset.
+//   arrow::dataset::FinishOptions finish_options;
+//   auto factory = arrow::dataset::RadosDatasetFactory::Make(
+//                      factory_options,
+//                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+//                      .ValueOrDie();
+//   auto dataset = factory->Finish(finish_options).ValueOrDie();
 
-  /// Create an InMemoryDataset and apply Scan operations.
-  arrow::RecordBatchVector batches_;
-  for (auto batch : batches) {
-    batches_.push_back(batch);
-    batches_.push_back(batch);
-    batches_.push_back(batch);
-    batches_.push_back(batch);
-  }
+//   /// Build the Scanner.
+//   auto scanner_builder = dataset->NewScan().ValueOrDie();
+//   auto filter = ("id"_ == int32_t(8) || "id"_ == int32_t(7)).Copy();
+//   scanner_builder->Filter(filter);
+//   scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
+//   auto scanner = scanner_builder->Finish().ValueOrDie();
 
-  auto schema = arrow::schema(
-      {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
-       arrow::field("cost_components", arrow::list(arrow::float64()))});
+//   /// Execute Scan and Validate.
+//   auto result_table = scanner->ToTable().ValueOrDie();
+//   ASSERT_EQ(result_table->num_rows(), 2);
+// }
 
-  auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema,
-  batches_); auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
-  inmemory_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
-  inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
-  auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
-  auto expected_table = inmemory_scanner->ToTable().ValueOrDie();
+// TEST(TestClsSDK, SelectionParquet) {
+//   auto batches = CreateTestRecordBatches();
+//   auto table = CreateTestTable();
+//   auto object = CreateTestObject("test.obj.3");
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 2;
 
-  /// Check if both the Tables are same or not.
-  ASSERT_EQ(result_table->Equals(*expected_table), 1);
-}
+//   /// Write the Fragment.
+//   arrow::dataset::RadosDataset::Write(batches, factory_options, object->id());
+
+//   /// Build the Dataset.
+//   arrow::dataset::FinishOptions finish_options;
+//   auto factory = arrow::dataset::RadosDatasetFactory::Make(
+//                      factory_options,
+//                      std::vector<std::shared_ptr<arrow::dataset::RadosObject>>{object})
+//                      .ValueOrDie();
+//   auto dataset = factory->Finish(finish_options).ValueOrDie();
+
+//   /// Build the Scanner.
+//   auto scanner_builder = dataset->NewScan().ValueOrDie();
+//   auto filter = ("id"_ == int32_t(8) || "id"_ == int32_t(7)).Copy();
+//   scanner_builder->Filter(filter);
+//   scanner_builder->Project(std::vector<std::string>{"id", "cost", "cost_components"});
+//   auto scanner = scanner_builder->Finish().ValueOrDie();
+
+//   /// Execute Scan and Validate.
+//   auto result_table = scanner->ToTable().ValueOrDie();
+//   ASSERT_EQ(result_table->num_rows(), 2);
+// }
+
+// TEST(TestClsSDK, EndToEndIPC) {
+//   auto batches = CreateTestRecordBatches();
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 1;
+
+//   /// Prepare RecordBatches and Write the fragments.
+//   for (int i = 0; i < 4; i++) {
+//     std::string object_id = "/ds/test.obj." + std::to_string(i);
+//     arrow::dataset::RadosDataset::Write(batches, factory_options, object_id);
+//   }
+
+//   /// Create a RadosDataset and apply Scan operations.
+//   arrow::dataset::FinishOptions finish_options;
+//   factory_options.partition_base_dir = "/ds";
+//   auto rados_ds_factory =
+//       arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
+//   auto rados_ds = rados_ds_factory->Finish(finish_options).ValueOrDie();
+//   auto rados_scanner_builder = rados_ds->NewScan().ValueOrDie();
+//   rados_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
+//   rados_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+//   auto rados_scanner = rados_scanner_builder->Finish().ValueOrDie();
+//   auto result_table = rados_scanner->ToTable().ValueOrDie();
+
+//   /// Create an InMemoryDataset and apply Scan operations.
+//   arrow::RecordBatchVector batches_;
+//   for (auto batch : batches) {
+//     batches_.push_back(batch);
+//     batches_.push_back(batch);
+//     batches_.push_back(batch);
+//     batches_.push_back(batch);
+//   }
+
+//   auto schema = arrow::schema(
+//       {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
+//        arrow::field("cost_components", arrow::list(arrow::float64()))});
+
+//   auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema,
+//   batches_); auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
+//   inmemory_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
+//   inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+//   auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
+//   auto expected_table = inmemory_scanner->ToTable().ValueOrDie();
+
+//   /// Check if both the Tables are same or not.
+//   ASSERT_EQ(result_table->Equals(*expected_table), 1);
+// }
+
+// TEST(TestClsSDK, EndToEndParquet) {
+//   auto batches = CreateTestRecordBatches();
+//   auto factory_options = CreateTestRadosFactoryOptions();
+//   factory_options.format_ = 1;
+
+//   /// Prepare RecordBatches and Write the fragments.
+//   for (int i = 0; i < 4; i++) {
+//     std::string object_id = "/ds/test.obj." + std::to_string(i);
+//     arrow::dataset::RadosDataset::Write(batches, factory_options, object_id);
+//   }
+
+//   /// Create a RadosDataset and apply Scan operations.
+//   arrow::dataset::FinishOptions finish_options;
+//   factory_options.partition_base_dir = "/ds";
+//   auto rados_ds_factory =
+//       arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie();
+//   auto rados_ds = rados_ds_factory->Finish(finish_options).ValueOrDie();
+//   auto rados_scanner_builder = rados_ds->NewScan().ValueOrDie();
+//   rados_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
+//   rados_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+//   auto rados_scanner = rados_scanner_builder->Finish().ValueOrDie();
+//   auto result_table = rados_scanner->ToTable().ValueOrDie();
+
+//   /// Create an InMemoryDataset and apply Scan operations.
+//   arrow::RecordBatchVector batches_;
+//   for (auto batch : batches) {
+//     batches_.push_back(batch);
+//     batches_.push_back(batch);
+//     batches_.push_back(batch);
+//     batches_.push_back(batch);
+//   }
+
+//   auto schema = arrow::schema(
+//       {arrow::field("id", arrow::int32()), arrow::field("cost", arrow::float64()),
+//        arrow::field("cost_components", arrow::list(arrow::float64()))});
+
+//   auto inmemory_ds = std::make_shared<arrow::dataset::InMemoryDataset>(schema,
+//   batches_); auto inmemory_scanner_builder = inmemory_ds->NewScan().ValueOrDie();
+//   inmemory_scanner_builder->Filter(("id"_ > int32_t(5)).Copy());
+//   inmemory_scanner_builder->Project(std::vector<std::string>{"cost", "id"});
+//   auto inmemory_scanner = inmemory_scanner_builder->Finish().ValueOrDie();
+//   auto expected_table = inmemory_scanner->ToTable().ValueOrDie();
+
+//   /// Check if both the Tables are same or not.
+//   ASSERT_EQ(result_table->Equals(*expected_table), 1);
+// }
 
 TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto batches = CreateTestRecordBatches();
   auto factory_options = CreateTestRadosFactoryOptions();
   factory_options.format_ = 2;
 
-  factory_options.partition_base_dir = "nyc/";
+  factory_options.partition_base_dir = "/workspace/nyc/";
   factory_options.partitioning =
   std::make_shared<arrow::dataset::HivePartitioning>(
       arrow::schema(
@@ -301,15 +410,18 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto factory =
   arrow::dataset::RadosDatasetFactory::Make(factory_options).ValueOrDie(); 
   auto ds = factory->Finish(finish_options).ValueOrDie();
-
+  
   auto builder = ds->NewScan().ValueOrDie();
 
-  std::shared_ptr<arrow::dataset::Expression> expr =
-      ("payment_type"_ == 4).Copy();
-  builder->Filter(expr);
-  builder->Project(std::vector<std::string>{"fare_amount", "passenger_count", "VendorID"});
+  builder->Project(std::vector<std::string>{"tip_amount", "fare_amount"}); // how to project on the partition col ?
+  auto filter = ("VendorID"_ == int64_t(2) && "payment_type"_ == int64_t(4)).Copy();
+  builder->Filter(filter);
 
   auto scanner = builder->Finish().ValueOrDie();
+
   auto table = scanner->ToTable().ValueOrDie();
+  
   std::cout << table->ToString();
+  std::cout << table->num_columns() << "\n";
+  std::cout << table->num_rows() << "\n";
 }

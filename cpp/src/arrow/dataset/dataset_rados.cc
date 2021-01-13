@@ -38,6 +38,7 @@ namespace dataset {
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
   options->format = format_;
+  options->filter = options->filter->Assume(partition_expression_);
   ScanTaskVector v{std::make_shared<RadosScanTask>(
       std::move(options), std::move(context), std::move(object_), std::move(cluster_))};
   return MakeVectorIterator(v);
@@ -107,13 +108,19 @@ Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas
   io::BufferReader schema_reader((uint8_t*)out.c_str(), out.length());
   ARROW_ASSIGN_OR_RAISE(auto schema, ipc::ReadSchema(&schema_reader, &empty_memo));
   schemas.push_back(schema);
+
+  auto partition_schema = options_.partitioning.partitioning()->schema();
+  schemas.push_back(partition_schema);
+
   return schemas;
 }
 
 Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions options) {
   InspectOptions inspect_options_;
-  ARROW_ASSIGN_OR_RAISE(auto schemas_, InspectSchemas(inspect_options_));
-  auto schema = schemas_[0];
+
+  // basically, these two lines make up of Inspect()
+  ARROW_ASSIGN_OR_RAISE(auto schema_vector, InspectSchemas(inspect_options_));
+  ARROW_ASSIGN_OR_RAISE(auto schema, UnifySchemas(schema_vector));
 
   std::shared_ptr<Partitioning> partitioning = options_.partitioning.partitioning();
   if (partitioning == nullptr) {
