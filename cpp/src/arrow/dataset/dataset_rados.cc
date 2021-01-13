@@ -38,7 +38,6 @@ namespace dataset {
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
   options->format = format_;
-  // options->filter = options->filter->Assume(partition_expression_);
   options->partition_expression = partition_expression_;
  
   ScanTaskVector v{std::make_shared<RadosScanTask>(

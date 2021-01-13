@@ -131,46 +131,39 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
 static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        std::shared_ptr<arrow::dataset::Expression> filter,
+                                       std::shared_ptr<arrow::dataset::Expression> partition_expression,
                                        std::shared_ptr<arrow::Schema> schema,
                                        std::shared_ptr<arrow::Table>& t) {
-  auto source = std::make_shared<RandomAccessObject>(hctx);
-  ARROW_RETURN_NOT_OK(source->Init());
+  auto file = std::make_shared<RandomAccessObject>(hctx);
+  ARROW_RETURN_NOT_OK(file->Init());
+
+  arrow::dataset::FileSource source(file);
 
   std::unique_ptr<parquet::arrow::FileReader> reader;
   ARROW_RETURN_NOT_OK(
-      parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader));
+      parquet::arrow::OpenFile(file, arrow::default_memory_pool(), &reader));
 
   std::shared_ptr<arrow::Schema> table_schema;
   ARROW_RETURN_NOT_OK(reader->GetSchema(&table_schema));
 
-  int64_t num_cols = schema->num_fields();
-  int64_t num_rows = reader->parquet_reader()->metadata()->num_rows();
-  
-  arrow::ChunkedArrayVector columns(num_cols, nullptr);
-  for (int j = 0; j < num_cols; j++) {
-    int32_t field_idx = table_schema->GetFieldIndex(schema->field_names()[j]);
-    ARROW_RETURN_NOT_OK(reader->ReadColumn(field_idx, &columns[j]));
-  }
-  std::shared_ptr<arrow::Table> deserialized_table =
-      arrow::Table::Make(schema, columns, num_rows);
-  std::shared_ptr<arrow::TableBatchReader> table_reader =
-      std::make_shared<arrow::TableBatchReader>(*deserialized_table);
-  arrow::RecordBatchVector batches;
-  ARROW_RETURN_NOT_OK(table_reader->ReadAll(&batches));
-  auto ctx = std::make_shared<arrow::dataset::ScanContext>();
-  auto fragment = std::make_shared<arrow::dataset::InMemoryFragment>(batches);
-  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema, fragment, ctx);
+  auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
+  ARROW_ASSIGN_OR_RAISE(auto fragment, format->MakeFragment(source, partition_expression, table_schema));
 
+  auto ctx = std::make_shared<arrow::dataset::ScanContext>();
+  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema, fragment, ctx);
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
 
   t = table;
+
+  ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
 }
 
 static arrow::Status ScanIpcObject(cls_method_context_t hctx,
                                    std::shared_ptr<arrow::dataset::Expression> filter,
+                                   std::shared_ptr<arrow::dataset::Expression> partition_expression,
                                    std::shared_ptr<arrow::Schema> schema,
                                    std::shared_ptr<arrow::Table>& t) {
   ceph::buffer::list bl;
@@ -248,19 +241,22 @@ static int write(cls_method_context_t hctx, ceph::buffer::list* in,
 static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
                 ceph::buffer::list* out) {
   std::shared_ptr<arrow::dataset::Expression> filter;
+  std::shared_ptr<arrow::dataset::Expression> partition_expression;
   std::shared_ptr<arrow::Schema> schema;
   int64_t format;
-  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(&filter, &schema, &format, *in).ok())
+  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(&filter, &partition_expression, &schema, &format, *in).ok())
     return -1;
 
   std::shared_ptr<arrow::Table> table;
   if (format == 1) {
-    if (!ScanIpcObject(hctx, filter, schema, table).ok()) return -1;
+    if (!ScanIpcObject(hctx, filter, partition_expression, schema, table).ok()) return -1;
   } else if (format == 2) {
-    if (!ScanParquetObject(hctx, filter, schema, table).ok()) return -1;
+    if (!ScanParquetObject(hctx, filter, partition_expression, schema, table).ok()) return -1;
   } else {
     return -1;
   }
+
+  CLS_LOG(0, "table: %s", table->ToString().c_str());
 
   ceph::buffer::list bl;
   if (!arrow::dataset::SerializeTableToIPCStream(table, bl).ok()) return -1;
