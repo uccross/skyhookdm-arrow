@@ -38,7 +38,7 @@ cls_method_handle_t h_scan;
 
 class RandomAccessObject : public arrow::io::RandomAccessFile {
  public:
-  RandomAccessObject(cls_method_context_t hctx) { hctx_ = hctx; }
+  explicit RandomAccessObject(cls_method_context_t hctx) { hctx_ = hctx; }
 
   arrow::Status Init() {
     uint64_t size;
