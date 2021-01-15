@@ -107,6 +107,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
   /// to which this Fragment maps to.
   /// \param[in] object the RadosObject that this Fragment wraps.
   /// \param[in] cluster the connection information to the RADOS interface.
+  /// \param[in] format the fileformat in which data is stored inside an object.
   /// \param[in] partition_expression the partition expression associated with this
   /// fragment.
   RadosFragment(std::shared_ptr<Schema> schema, std::shared_ptr<RadosObject> object,
