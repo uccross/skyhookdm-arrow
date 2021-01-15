@@ -398,7 +398,7 @@ TEST(TestClsSDK, EndToEndWithPartitioning) {
   auto factory_options = CreateTestRadosFactoryOptions();
   factory_options.format = 2;
 
-  factory_options.partition_base_dir = "/workspace/nyc/";
+  factory_options.partition_base_dir = "nyc/";
   factory_options.partitioning = std::make_shared<arrow::dataset::HivePartitioning>(
       arrow::schema({arrow::field("payment_type", arrow::int64()),
                      arrow::field("VendorID", arrow::int64())}));
