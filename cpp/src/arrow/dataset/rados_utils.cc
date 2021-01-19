@@ -165,18 +165,6 @@ Status SerializeTableToIPCStream(std::shared_ptr<Table>& table,
   return Status::OK();
 }
 
-Status SerializeTableToParquetStream(std::shared_ptr<Table>& table,
-                                     librados::bufferlist& bl) {
-  ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
-
-  PARQUET_THROW_NOT_OK(parquet::arrow::WriteTable(*table, arrow::default_memory_pool(),
-                                                  buffer_output_stream, 1));
-
-  ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
-  bl.append((char*)buffer->data(), buffer->size());
-  return Status::OK();
-}
-
 Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
                                       librados::bufferlist& bl) {
   io::BufferReader reader((uint8_t*)bl.c_str(), bl.length());

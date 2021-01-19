@@ -59,10 +59,6 @@ ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(
 ARROW_DS_EXPORT Status SerializeTableToIPCStream(std::shared_ptr<Table>& table,
                                                  librados::bufferlist& bl);
 
-/// \brief Serialize a Table to an Parquet binary buffer.
-ARROW_DS_EXPORT Status SerializeTableToParquetStream(std::shared_ptr<Table>& table,
-                                                     librados::bufferlist& bl);
-
 /// \brief Deserialize the Table from an Arrow IPC binary bufferlist.
 ARROW_DS_EXPORT Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
                                                       librados::bufferlist& bl);
