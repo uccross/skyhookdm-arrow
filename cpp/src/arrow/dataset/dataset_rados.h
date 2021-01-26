@@ -194,33 +194,34 @@ class ARROW_DS_EXPORT RadosFileSystem : public fs::LocalFileSystem {
     return Status::OK();
   }
 
-  Status ListDirRecursive(const std::string& path, struct ceph_dir_result* dirpp,
+  Status ListDirRecursive(const std::string& path,
                           std::vector<std::string>& files) {
     struct dirent* de = NULL;
-
-    if (ceph_opendir(cmount_, path.c_str(), &dirpp))
+    struct ceph_dir_result *dirr = NULL;
+    
+    if (ceph_opendir(cmount_, path.c_str(), &dirr))
       return Status::IOError("libcephfs::ceph_opendir returned non-zero exit code.");
 
-    while ((de = ceph_readdir(cmount_, dirpp)) != NULL) {
+    while ((de = ceph_readdir(cmount_, dirr)) != NULL) {
       std::string entry(de->d_name);
 
       if (de->d_type == DT_REG) {
+        ARROW_LOG(INFO) << path + "/" + entry << "\n";
         files.push_back(path + "/" + entry);
       } else {
         if (entry == "." || entry == "..") continue;
-        return ListDirRecursive(path + "/" + entry, dirpp, files);
+        ListDirRecursive(path + "/" + entry, files);
       }
     }
 
-    if (ceph_closedir(cmount_, dirpp))
+    if (ceph_closedir(cmount_, dirr))
       return Status::IOError("libcephfs::ceph_closedir returned non-zero exit code.");
 
     return Status::OK();
   }
 
   Status ListDir(const std::string& path, std::vector<std::string>& files) {
-    struct ceph_dir_result* dirpp = NULL;
-    return ListDirRecursive(path, dirpp, files);
+    return ListDirRecursive(path, files);
   }
 
  protected:

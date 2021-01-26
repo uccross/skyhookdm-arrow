@@ -181,6 +181,35 @@ std::shared_ptr<arrow::Table> CreatePartitionedTable() {
 }
 
 TEST(TestClsSDK, EndToEndWithPartitionPruning) {
-  auto table = CreatePartitionedTable();
-  std::cout << table->ToString();
+  auto fs = CreateTestRadosFileSystem();
+  auto factory_options = CreateTestRadosFactoryOptions();
+  factory_options.partition_base_dir = "/tesla";
+
+  auto writer = std::make_shared<arrow::dataset::SplittedParquetWriter>(fs);
+  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2018/18UK.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2018/18US.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2019/19UK.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2019/19US.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2020/20UK.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2020/20US.parquet");
+
+  factory_options.partitioning = std::make_shared<arrow::dataset::HivePartitioning>(
+      arrow::schema({arrow::field("year", arrow::int32())}));
+
+  arrow::dataset::FinishOptions finish_options;
+  auto factory = arrow::dataset::RadosDatasetFactory::Make(fs, factory_options).ValueOrDie();
+  auto ds = factory->Finish(finish_options).ValueOrDie();
+
+  auto builder = ds->NewScan().ValueOrDie();
+
+  auto projection = std::vector<std::string>{"sales", "year"};
+  auto filter = ("year"_ > int32_t(2018)).Copy();
+
+  // builder->Project(projection);
+  builder->Filter(filter);
+  auto scanner = builder->Finish().ValueOrDie();
+
+  auto table = scanner->ToTable().ValueOrDie();
+  std::cout << table->ToString() << "\n";
+  std::cout << table->num_rows() << "\n";
 }

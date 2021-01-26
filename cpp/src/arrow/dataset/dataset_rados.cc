@@ -52,6 +52,7 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
     std::shared_ptr<RadosFileSystem> filesystem, RadosDatasetFactoryOptions options) {
   std::vector<std::string> paths;
   filesystem->ListDir(options.partition_base_dir, paths);
+  ARROW_LOG(INFO) << paths.size() << "\n";
   if (paths.empty()) {
     RETURN_NOT_OK(Status::Invalid("No files found."));
   }
