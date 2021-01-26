@@ -202,7 +202,7 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
 
   auto builder = ds->NewScan().ValueOrDie();
 
-  auto projection = std::vector<std::string>{"sales", "year"};
+  auto projection = std::vector<std::string>{"sales", "year", "price"};
   auto filter = ("year"_ > int32_t(2018)).Copy();
 
   builder->Project(projection);
