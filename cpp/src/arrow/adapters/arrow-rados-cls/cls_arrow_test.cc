@@ -16,13 +16,10 @@
 // under the License.
 #define _FILE_OFFSET_BITS 64
 
-#include <errno.h>
 #include <iostream>
-
+#include <random>
 #include <rados/objclass.h>
 #include <rados/librados.hpp>
-
-#include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/dataset_rados.h"
@@ -30,6 +27,7 @@
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
+#include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "gtest/gtest.h"
 #include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
@@ -147,4 +145,42 @@ TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
   auto result_table_ = scanner_->ToTable().ValueOrDie();
 
   ASSERT_EQ(result_table->Equals(*result_table_), 1);
+}
+
+double RandDouble(double min, double max) {
+  return min + ((double)rand() / RAND_MAX) * (max - min);
+}
+
+int32_t RandInt32(int32_t min, int32_t max) {
+  return min + (rand() % static_cast<int>(max - min + 1));
+}
+
+std::shared_ptr<arrow::Table> CreatePartitionedTable() {
+  arrow::MemoryPool* pool = arrow::default_memory_pool();
+
+  arrow::Int32Builder sales_builder(pool);
+  for (int i = 0; i < 100; i++) {
+    sales_builder.Append(RandInt32(800, 1000));
+  }
+  std::shared_ptr<arrow::Int32Array> sales_array;
+  sales_builder.Finish(&sales_array);
+
+  arrow::DoubleBuilder price_builder(pool);
+  for (int i = 0; i < 100; i++) {
+    price_builder.Append(RandDouble(38999.56, 99899.23));
+  }
+  std::shared_ptr<arrow::DoubleArray> price_array;
+  price_builder.Finish(&price_array);
+
+  std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
+      arrow::field("sales", arrow::int32()), 
+      arrow::field("price", arrow::float64())
+  };
+  auto schema = std::make_shared<arrow::Schema>(schema_vector);
+  return arrow::Table::Make(schema, {sales_array, price_array});
+}
+
+TEST(TestClsSDK, EndToEndWithPartitionPruning) {
+  auto table = CreatePartitionedTable();
+  std::cout << table->ToString();
 }
