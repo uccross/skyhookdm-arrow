@@ -206,7 +206,6 @@ class ARROW_DS_EXPORT RadosFileSystem : public fs::LocalFileSystem {
       std::string entry(de->d_name);
 
       if (de->d_type == DT_REG) {
-        ARROW_LOG(INFO) << path + "/" + entry << "\n";
         files.push_back(path + "/" + entry);
       } else {
         if (entry == "." || entry == "..") continue;
