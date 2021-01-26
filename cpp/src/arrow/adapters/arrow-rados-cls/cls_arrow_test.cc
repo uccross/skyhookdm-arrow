@@ -205,7 +205,7 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   auto projection = std::vector<std::string>{"sales", "year"};
   auto filter = ("year"_ > int32_t(2018)).Copy();
 
-  // builder->Project(projection);
+  builder->Project(projection);
   builder->Filter(filter);
   auto scanner = builder->Finish().ValueOrDie();
 
