@@ -159,14 +159,14 @@ std::shared_ptr<arrow::Table> CreatePartitionedTable() {
   arrow::MemoryPool* pool = arrow::default_memory_pool();
 
   arrow::Int32Builder sales_builder(pool);
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 10; i++) {
     sales_builder.Append(RandInt32(800, 1000));
   }
   std::shared_ptr<arrow::Int32Array> sales_array;
   sales_builder.Finish(&sales_array);
 
   arrow::DoubleBuilder price_builder(pool);
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 10; i++) {
     price_builder.Append(RandDouble(38999.56, 99899.23));
   }
   std::shared_ptr<arrow::DoubleArray> price_array;
@@ -201,9 +201,8 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   auto ds = factory->Finish(finish_options).ValueOrDie();
 
   auto builder = ds->NewScan().ValueOrDie();
-
-  auto projection = std::vector<std::string>{"sales", "year", "price"};
-  auto filter = ("year"_ > int32_t(2018)).Copy();
+  auto projection = std::vector<std::string>{"price", "sales", "year"};
+  auto filter = ("year"_ > int32_t(2018) && "sales"_ > int32_t(950)).Copy();
 
   builder->Project(projection);
   builder->Filter(filter);

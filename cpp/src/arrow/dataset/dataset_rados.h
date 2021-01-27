@@ -326,7 +326,7 @@ class SplittedParquetWriter {
     ARROW_ASSIGN_OR_RAISE(auto bos, io::BufferOutputStream::Create());
 
     PARQUET_THROW_NOT_OK(
-        parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), bos, 1));
+        parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), bos, 100));
 
     ARROW_ASSIGN_OR_RAISE(auto buffer, bos->Finish());
 
