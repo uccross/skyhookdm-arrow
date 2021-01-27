@@ -202,12 +202,13 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   auto ds = factory->Finish(finish_options).ValueOrDie();
 
   auto builder = ds->NewScan().ValueOrDie();
-  auto projection = std::vector<std::string>{"year", "sales"};
-  //auto filter = ("year"_ > int32_t(2018) && "sales"_ > int32_t(850)).Copy();
+  auto projection = std::vector<std::string>{"sales", "year"};
+  //auto filter = ("sales"_ > int32_t(890) && "price"_ > double(55000.0f)).Copy();
 
+  auto filter =  ("sales"_ > int32_t(800) && "price"_ > double(50000)).Copy();
+  std::cout << builder->schema()->ToString() << "\n";
   builder->Project(projection);
-  //builder->Filter(filter);
-  builder->UseThreads(false);
+  builder->Filter(filter);
   auto scanner = builder->Finish().ValueOrDie();
 
   auto table = scanner->ToTable().ValueOrDie();

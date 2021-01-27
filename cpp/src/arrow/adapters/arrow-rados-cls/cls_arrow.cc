@@ -151,8 +151,12 @@ static arrow::Status ScanParquetObject(
                         format->MakeFragment(source, partition_expression, table_schema));
 
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
-  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(schema, fragment, ctx);
+  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(table_schema, fragment, ctx);
+  CLS_LOG(0, "schema: %s", builder->schema()->ToString().c_str());
+
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
+  ARROW_RETURN_NOT_OK(builder->Project(schema->field_names()));
+
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
 
@@ -254,8 +258,11 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   if (format == 1) {
     if (!ScanIpcObject(hctx, filter, partition_expression, schema, table).ok()) return -1;
   } else if (format == 2) {
-    if (!ScanParquetObject(hctx, filter, partition_expression, schema, table).ok())
+    arrow::Status s = ScanParquetObject(hctx, filter, partition_expression, schema, table);
+    if (!s.ok()) {
+      CLS_LOG(0, "error: %s", s.message().c_str());
       return -1;
+    }
   } else {
     return -1;
   }

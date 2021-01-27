@@ -145,8 +145,9 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
       options_->filter, options_->partition_expression, options_->projector.schema(),
       options_->format, in));
 
-  if (!filesystem_->Exec(path_, "scan", in, out).ok()) {
-    return Status::ExecutionError("RadosFileSystem::Exec returned non-zero exit code.");
+  Status s = filesystem_->Exec(path_, "scan", in, out);
+  if (!s.ok()) {
+    return Status::ExecutionError(s.message());
   }
 
   std::shared_ptr<Table> result_table;
