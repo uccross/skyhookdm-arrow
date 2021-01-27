@@ -106,6 +106,39 @@ std::shared_ptr<arrow::dataset::RadosFileSystem> CreateTestRadosFileSystem() {
   return fs;
 }
 
+double RandDouble(double min, double max) {
+  return min + ((double)rand() / RAND_MAX) * (max - min);
+}
+
+int32_t RandInt32(int32_t min, int32_t max) {
+  return min + (rand() % static_cast<int>(max - min + 1));
+}
+
+std::shared_ptr<arrow::Table> CreatePartitionedTable() {
+  arrow::MemoryPool* pool = arrow::default_memory_pool();
+
+  arrow::Int32Builder sales_builder(pool);
+  for (int i = 0; i < 10; i++) {
+    sales_builder.Append(RandInt32(800, 1000));
+  }
+  std::shared_ptr<arrow::Int32Array> sales_array;
+  sales_builder.Finish(&sales_array);
+
+  arrow::DoubleBuilder price_builder(pool);
+  for (int i = 0; i < 10; i++) {
+    price_builder.Append(RandDouble(38999.56, 99899.23));
+  }
+  std::shared_ptr<arrow::DoubleArray> price_array;
+  price_builder.Finish(&price_array);
+
+  std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
+      arrow::field("sales", arrow::int32()), 
+      arrow::field("price", arrow::float64())
+  };
+  auto schema = std::make_shared<arrow::Schema>(schema_vector);
+  return arrow::Table::Make(schema, {sales_array, price_array});
+}
+
 TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
   auto table = CreateTestTable();
   auto batches = CreateTestRecordBatches();
@@ -147,39 +180,6 @@ TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
   ASSERT_EQ(result_table->Equals(*result_table_), 1);
 }
 
-double RandDouble(double min, double max) {
-  return min + ((double)rand() / RAND_MAX) * (max - min);
-}
-
-int32_t RandInt32(int32_t min, int32_t max) {
-  return min + (rand() % static_cast<int>(max - min + 1));
-}
-
-std::shared_ptr<arrow::Table> CreatePartitionedTable() {
-  arrow::MemoryPool* pool = arrow::default_memory_pool();
-
-  arrow::Int32Builder sales_builder(pool);
-  for (int i = 0; i < 10; i++) {
-    sales_builder.Append(RandInt32(800, 1000));
-  }
-  std::shared_ptr<arrow::Int32Array> sales_array;
-  sales_builder.Finish(&sales_array);
-
-  arrow::DoubleBuilder price_builder(pool);
-  for (int i = 0; i < 10; i++) {
-    price_builder.Append(RandDouble(38999.56, 99899.23));
-  }
-  std::shared_ptr<arrow::DoubleArray> price_array;
-  price_builder.Finish(&price_array);
-
-  std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
-      arrow::field("sales", arrow::int32()), 
-      arrow::field("price", arrow::float64())
-  };
-  auto schema = std::make_shared<arrow::Schema>(schema_vector);
-  return arrow::Table::Make(schema, {sales_array, price_array});
-}
-
 TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   auto fs = CreateTestRadosFileSystem();
   auto factory_options = CreateTestRadosFactoryOptions();
@@ -202,7 +202,7 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
 
   auto builder = ds->NewScan().ValueOrDie();
   auto projection = std::vector<std::string>{"price", "sales", "year"};
-  auto filter = ("year"_ > int32_t(2018) && "sales"_ > int32_t(950)).Copy();
+  auto filter = ("year"_ > int32_t(2018) && "sales"_ > int32_t(850)).Copy();
 
   builder->Project(projection);
   builder->Filter(filter);
