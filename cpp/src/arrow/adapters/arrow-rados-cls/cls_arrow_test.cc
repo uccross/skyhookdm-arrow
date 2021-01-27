@@ -1,3 +1,4 @@
+
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -201,11 +202,12 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   auto ds = factory->Finish(finish_options).ValueOrDie();
 
   auto builder = ds->NewScan().ValueOrDie();
-  auto projection = std::vector<std::string>{"price", "sales", "year"};
-  auto filter = ("year"_ > int32_t(2018) && "sales"_ > int32_t(850)).Copy();
+  auto projection = std::vector<std::string>{"year", "sales"};
+  //auto filter = ("year"_ > int32_t(2018) && "sales"_ > int32_t(850)).Copy();
 
   builder->Project(projection);
-  builder->Filter(filter);
+  //builder->Filter(filter);
+  builder->UseThreads(false);
   auto scanner = builder->Finish().ValueOrDie();
 
   auto table = scanner->ToTable().ValueOrDie();
