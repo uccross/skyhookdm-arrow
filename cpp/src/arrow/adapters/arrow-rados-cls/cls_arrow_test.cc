@@ -140,46 +140,46 @@ std::shared_ptr<arrow::Table> CreatePartitionedTable() {
   return arrow::Table::Make(schema, {sales_array, price_array});
 }
 
-TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
-  auto table = CreateTestTable();
-  auto batches = CreateTestRecordBatches();
-  auto fs = CreateTestRadosFileSystem();
-  auto foptions = CreateTestRadosFactoryOptions();
-  foptions.partition_base_dir = "/mydir";
+// TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
+//   auto table = CreateTestTable();
+//   auto batches = CreateTestRecordBatches();
+//   auto fs = CreateTestRadosFileSystem();
+//   auto foptions = CreateTestRadosFactoryOptions();
+//   foptions.partition_base_dir = "/mydir";
 
-  auto writer = std::make_shared<arrow::dataset::SplittedParquetWriter>(fs);
-  for (int i = 0; i < 8; i++) {
-    std::string path =  "/mydir/mysubdir/abc." + std::to_string(i) + ".parquet";
-    writer->WriteTable(table, path);
-  }
+//   auto writer = std::make_shared<arrow::dataset::SplittedParquetWriter>(fs);
+//   for (int i = 0; i < 8; i++) {
+//     std::string path =  "/mydir/mysubdir/abc." + std::to_string(i) + ".parquet";
+//     writer->WriteTable(table, path);
+//   }
   
-  auto filter = ("id"_ > int32_t(5)).Copy();
-  auto projection = std::vector<std::string>{"id", "cost", "cost_components"};
+//   auto filter = ("id"_ > int32_t(5)).Copy();
+//   auto projection = std::vector<std::string>{"id", "cost", "cost_components"};
 
-  arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(fs, foptions).ValueOrDie();
-  auto dataset = factory->Finish(finish_options).ValueOrDie();
-  auto scanner_builder = dataset->NewScan().ValueOrDie();
-  scanner_builder->Filter(filter);
-  scanner_builder->Project(projection);
-  auto scanner = scanner_builder->Finish().ValueOrDie();
-  auto result_table = scanner->ToTable().ValueOrDie();
+//   arrow::dataset::FinishOptions finish_options;
+//   auto factory = arrow::dataset::RadosDatasetFactory::Make(fs, foptions).ValueOrDie();
+//   auto dataset = factory->Finish(finish_options).ValueOrDie();
+//   auto scanner_builder = dataset->NewScan().ValueOrDie();
+//   scanner_builder->Filter(filter);
+//   scanner_builder->Project(projection);
+//   auto scanner = scanner_builder->Finish().ValueOrDie();
+//   auto result_table = scanner->ToTable().ValueOrDie();
 
-  arrow::RecordBatchVector batches_;
-  for (auto batch : batches) {
-    for (int i = 0; i < 8; i++) {
-      batches_.push_back(batch);
-    }
-  }
-  auto dataset_ = std::make_shared<arrow::dataset::InMemoryDataset>(batches_[0]->schema(), batches_);
-  auto scanner_builder_ = dataset_->NewScan().ValueOrDie();
-  scanner_builder_->Filter(filter);
-  scanner_builder_->Project(projection);
-  auto scanner_ = scanner_builder_->Finish().ValueOrDie();
-  auto result_table_ = scanner_->ToTable().ValueOrDie();
+//   arrow::RecordBatchVector batches_;
+//   for (auto batch : batches) {
+//     for (int i = 0; i < 8; i++) {
+//       batches_.push_back(batch);
+//     }
+//   }
+//   auto dataset_ = std::make_shared<arrow::dataset::InMemoryDataset>(batches_[0]->schema(), batches_);
+//   auto scanner_builder_ = dataset_->NewScan().ValueOrDie();
+//   scanner_builder_->Filter(filter);
+//   scanner_builder_->Project(projection);
+//   auto scanner_ = scanner_builder_->Finish().ValueOrDie();
+//   auto result_table_ = scanner_->ToTable().ValueOrDie();
 
-  ASSERT_EQ(result_table->Equals(*result_table_), 1);
-}
+//   ASSERT_EQ(result_table->Equals(*result_table_), 1);
+// }
 
 TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   auto fs = CreateTestRadosFileSystem();
@@ -202,11 +202,10 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   auto ds = factory->Finish(finish_options).ValueOrDie();
 
   auto builder = ds->NewScan().ValueOrDie();
-  auto projection = std::vector<std::string>{"sales", "year"};
-  //auto filter = ("sales"_ > int32_t(890) && "price"_ > double(55000.0f)).Copy();
+  auto projection = std::vector<std::string>{"year", "price"};
+  // auto filter = ("sales"_ > int32_t(900) && "price"_ > double(90000.0f) && "year"_ == 2018).Copy();
+  auto filter = ("sales"_ > int32_t(700) && "price"_ > double(80000.0f)).Copy();
 
-  auto filter =  ("sales"_ > int32_t(800) && "price"_ > double(50000)).Copy();
-  std::cout << builder->schema()->ToString() << "\n";
   builder->Project(projection);
   builder->Filter(filter);
   auto scanner = builder->Finish().ValueOrDie();

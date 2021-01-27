@@ -36,8 +36,9 @@ namespace dataset {
 
 Result<ScanTaskIterator> RadosFragment::Scan(std::shared_ptr<ScanOptions> options,
                                              std::shared_ptr<ScanContext> context) {
-  options->format = format_;
+  // inject partition expression and dataset schema in the scan options
   options->partition_expression = partition_expression_;
+  ARROW_ASSIGN_OR_RAISE(options->dataset_schema, ReadPhysicalSchema());
 
   ScanTaskVector v{std::make_shared<RadosScanTask>(
       std::move(options), std::move(context), std::move(path_), std::move(filesystem_))};
@@ -62,23 +63,8 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
     InspectOptions options) {
-  std::string cls_fn = "read_parquet_schema";
-
-  switch (options_.format) {
-    case 1:
-      cls_fn = "read_ipc_schema";
-      break;
-
-    case 2:
-      cls_fn = "read_parquet_schema";
-      break;
-
-    default:
-      break;
-  }
-
   librados::bufferlist in, out;
-  if (!filesystem_->Exec(paths_[0], cls_fn.c_str(), in, out).ok()) {
+  if (!filesystem_->Exec(paths_[0], "read_schema", in, out).ok()) {
     return Status::ExecutionError("RadosFileSystem::Exec returned non-zero exit code.");
   }
 
@@ -108,8 +94,7 @@ Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions optio
   for (auto& path : paths_) {
     auto fixed_path = StripPrefixAndFilename(path, options_.partition_base_dir);
     ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
-    fragments.push_back(std::make_shared<RadosFragment>(schema, path, filesystem_,
-                                                        options_.format, partition));
+    fragments.push_back(std::make_shared<RadosFragment>(schema, path, filesystem_, partition));
   }
   return RadosDataset::Make(schema, fragments, filesystem_);
 }
@@ -142,8 +127,11 @@ Result<RecordBatchIterator> RadosScanTask::Execute() {
   librados::bufferlist in, out;
 
   ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
-      options_->filter, options_->partition_expression, options_->projector.schema(),
-      options_->format, in));
+      options_->filter, 
+      options_->partition_expression,
+      options_->projector.schema(),
+      options_->dataset_schema, 
+      in));
 
   Status s = filesystem_->Exec(path_, "scan", in, out);
   if (!s.ok()) {
