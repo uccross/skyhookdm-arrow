@@ -63,14 +63,16 @@ Result<std::shared_ptr<DatasetFactory>> RadosDatasetFactory::Make(
 
 Result<std::vector<std::shared_ptr<Schema>>> RadosDatasetFactory::InspectSchemas(
     InspectOptions options) {
-  librados::bufferlist in, out;
+  std::shared_ptr<librados::bufferlist> in = std::make_shared<librados::bufferlist>();
+  std::shared_ptr<librados::bufferlist> out = std::make_shared<librados::bufferlist>();
+
   if (!filesystem_->Exec(paths_[0], "read_schema", in, out).ok()) {
     return Status::ExecutionError("RadosFileSystem::Exec returned non-zero exit code.");
   }
 
   std::vector<std::shared_ptr<Schema>> schemas;
   ipc::DictionaryMemo empty_memo;
-  io::BufferReader schema_reader((uint8_t*)out.c_str(), out.length());
+  io::BufferReader schema_reader((uint8_t*)out->c_str(), out->length());
   ARROW_ASSIGN_OR_RAISE(auto schema, ipc::ReadSchema(&schema_reader, &empty_memo));
   schemas.push_back(schema);
 
@@ -124,33 +126,41 @@ FragmentIterator RadosDataset::GetFragmentsImpl(std::shared_ptr<Expression> pred
 }
 
 Result<RecordBatchIterator> RadosScanTask::Execute() {
-  librados::bufferlist in, out;
+  struct Impl {
+      static Result<RecordBatchIterator> Make(std::shared_ptr<Buffer> buffer) {
+        ARROW_ASSIGN_OR_RAISE(auto file, Buffer::GetReader(buffer));
+        ARROW_ASSIGN_OR_RAISE(auto reader, ipc::RecordBatchFileReader::Open(file, ipc::IpcReadOptions::Defaults()));        
+        return RecordBatchIterator(Impl{std::move(reader), 0});
+      }
 
-  ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
-      options_->filter, 
-      options_->partition_expression,
-      options_->projector.schema(),
-      options_->dataset_schema, 
-      in));
+      Result<std::shared_ptr<RecordBatch>> Next() {
+        if (i_ == reader_->num_record_batches()) {
+          return nullptr;
+        }
 
-  Status s = filesystem_->Exec(path_, "scan", in, out);
-  if (!s.ok()) {
-    return Status::ExecutionError(s.message());
-  }
+        return reader_->ReadRecordBatch(i_++);
+      }
 
-  std::shared_ptr<Table> result_table;
-  ARROW_RETURN_NOT_OK(DeserializeTableFromBufferlist(&result_table, out));
+      std::shared_ptr<ipc::RecordBatchFileReader> reader_;
+      int i_;
+    };
 
-  if (!options_->schema()->Equals(*(result_table->schema()))) {
-    return Status::Invalid(
-        "the schema of the result table doesn't match the schema of the requested "
-        "projection.");
-  }
+    std::shared_ptr<librados::bufferlist> in = std::make_shared<librados::bufferlist>();
+    std::shared_ptr<librados::bufferlist> out = std::make_shared<librados::bufferlist>();
 
-  auto table_reader = std::make_shared<TableBatchReader>(*result_table);
-  RecordBatchVector batches;
-  ARROW_RETURN_NOT_OK(table_reader->ReadAll(&batches));
-  return MakeVectorIterator(batches);
+    ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
+        options_->filter, 
+        options_->partition_expression,
+        options_->projector.schema(),
+        options_->dataset_schema, 
+        in));
+
+    Status s = filesystem_->Exec(path_, "scan", in, out);
+    if (!s.ok()) {
+      return Status::ExecutionError(s.message());
+    }
+    auto buffer = std::make_shared<Buffer>((uint8_t*)out->c_str(), out->length());
+    return Impl::Make(buffer);
 }
 
 }  // namespace dataset

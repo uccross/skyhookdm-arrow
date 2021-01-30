@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 #define _FILE_OFFSET_BITS 64
-
+#include <memory>
 #include <rados/objclass.h>
 
 #include "arrow/api.h"
@@ -200,8 +200,10 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   std::shared_ptr<arrow::Schema> dataset_schema;
 
   // deserialize the scan request
+  std::shared_ptr<ceph::buffer::list> in_ptr = std::make_shared<ceph::buffer::list>(*in);
+
   if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
-           &filter, &partition_expression, &projection_schema, &dataset_schema, *in)
+           &filter, &partition_expression, &projection_schema, &dataset_schema, in_ptr)
            .ok())
     return -1;
 
@@ -213,13 +215,11 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
     return -1;
   }
 
-  CLS_LOG(0, "table: %s", table->ToString().c_str());
-
   // serialize the resultant table to send back to the client
-  ceph::buffer::list bl;
+  std::shared_ptr<ceph::buffer::list> bl = std::make_shared<ceph::buffer::list>();
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
-  *out = bl;
+  *out = *bl;
   return 0;
 }
 

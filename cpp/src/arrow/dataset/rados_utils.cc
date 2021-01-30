@@ -51,7 +51,7 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
                                         std::shared_ptr<Expression> part_expr,
                                         std::shared_ptr<Schema> projection_schema, 
                                         std::shared_ptr<Schema> dataset_schema,
-                                        librados::bufferlist& bl) {
+                                        std::shared_ptr<librados::bufferlist>& bl) {
   // serialize the filter expression's and the schema's.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, filter->Serialize());
   ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer, part_expr->Serialize());
@@ -76,20 +76,20 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<Expression> filter,
   ARROW_RETURN_NOT_OK(int64_to_char(dataset_schema_size_buffer, dataset_schema_buffer->size()));
 
   // append the filter expression size and data.
-  bl.append(filter_size_buffer, 8);
-  bl.append((char*)filter_buffer->data(), filter_buffer->size());
+  bl->append(filter_size_buffer, 8);
+  bl->append((char*)filter_buffer->data(), filter_buffer->size());
 
   // append the partition expression size and data
-  bl.append(part_expr_size_buffer, 8);
-  bl.append((char*)part_expr_buffer->data(), part_expr_buffer->size());
+  bl->append(part_expr_size_buffer, 8);
+  bl->append((char*)part_expr_buffer->data(), part_expr_buffer->size());
 
   // append the projection schema size and data.
-  bl.append(projection_schema_size_buffer, 8);
-  bl.append((char*)projection_schema_buffer->data(), projection_schema_buffer->size());
+  bl->append(projection_schema_size_buffer, 8);
+  bl->append((char*)projection_schema_buffer->data(), projection_schema_buffer->size());
 
   // append the dataset schema size and data.
-  bl.append(dataset_schema_size_buffer, 8);
-  bl.append((char*)dataset_schema_buffer->data(), dataset_schema_buffer->size());
+  bl->append(dataset_schema_size_buffer, 8);
+  bl->append((char*)dataset_schema_buffer->data(), dataset_schema_buffer->size());
   return Status::OK();
 }
 
@@ -97,8 +97,8 @@ Status DeserializeScanRequestFromBufferlist(std::shared_ptr<Expression>* filter,
                                             std::shared_ptr<Expression>* part_expr,
                                             std::shared_ptr<Schema>* projection_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
-                                            librados::bufferlist& bl) {
-  librados::bufferlist::iterator itr = bl.begin();
+                                            std::shared_ptr<librados::bufferlist>& bl) {
+  librados::bufferlist::iterator itr = bl->begin();
 
   int64_t filter_size = 0;
   char* filter_size_buffer = new char[8];
@@ -151,29 +151,18 @@ Status DeserializeScanRequestFromBufferlist(std::shared_ptr<Expression>* filter,
 }
 
 Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
-                                 librados::bufferlist& bl) {
+                                  std::shared_ptr<librados::bufferlist>& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
   const auto options = ipc::IpcWriteOptions::Defaults();
   ARROW_ASSIGN_OR_RAISE(
-      auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
+      auto writer, ipc::MakeFileWriter(buffer_output_stream, table->schema(), options));
 
   ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
   ARROW_RETURN_NOT_OK(writer->Close());
 
   ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
-  bl.append((char*)buffer->data(), buffer->size());
-  return Status::OK();
-}
-
-Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
-                                      librados::bufferlist& bl) {
-  io::BufferReader reader((uint8_t*)bl.c_str(), bl.length());
-  ARROW_ASSIGN_OR_RAISE(auto record_batch_reader,
-                        ipc::RecordBatchStreamReader::Open(&reader));
-  ARROW_ASSIGN_OR_RAISE(auto table_,
-                        Table::FromRecordBatchReader(record_batch_reader.get()));
-  *table = table_;
+  bl->append((char*)buffer->data(), buffer->size());
   return Status::OK();
 }
 

@@ -173,8 +173,8 @@ class ARROW_DS_EXPORT RadosFileSystem : public fs::LocalFileSystem {
     return Status::OK();
   }
 
-  Status Exec(const std::string& path, const std::string& fn, librados::bufferlist& in,
-              librados::bufferlist& out) {
+  Status Exec(const std::string& path, const std::string& fn, std::shared_ptr<librados::bufferlist>& in,
+              std::shared_ptr<librados::bufferlist>& out) {
     struct ceph_statx stx;
     if (ceph_statx(cmount_, path.c_str(), &stx, 0, 0))
       return Status::IOError("ceph_stat failed");
@@ -185,11 +185,13 @@ class ARROW_DS_EXPORT RadosFileSystem : public fs::LocalFileSystem {
     ss << std::hex << inode;
     std::string oid(ss.str() + ".00000000");
 
-    if (cluster_->ioCtx->exec(oid.c_str(), cluster_->cls_name.c_str(), fn.c_str(), in,
-                              out)) {
+    librados::bufferlist out_bl;
+    if (cluster_->ioCtx->exec(oid.c_str(), cluster_->cls_name.c_str(), fn.c_str(), *in,
+                              out_bl)) {
       return Status::ExecutionError("librados::exec returned non-zero exit code.");
     }
 
+    out = std::make_shared<librados::bufferlist>(out_bl);
     return Status::OK();
   }
 
@@ -291,6 +293,7 @@ class ARROW_DS_EXPORT RadosScanTask : public ScanTask {
  protected:
   std::string path_;
   std::shared_ptr<RadosFileSystem> filesystem_;
+  std::shared_ptr<TableBatchReader> reader_;
 };
 
 class ARROW_DS_EXPORT RadosDatasetFactory : public DatasetFactory {
@@ -318,8 +321,6 @@ class SplittedParquetWriter {
       : filesystem_(std::move(filesystem)) {}
 
   Status WriteTable(std::shared_ptr<Table> table, std::string path) {
-    librados::bufferlist bl;
-
     ARROW_ASSIGN_OR_RAISE(auto bos, io::BufferOutputStream::Create());
 
     PARQUET_THROW_NOT_OK(
