@@ -48,20 +48,16 @@ ARROW_DS_EXPORT Status char_to_int64(char* buffer, int64_t& num);
 /// \brief Serialize Expression(s) and Schema to a bufferlist.
 ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
     std::shared_ptr<Expression> filter, std::shared_ptr<Expression> part_expr,
-    std::shared_ptr<Schema> projection_schema, std::shared_ptr<Schema> dataset_schema, librados::bufferlist& bl);
+    std::shared_ptr<Schema> projection_schema, std::shared_ptr<Schema> dataset_schema, std::shared_ptr<librados::bufferlist>& bl);
 
 /// \brief Deserialize Expression(s) and Schema from a bufferlist.
 ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(
     std::shared_ptr<Expression>* filter, std::shared_ptr<Expression>* part_expr,
-    std::shared_ptr<Schema>* projection_schema, std::shared_ptr<Schema>* dataset_schema, librados::bufferlist& bl);
+    std::shared_ptr<Schema>* projection_schema, std::shared_ptr<Schema>* dataset_schema, std::shared_ptr<librados::bufferlist>& bl);
 
 /// \brief Serialize a Table to an Arrow IPC binary buffer.
 ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
-                                                 librados::bufferlist& bl);
-
-/// \brief Deserialize the Table from an Arrow IPC binary bufferlist.
-ARROW_DS_EXPORT Status DeserializeTableFromBufferlist(std::shared_ptr<Table>* table,
-                                                      librados::bufferlist& bl);
+                                                  std::shared_ptr<librados::bufferlist>& bl);
 
 }  // namespace dataset
 }  // namespace arrow
