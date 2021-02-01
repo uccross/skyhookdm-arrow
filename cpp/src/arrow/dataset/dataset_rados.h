@@ -370,7 +370,7 @@ class ARROW_DS_EXPORT ObjectInputFile : public arrow::io::RandomAccessFile {
  public:
   explicit ObjectInputFile(std::shared_ptr<RadosFileSystem> filesystem, std::string &path)
     : filesystem_(std::move(filesystem)),
-      path_(path) {}
+      path_(path) {Init();}
 
   arrow::Status Init() {
     uint64_t size;

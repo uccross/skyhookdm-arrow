@@ -174,7 +174,6 @@ TEST(TestClsSDK, TestObjectInputFileInterface) {
   ASSERT_EQ(s.ok(), true);
 
   auto source = std::make_shared<arrow::dataset::ObjectInputFile>(fs, path);
-  s = source->Init();
   ASSERT_EQ(s.ok(), true);
 
   std::unique_ptr<parquet::arrow::FileReader> reader;
@@ -186,6 +185,8 @@ TEST(TestClsSDK, TestObjectInputFileInterface) {
   s = reader->GetSchema(&schema);
   ASSERT_EQ(s.ok(), true);
   std::cout << schema->ToString() << "\n";
+  auto schema_ = arrow::schema({arrow::field("sales", arrow::int32()), arrow::field("price", arrow::float64())});
+  ASSERT_EQ(schema->Equals(schema_), 1);
 
   // get parquet file metadata
   std::shared_ptr<parquet::FileMetaData> metadata = reader->parquet_reader()->metadata();
