@@ -25,15 +25,14 @@
 #include "arrow/dataset/dataset_internal.h"
 #include "arrow/dataset/filter.h"
 #include "arrow/dataset/scanner_internal.h"
+#include "arrow/io/memory.h"
+#include "arrow/ipc/reader.h"
+#include "arrow/ipc/writer.h"
+#include "arrow/result.h"
 #include "arrow/table.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/task_group.h"
 #include "arrow/util/thread_pool.h"
-#include "arrow/ipc/writer.h"
-#include "arrow/ipc/reader.h"
-#include "arrow/io/memory.h"
-#include "arrow/result.h"
-
 
 namespace arrow {
 namespace dataset {
@@ -196,30 +195,29 @@ struct TableAssemblyState {
   }
 };
 
-
 struct TableSerializer {
   std::mutex mutex{};
   std::shared_ptr<ipc::RecordBatchWriter> writer;
-  std::shared_ptr<io::BufferOutputStream> sink;  
-  
+  std::shared_ptr<io::BufferOutputStream> sink;
+
   Status Init(std::shared_ptr<Schema> schema) {
     ARROW_ASSIGN_OR_RAISE(sink, io::BufferOutputStream::Create());
     ARROW_ASSIGN_OR_RAISE(writer, ipc::MakeStreamWriter(sink, schema));
     return Status::OK();
   }
-  
+
   Status Write(RecordBatchVector b) {
     std::lock_guard<std::mutex> lock(mutex);
-    for (auto &batch : b) {
-	    RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
+    for (auto& batch : b) {
+      RETURN_NOT_OK(writer->WriteRecordBatch(*batch));
     }
     return Status::OK();
   }
 
-  Status Close(std::shared_ptr<Buffer> &buffer) {
-  	RETURN_NOT_OK(writer->Close());
-	ARROW_ASSIGN_OR_RAISE(buffer, sink->Finish());
-	return Status::OK();
+  Status Close(std::shared_ptr<Buffer>& buffer) {
+    RETURN_NOT_OK(writer->Close());
+    ARROW_ASSIGN_OR_RAISE(buffer, sink->Finish());
+    return Status::OK();
   }
 };
 

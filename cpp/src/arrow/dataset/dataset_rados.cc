@@ -96,7 +96,8 @@ Result<std::shared_ptr<Dataset>> RadosDatasetFactory::Finish(FinishOptions optio
   for (auto& path : paths_) {
     auto fixed_path = StripPrefixAndFilename(path, options_.partition_base_dir);
     ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
-    fragments.push_back(std::make_shared<RadosFragment>(schema, path, filesystem_, partition));
+    fragments.push_back(
+        std::make_shared<RadosFragment>(schema, path, filesystem_, partition));
   }
   return RadosDataset::Make(schema, fragments, filesystem_);
 }
@@ -127,40 +128,38 @@ FragmentIterator RadosDataset::GetFragmentsImpl(std::shared_ptr<Expression> pred
 
 Result<RecordBatchIterator> RadosScanTask::Execute() {
   struct Impl {
-      static Result<RecordBatchIterator> Make(std::shared_ptr<Buffer> buffer) {
-        ARROW_ASSIGN_OR_RAISE(auto file, Buffer::GetReader(buffer));
-        ARROW_ASSIGN_OR_RAISE(auto reader, ipc::RecordBatchFileReader::Open(file, ipc::IpcReadOptions::Defaults()));        
-        return RecordBatchIterator(Impl{std::move(reader), 0});
-      }
-
-      Result<std::shared_ptr<RecordBatch>> Next() {
-        if (i_ == reader_->num_record_batches()) {
-          return nullptr;
-        }
-
-        return reader_->ReadRecordBatch(i_++);
-      }
-
-      std::shared_ptr<ipc::RecordBatchFileReader> reader_;
-      int i_;
-    };
-
-    std::shared_ptr<librados::bufferlist> in = std::make_shared<librados::bufferlist>();
-    std::shared_ptr<librados::bufferlist> out = std::make_shared<librados::bufferlist>();
-
-    ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
-        options_->filter, 
-        options_->partition_expression,
-        options_->projector.schema(),
-        options_->dataset_schema, 
-        in));
-
-    Status s = filesystem_->Exec(path_, "scan", in, out);
-    if (!s.ok()) {
-      return Status::ExecutionError(s.message());
+    static Result<RecordBatchIterator> Make(std::shared_ptr<Buffer> buffer) {
+      ARROW_ASSIGN_OR_RAISE(auto file, Buffer::GetReader(buffer));
+      ARROW_ASSIGN_OR_RAISE(auto reader, ipc::RecordBatchFileReader::Open(
+                                             file, ipc::IpcReadOptions::Defaults()));
+      return RecordBatchIterator(Impl{std::move(reader), 0});
     }
-    auto buffer = std::make_shared<Buffer>((uint8_t*)out->c_str(), out->length());
-    return Impl::Make(buffer);
+
+    Result<std::shared_ptr<RecordBatch>> Next() {
+      if (i_ == reader_->num_record_batches()) {
+        return nullptr;
+      }
+
+      return reader_->ReadRecordBatch(i_++);
+    }
+
+    std::shared_ptr<ipc::RecordBatchFileReader> reader_;
+    int i_;
+  };
+
+  std::shared_ptr<librados::bufferlist> in = std::make_shared<librados::bufferlist>();
+  std::shared_ptr<librados::bufferlist> out = std::make_shared<librados::bufferlist>();
+
+  ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
+      options_->filter, options_->partition_expression, options_->projector.schema(),
+      options_->dataset_schema, in));
+
+  Status s = filesystem_->Exec(path_, "scan", in, out);
+  if (!s.ok()) {
+    return Status::ExecutionError(s.message());
+  }
+  auto buffer = std::make_shared<Buffer>((uint8_t*)out->c_str(), out->length());
+  return Impl::Make(buffer);
 }
 
 }  // namespace dataset

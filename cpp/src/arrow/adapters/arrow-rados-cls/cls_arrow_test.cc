@@ -16,10 +16,11 @@
 // under the License.
 #define _FILE_OFFSET_BITS 64
 
-#include <iostream>
-#include <random>
 #include <rados/objclass.h>
+#include <iostream>
 #include <rados/librados.hpp>
+#include <random>
+#include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/dataset_rados.h"
@@ -27,7 +28,6 @@
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
-#include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "gtest/gtest.h"
 #include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
@@ -74,22 +74,20 @@ std::shared_ptr<arrow::Table> CreatePartitionedTable() {
 
   arrow::Int32Builder sales_builder(pool);
   for (int i = 0; i < 10; i++) {
-    sales_builder.Append(RandInt32(800, 1000));
+    sales_builder.Append(RandInt32(100, 1000));
   }
   std::shared_ptr<arrow::Int32Array> sales_array;
   sales_builder.Finish(&sales_array);
 
   arrow::DoubleBuilder price_builder(pool);
   for (int i = 0; i < 10; i++) {
-    price_builder.Append(RandDouble(38999.56, 99899.23));
+    price_builder.Append(RandDouble(10000.00, 99000.00));
   }
   std::shared_ptr<arrow::DoubleArray> price_array;
   price_builder.Finish(&price_array);
 
   std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
-      arrow::field("sales", arrow::int32()), 
-      arrow::field("price", arrow::float64())
-  };
+      arrow::field("sales", arrow::int32()), arrow::field("price", arrow::float64())};
   auto schema = std::make_shared<arrow::Schema>(schema_vector);
   return arrow::Table::Make(schema, {sales_array, price_array});
 }
@@ -97,23 +95,24 @@ std::shared_ptr<arrow::Table> CreatePartitionedTable() {
 TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
   auto fs = CreateTestRadosFileSystem();
   auto factory_options = CreateTestRadosFactoryOptions();
-  factory_options.partition_base_dir = "/tesla";
+  factory_options.partition_base_dir = "/gm";
 
   auto writer = std::make_shared<arrow::dataset::CephFSParquetWriter>(fs);
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/18UK.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/18US.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/19UK.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/19US.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/20UK.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/20US.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/gm/a.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/gm/b.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/gm/c.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/gm/d.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/gm/e.parquet");
+  writer->WriteTable(CreatePartitionedTable(), "/gm/f.parquet");
 
   arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(fs, factory_options).ValueOrDie();
+  auto factory =
+      arrow::dataset::RadosDatasetFactory::Make(fs, factory_options).ValueOrDie();
   auto ds = factory->Finish(finish_options).ValueOrDie();
 
   auto builder = ds->NewScan().ValueOrDie();
   auto projection = std::vector<std::string>{"price", "sales"};
-  auto filter = ("sales"_ > int32_t(900) && "price"_ > double(90000.0f)).Copy();
+  auto filter = ("sales"_ > int32_t(400) && "price"_ > double(50000.0f)).Copy();
 
   builder->Project(projection);
   builder->Filter(filter);
@@ -130,23 +129,32 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
   factory_options.partition_base_dir = "/tesla";
 
   auto writer = std::make_shared<arrow::dataset::CephFSParquetWriter>(fs);
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2018/country=UK/18UK.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2018/country=US/18US.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2019/country=UK/19UK.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2019/country=US/19US.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2020/country=UK/20UK.parquet");
-  writer->WriteTable(CreatePartitionedTable(), "/tesla/year=2020/country=US/20US.parquet");
+  writer->WriteTable(CreatePartitionedTable(),
+                     "/tesla/year=2018/country=UK/18UK.parquet");
+  writer->WriteTable(CreatePartitionedTable(),
+                     "/tesla/year=2018/country=US/18US.parquet");
+  writer->WriteTable(CreatePartitionedTable(),
+                     "/tesla/year=2019/country=UK/19UK.parquet");
+  writer->WriteTable(CreatePartitionedTable(),
+                     "/tesla/year=2019/country=US/19US.parquet");
+  writer->WriteTable(CreatePartitionedTable(),
+                     "/tesla/year=2020/country=UK/20UK.parquet");
+  writer->WriteTable(CreatePartitionedTable(),
+                     "/tesla/year=2020/country=US/20US.parquet");
 
   factory_options.partitioning = std::make_shared<arrow::dataset::HivePartitioning>(
-      arrow::schema({arrow::field("year", arrow::int32()), arrow::field("country", arrow::utf8())}));
+      arrow::schema({arrow::field("year", arrow::int32()),
+                     arrow::field("country", arrow::utf8())}));
 
   arrow::dataset::FinishOptions finish_options;
-  auto factory = arrow::dataset::RadosDatasetFactory::Make(fs, factory_options).ValueOrDie();
+  auto factory =
+      arrow::dataset::RadosDatasetFactory::Make(fs, factory_options).ValueOrDie();
   auto ds = factory->Finish(finish_options).ValueOrDie();
 
   auto builder = ds->NewScan().ValueOrDie();
   auto projection = std::vector<std::string>{"year", "price", "country", "sales"};
-  auto filter = ("sales"_ > int32_t(900) && "price"_ > double(90000.0f) && "year"_ == 2018).Copy();
+  auto filter =
+      ("sales"_ > int32_t(900) && "price"_ > double(90000.0f) && "year"_ == 2018).Copy();
 
   builder->Project(projection);
   builder->Filter(filter);

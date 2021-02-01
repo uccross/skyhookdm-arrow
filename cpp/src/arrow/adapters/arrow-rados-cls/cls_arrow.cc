@@ -15,8 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 #define _FILE_OFFSET_BITS 64
-#include <memory>
 #include <rados/objclass.h>
+#include <memory>
 
 #include "arrow/api.h"
 #include "arrow/dataset/dataset_rados.h"
@@ -130,12 +130,10 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 };
 
 static arrow::Status ScanParquetObject(
-    cls_method_context_t hctx, 
-    std::shared_ptr<arrow::dataset::Expression> filter,
+    cls_method_context_t hctx, std::shared_ptr<arrow::dataset::Expression> filter,
     std::shared_ptr<arrow::dataset::Expression> partition_expression,
-    std::shared_ptr<arrow::Schema> projection_schema, 
-    std::shared_ptr<arrow::Schema> dataset_schema,
-    std::shared_ptr<arrow::Table>& t) {
+    std::shared_ptr<arrow::Schema> projection_schema,
+    std::shared_ptr<arrow::Schema> dataset_schema, std::shared_ptr<arrow::Table>& t) {
   auto file = std::make_shared<RandomAccessObject>(hctx);
   ARROW_RETURN_NOT_OK(file->Init());
 
@@ -150,7 +148,8 @@ static arrow::Status ScanParquetObject(
                         format->MakeFragment(source, partition_expression));
 
   auto ctx = std::make_shared<arrow::dataset::ScanContext>();
-  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, ctx);
+  auto builder =
+      std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, ctx);
 
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
@@ -165,7 +164,7 @@ static arrow::Status ScanParquetObject(
 }
 
 static int read_schema(cls_method_context_t hctx, ceph::buffer::list* in,
-                               ceph::buffer::list* out) {
+                       ceph::buffer::list* out) {
   std::shared_ptr<RandomAccessObject> source = std::make_shared<RandomAccessObject>(hctx);
   if (!source->Init().ok()) return -1;
 
@@ -209,7 +208,8 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
 
   // scan the parquet object
   std::shared_ptr<arrow::Table> table;
-  arrow::Status s = ScanParquetObject(hctx, filter, partition_expression, projection_schema, dataset_schema, table);
+  arrow::Status s = ScanParquetObject(hctx, filter, partition_expression,
+                                      projection_schema, dataset_schema, table);
   if (!s.ok()) {
     CLS_LOG(0, "error: %s", s.message().c_str());
     return -1;

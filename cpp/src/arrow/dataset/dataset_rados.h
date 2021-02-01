@@ -173,7 +173,8 @@ class ARROW_DS_EXPORT RadosFileSystem : public fs::LocalFileSystem {
     return Status::OK();
   }
 
-  Status Exec(const std::string& path, const std::string& fn, std::shared_ptr<librados::bufferlist>& in,
+  Status Exec(const std::string& path, const std::string& fn,
+              std::shared_ptr<librados::bufferlist>& in,
               std::shared_ptr<librados::bufferlist>& out) {
     struct ceph_statx stx;
     if (ceph_statx(cmount_, path.c_str(), &stx, 0, 0))
@@ -195,11 +196,10 @@ class ARROW_DS_EXPORT RadosFileSystem : public fs::LocalFileSystem {
     return Status::OK();
   }
 
-  Status ListDirRecursive(const std::string& path,
-                          std::vector<std::string>& files) {
+  Status ListDirRecursive(const std::string& path, std::vector<std::string>& files) {
     struct dirent* de = NULL;
-    struct ceph_dir_result *dirr = NULL;
-    
+    struct ceph_dir_result* dirr = NULL;
+
     if (ceph_opendir(cmount_, path.c_str(), &dirr))
       return Status::IOError("libcephfs::ceph_opendir returned non-zero exit code.");
 
