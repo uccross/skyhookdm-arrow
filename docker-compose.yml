@@ -285,7 +285,7 @@ services:
       ARROW_ENABLE_TIMING_TESTS:  # inherit
       ARROW_MIMALLOC: "ON"
     volumes: &ubuntu-volumes
-      - /lib/modules/5.4.0-54-generic:/lib/modules/5.4.0-54-generic
+      - /lib/modules/{KERNEL}:/lib/modules/{KERNEL}
       - .:/arrow:delegated
       - ${DOCKER_VOLUME_PREFIX}ubuntu-ccache:/ccache:delegated
     command: *cpp-command
