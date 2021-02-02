@@ -228,7 +228,7 @@ script:
   - |
     ulimit -c unlimited || :
   - |
-    export KERNEL=$(uname-r)
+    export KERNEL=$(uname -r)
     echo ${KERNEL}
     archery docker run \
       ${DOCKER_RUN_ARGS} \
