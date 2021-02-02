@@ -60,11 +60,11 @@ std::shared_ptr<arrow::dataset::RadosFileSystem> CreateTestRadosFileSystem() {
 }
 
 double RandDouble(double min, double max) {
-  return min + ((double)rand_r() / RAND_MAX) * (max - min);
+  return min + ((double)rand() / RAND_MAX) * (max - min);
 }
 
 int32_t RandInt32(int32_t min, int32_t max) {
-  return min + (rand_r() % static_cast<int>(max - min + 1));
+  return min + (rand() % static_cast<int>(max - min + 1));
 }
 
 std::shared_ptr<arrow::Table> CreatePartitionedTable() {
