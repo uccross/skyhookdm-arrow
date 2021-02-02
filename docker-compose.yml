@@ -803,7 +803,7 @@ services:
     volumes: *ubuntu-volumes
     command: &cpp-cls-command >
       /bin/bash -c "
-        # /arrow/ci/scripts/cpp_build.sh /arrow /build &&
+        ls /lib/modules/ &&
         /arrow/ci/scripts/integration_ceph.sh /arrow /build &&
         /arrow/ci/scripts/cpp_test.sh /arrow /build"
 
