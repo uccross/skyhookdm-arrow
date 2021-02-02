@@ -47,8 +47,7 @@ Status char_to_int64(char* buffer, int64_t& num) {
   return Status::OK();
 }
 
-Status SerializeScanRequestToBufferlist(Expression filter,
-                                        Expression part_expr,
+Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
                                         std::shared_ptr<Schema> projection_schema,
                                         std::shared_ptr<Schema> dataset_schema,
                                         std::shared_ptr<librados::bufferlist>& bl) {
@@ -96,8 +95,7 @@ Status SerializeScanRequestToBufferlist(Expression filter,
   return Status::OK();
 }
 
-Status DeserializeScanRequestFromBufferlist(Expression* filter,
-                                            Expression* part_expr,
+Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part_expr,
                                             std::shared_ptr<Schema>* projection_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
                                             std::shared_ptr<librados::bufferlist>& bl) {
@@ -132,7 +130,8 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter,
   char* dataset_schema_buffer = new char[dataset_schema_size];
   itr.copy(dataset_schema_size, dataset_schema_buffer);
 
-  ARROW_ASSIGN_OR_RAISE(auto filter_, Deserialize(std::make_shared<Buffer>((uint8_t*)filter_buffer, filter_size)));
+  ARROW_ASSIGN_OR_RAISE(auto filter_, Deserialize(std::make_shared<Buffer>(
+                                          (uint8_t*)filter_buffer, filter_size)));
   *filter = filter_;
 
   ARROW_ASSIGN_OR_RAISE(

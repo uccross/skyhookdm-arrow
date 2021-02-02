@@ -16,16 +16,16 @@
 // under the License.
 #define _FILE_OFFSET_BITS 64
 
-#include <iostream>
-#include <random>
 #include <rados/objclass.h>
+#include <iostream>
 #include <rados/librados.hpp>
+#include <random>
 #include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/dataset_rados.h"
-#include "arrow/dataset/rados_utils.h"
 #include "arrow/dataset/expression.h"
+#include "arrow/dataset/rados_utils.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
@@ -55,17 +55,16 @@ arrow::dataset::RadosDatasetFactoryOptions CreateTestRadosFactoryOptions() {
 std::shared_ptr<arrow::dataset::RadosFileSystem> CreateTestRadosFileSystem() {
   auto cluster = CreateTestClusterHandle();
   auto fs = std::make_shared<arrow::dataset::RadosFileSystem>();
-  arrow::Status s = fs->Init(cluster);
-  if (!s.ok()) std::cout << "Init() failed.\n";
+  fs->Init(cluster);
   return fs;
 }
 
 double RandDouble(double min, double max) {
-  return min + ((double)rand() / RAND_MAX) * (max - min);
+  return min + ((double)rand_r() / RAND_MAX) * (max - min);
 }
 
 int32_t RandInt32(int32_t min, int32_t max) {
-  return min + (rand() % static_cast<int>(max - min + 1));
+  return min + (rand_r() % static_cast<int>(max - min + 1));
 }
 
 std::shared_ptr<arrow::Table> CreatePartitionedTable() {
@@ -92,14 +91,9 @@ std::shared_ptr<arrow::Table> CreatePartitionedTable() {
 }
 
 TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
-    std::cout << "coming till here...";
-
-	auto fs = CreateTestRadosFileSystem();
-    std::cout << "coming till here...";
-
+  auto fs = CreateTestRadosFileSystem();
   auto factory_options = CreateTestRadosFactoryOptions();
   factory_options.partition_base_dir = "/gm";
-  std::cout << "coming till here...";
 
   auto writer = std::make_shared<arrow::dataset::CephFSParquetWriter>(fs);
   writer->WriteTable(CreatePartitionedTable(), "/gm/a.parquet");
@@ -108,24 +102,23 @@ TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
   writer->WriteTable(CreatePartitionedTable(), "/gm/d.parquet");
   writer->WriteTable(CreatePartitionedTable(), "/gm/e.parquet");
   writer->WriteTable(CreatePartitionedTable(), "/gm/f.parquet");
-  std::cout << "coming till here...";
 
   arrow::dataset::FinishOptions finish_options;
   auto factory =
       arrow::dataset::RadosDatasetFactory::Make(fs, factory_options).ValueOrDie();
   auto ds = factory->Finish(finish_options).ValueOrDie();
-  std::cout << "coming till here...";
 
   auto builder = ds->NewScan().ValueOrDie();
   auto projection = std::vector<std::string>{"price", "sales"};
   auto filter = arrow::dataset::and_(
-                arrow::dataset::greater(arrow::dataset::field_ref("sales"), arrow::dataset::literal(int32_t(400))),
-                arrow::dataset::greater(arrow::dataset::field_ref("price"), arrow::dataset::literal(double(50000.0f))));
+      arrow::dataset::greater(arrow::dataset::field_ref("sales"),
+                              arrow::dataset::literal(int32_t(400))),
+      arrow::dataset::greater(arrow::dataset::field_ref("price"),
+                              arrow::dataset::literal(double(50000.0f))));
 
   builder->Project(projection);
   builder->Filter(filter);
   auto scanner = builder->Finish().ValueOrDie();
-  std::cout << "coming till here...";
   auto table = scanner->ToTable().ValueOrDie();
   std::cout << table->ToString() << "\n";
   std::cout << table->num_rows() << "\n";
@@ -161,9 +154,11 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
 
   auto builder = ds->NewScan().ValueOrDie();
   auto projection = std::vector<std::string>{"year", "price", "country"};
-  auto filter = arrow::dataset::and_(
-		arrow::dataset::greater(arrow::dataset::field_ref("sales"), arrow::dataset::literal(400)), 
-	        arrow::dataset::greater(arrow::dataset::field_ref("price"), arrow::dataset::literal(30000.0f)));
+  auto filter =
+      arrow::dataset::and_(arrow::dataset::greater(arrow::dataset::field_ref("sales"),
+                                                   arrow::dataset::literal(400)),
+                           arrow::dataset::greater(arrow::dataset::field_ref("price"),
+                                                   arrow::dataset::literal(30000.0f)));
 
   builder->Project(projection);
   builder->Filter(filter);
@@ -194,7 +189,8 @@ TEST(TestClsSDK, TestObjectInputFileInterface) {
   s = reader->GetSchema(&schema);
   ASSERT_EQ(s.ok(), true);
   std::cout << schema->ToString() << "\n";
-  auto schema_ = arrow::schema({arrow::field("sales", arrow::int32()), arrow::field("price", arrow::float64())});
+  auto schema_ = arrow::schema(
+      {arrow::field("sales", arrow::int32()), arrow::field("price", arrow::float64())});
   ASSERT_EQ(schema->Equals(schema_), 1);
 
   // get parquet file metadata
