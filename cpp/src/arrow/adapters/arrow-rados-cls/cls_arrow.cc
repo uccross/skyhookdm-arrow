@@ -130,8 +130,8 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 };
 
 static arrow::Status ScanParquetObject(
-    cls_method_context_t hctx, std::shared_ptr<arrow::dataset::Expression> filter,
-    std::shared_ptr<arrow::dataset::Expression> partition_expression,
+    cls_method_context_t hctx, arrow::dataset::Expression filter,
+    arrow::dataset::Expression partition_expression,
     std::shared_ptr<arrow::Schema> projection_schema,
     std::shared_ptr<arrow::Schema> dataset_schema, std::shared_ptr<arrow::Table>& t) {
   auto file = std::make_shared<RandomAccessObject>(hctx);
@@ -193,8 +193,8 @@ static int write(cls_method_context_t hctx, ceph::buffer::list* in,
 static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
                 ceph::buffer::list* out) {
   // the components required to construct a ParquetFragment.
-  std::shared_ptr<arrow::dataset::Expression> filter;
-  std::shared_ptr<arrow::dataset::Expression> partition_expression;
+  arrow::dataset::Expression filter;
+  arrow::dataset::Expression partition_expression;
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
 

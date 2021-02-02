@@ -261,7 +261,7 @@ class ARROW_DS_EXPORT RadosFragment : public Fragment {
  public:
   RadosFragment(std::shared_ptr<Schema> schema, std::string path,
                 std::shared_ptr<RadosFileSystem> filesystem,
-                std::shared_ptr<Expression> partition_expression = scalar(true))
+                Expression partition_expression = literal(true))
       : Fragment(partition_expression, std::move(schema)),
         path_(std::move(path)),
         filesystem_(std::move(filesystem)) {}
@@ -300,8 +300,8 @@ class ARROW_DS_EXPORT RadosDataset : public Dataset {
         fragments_(fragments),
         filesystem_(std::move(filesystem)) {}
 
-  FragmentIterator GetFragmentsImpl(
-      std::shared_ptr<Expression> predicate = scalar(true)) override;
+  Result<FragmentIterator> GetFragmentsImpl(
+      Expression predicate = literal(true)) override;
   RadosFragmentVector fragments_;
   std::shared_ptr<RadosFileSystem> filesystem_;
 };
