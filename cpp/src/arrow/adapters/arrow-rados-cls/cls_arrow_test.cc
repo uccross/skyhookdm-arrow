@@ -16,23 +16,22 @@
 // under the License.
 #define _FILE_OFFSET_BITS 64
 
-#include <rados/objclass.h>
 #include <iostream>
-#include <rados/librados.hpp>
 #include <random>
+#include <rados/objclass.h>
+#include <rados/librados.hpp>
 #include "arrow/adapters/arrow-rados-cls/cls_arrow_test_utils.h"
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/dataset_rados.h"
 #include "arrow/dataset/rados_utils.h"
+#include "arrow/dataset/expression.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
 #include "gtest/gtest.h"
 #include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
-
-using arrow::dataset::string_literals::operator"" _;
 
 std::shared_ptr<arrow::dataset::RadosCluster> CreateTestClusterHandle() {
   auto cluster = std::make_shared<arrow::dataset::RadosCluster>("cephfs_data",
@@ -93,9 +92,14 @@ std::shared_ptr<arrow::Table> CreatePartitionedTable() {
 }
 
 TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
-  auto fs = CreateTestRadosFileSystem();
+    std::cout << "coming till here...";
+
+	auto fs = CreateTestRadosFileSystem();
+    std::cout << "coming till here...";
+
   auto factory_options = CreateTestRadosFactoryOptions();
   factory_options.partition_base_dir = "/gm";
+  std::cout << "coming till here...";
 
   auto writer = std::make_shared<arrow::dataset::CephFSParquetWriter>(fs);
   writer->WriteTable(CreatePartitionedTable(), "/gm/a.parquet");
@@ -104,20 +108,24 @@ TEST(TestClsSDK, EndToEndWithoutPartitionPruning) {
   writer->WriteTable(CreatePartitionedTable(), "/gm/d.parquet");
   writer->WriteTable(CreatePartitionedTable(), "/gm/e.parquet");
   writer->WriteTable(CreatePartitionedTable(), "/gm/f.parquet");
+  std::cout << "coming till here...";
 
   arrow::dataset::FinishOptions finish_options;
   auto factory =
       arrow::dataset::RadosDatasetFactory::Make(fs, factory_options).ValueOrDie();
   auto ds = factory->Finish(finish_options).ValueOrDie();
+  std::cout << "coming till here...";
 
   auto builder = ds->NewScan().ValueOrDie();
   auto projection = std::vector<std::string>{"price", "sales"};
-  auto filter = ("sales"_ > int32_t(400) && "price"_ > double(50000.0f)).Copy();
+  auto filter = arrow::dataset::and_(
+                arrow::dataset::greater(arrow::dataset::field_ref("sales"), arrow::dataset::literal(int32_t(400))),
+                arrow::dataset::greater(arrow::dataset::field_ref("price"), arrow::dataset::literal(double(50000.0f))));
 
   builder->Project(projection);
   builder->Filter(filter);
   auto scanner = builder->Finish().ValueOrDie();
-
+  std::cout << "coming till here...";
   auto table = scanner->ToTable().ValueOrDie();
   std::cout << table->ToString() << "\n";
   std::cout << table->num_rows() << "\n";
@@ -153,8 +161,9 @@ TEST(TestClsSDK, EndToEndWithPartitionPruning) {
 
   auto builder = ds->NewScan().ValueOrDie();
   auto projection = std::vector<std::string>{"year", "price", "country"};
-  auto filter =
-      ("sales"_ > int32_t(400) && "price"_ > double(30000.0f)).Copy();
+  auto filter = arrow::dataset::and_(
+		arrow::dataset::greater(arrow::dataset::field_ref("sales"), arrow::dataset::literal(400)), 
+	        arrow::dataset::greater(arrow::dataset::field_ref("price"), arrow::dataset::literal(30000.0f)));
 
   builder->Project(projection);
   builder->Filter(filter);
