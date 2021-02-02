@@ -23,7 +23,7 @@ source_dir=${1}/cpp
 build_dir=${2}/cpp
 test_dir=${build_dir}/test-cluster
 
-pushd ${build_dir}
+# pushd ${build_dir}
 
 # get rid of process and directories leftovers
 pkill ceph-mon || true
@@ -100,17 +100,17 @@ ceph-mgr --id 0
 
 export CEPH_CONF="/etc/ceph/ceph.conf"
 
-mkdir -p /usr/lib/x86_64-linux-gnu/rados-classes/
-mkdir -p /usr/lib/aarch64-linux-gnu/rados-classes/
-cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
-cp debug/libcls_arrow* /usr/lib/aarch64-linux-gnu/rados-classes/
+# mkdir -p /usr/lib/x86_64-linux-gnu/rados-classes/
+# mkdir -p /usr/lib/aarch64-linux-gnu/rados-classes/
+# cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
+# cp debug/libcls_arrow* /usr/lib/aarch64-linux-gnu/rados-classes/
 
 mkdir -p /mnt/cephfs
 mount -t ceph 127.0.0.1:/ /mnt/cephfs
 
-TESTS=debug/arrow-cls-cls-arrow-test
-if [ -f "$TESTS" ]; then
-    debug/arrow-cls-cls-arrow-test
-fi
+# TESTS=debug/arrow-cls-cls-arrow-test
+# if [ -f "$TESTS" ]; then
+#     debug/arrow-cls-cls-arrow-test
+# fi
 
-popd
+# popd
