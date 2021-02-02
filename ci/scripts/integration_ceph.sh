@@ -61,6 +61,7 @@ EOF
 
 ceph-mon --id 0 --mkfs --keyring /dev/null
 touch ${MON_DATA}/keyring
+cp ${MON_DATA}/keyring /etc/ceph/keyring
 ceph-mon --id 0
 
 # single osd
@@ -87,8 +88,8 @@ ceph-osd --id ${OSD_ID}
 MDS_DATA=${TEST_DIR}/mds
 mkdir -p $MDS_DATA
 
-ceph osd pool create cephfs_data 64
-ceph osd pool create cephfs_metadata 64
+ceph osd pool create cephfs_data 16
+ceph osd pool create cephfs_metadata 16
 ceph fs new cephfs cephfs_metadata cephfs_data
 
 ceph-mds --id a
@@ -103,6 +104,9 @@ mkdir -p /usr/lib/x86_64-linux-gnu/rados-classes/
 mkdir -p /usr/lib/aarch64-linux-gnu/rados-classes/
 cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
 cp debug/libcls_arrow* /usr/lib/aarch64-linux-gnu/rados-classes/
+
+mkdir -p /mnt/cephfs
+mount -t ceph 127.0.0.1:/ /mnt/cephfs
 
 TESTS=debug/arrow-cls-cls-arrow-test
 if [ -f "$TESTS" ]; then
