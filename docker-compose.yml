@@ -794,6 +794,7 @@ services:
         llvm: ${LLVM}
     shm_size: *shm-size
     ulimits: *ulimits
+    privileged: true
     environment:
       <<: *ccache
       ARROW_ENABLE_TIMING_TESTS:  # inherit
@@ -802,8 +803,7 @@ services:
     command: &cpp-cls-command >
       /bin/bash -c "
         /arrow/ci/scripts/cpp_build.sh /arrow /build &&
-        /arrow/ci/scripts/integration_ceph.sh /arrow /build &&
-        /arrow/ci/scripts/cpp_test.sh /arrow /build"
+        /arrow/ci/scripts/integration_ceph.sh /arrow /build"
 
   ubuntu-python-cls:
     image: ${REPO}:${ARCH}-ubuntu-${UBUNTU}-python-3
