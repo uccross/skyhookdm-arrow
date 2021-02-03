@@ -81,7 +81,6 @@ RUN apt-get update -y -q && \
         libsnappy-dev \
         librados-dev \
         libcephfs-dev \
-        kmod \
         rados-objclass-dev \
         python3-rados \
         libssl-dev \
