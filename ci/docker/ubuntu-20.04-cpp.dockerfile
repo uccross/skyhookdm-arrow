@@ -84,6 +84,8 @@ RUN apt-get update -y -q && \
         libcephfs-dev \
         rados-objclass-dev \
         python3-rados \
+        ceph-common \
+        ceph-fuse \
         libssl-dev \
         libthrift-dev \
         libutf8proc-dev \
