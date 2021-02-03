@@ -105,6 +105,7 @@ export CEPH_CONF="/etc/ceph/ceph.conf"
 # cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
 # cp debug/libcls_arrow* /usr/lib/aarch64-linux-gnu/rados-classes/
 
+apt-get install -y ceph-fuse
 mkdir -p /mnt/cephfs
 ceph-fuse --id client.admin -m 127.0.0.1:6789 --client_fs cephfs /mnt/cephfs
 
