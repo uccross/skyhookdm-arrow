@@ -106,7 +106,7 @@ export CEPH_CONF="/etc/ceph/ceph.conf"
 # cp debug/libcls_arrow* /usr/lib/aarch64-linux-gnu/rados-classes/
 
 mkdir -p /mnt/cephfs
-mount -t ceph 127.0.0.1:/ /mnt/cephfs
+ceph-fuse --id client.admin -m 127.0.0.1:6789 --client_fs cephfs /mnt/cephfs
 
 # TESTS=debug/arrow-cls-cls-arrow-test
 # if [ -f "$TESTS" ]; then
