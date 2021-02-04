@@ -776,12 +776,14 @@ services:
 
   ubuntu-cpp-cls:
     # Usage:
-    #   docker-compose build ubuntu-cpp
-    #   docker-compose run --rm ubuntu-cpp
+    #   docker-compose build ubuntu-cpp-cls
+    #   docker-compose run --rm ubuntu-cpp-cls
     # Parameters:
-    #   ARCH: amd64, arm64v8, s390x, ...
-    #   UBUNTU: 16.04, 18.04, 20.04
+    #   ARCH: amd64
+    #   UBUNTU: 20.04
     image: ${REPO}:${ARCH}-ubuntu-${UBUNTU}-cpp
+    environment:
+      - UBUNTU: 20.04
     build:
       context: .
       dockerfile: ci/docker/ubuntu-${UBUNTU}-cpp.dockerfile
