@@ -781,17 +781,15 @@ services:
     # Parameters:
     #   ARCH: amd64
     #   UBUNTU: 20.04
-    image: ${REPO}:${ARCH}-ubuntu-${UBUNTU}-cpp
-    environment:
-      - UBUNTU: 20.04
+    image: ${REPO}:${ARCH}-ubuntu-20.04-cpp
     build:
       context: .
-      dockerfile: ci/docker/ubuntu-${UBUNTU}-cpp.dockerfile
+      dockerfile: ci/docker/ubuntu-20.04-cpp.dockerfile
       cache_from:
-        - ${REPO}:${ARCH}-ubuntu-${UBUNTU}-cpp
+        - ${REPO}:${ARCH}-ubuntu-20.04-cpp
       args:
         arch: ${ARCH}
-        base: "${ARCH}/ubuntu:${UBUNTU}"
+        base: "${ARCH}/ubuntu:20.04"
         clang_tools: ${CLANG_TOOLS}
         llvm: ${LLVM}
     shm_size: *shm-size
