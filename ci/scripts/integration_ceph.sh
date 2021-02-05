@@ -132,7 +132,7 @@ import pyarrow.dataset as ds
 fmt = ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
 dataset = ds.dataset("file:///mnt/cephfs/nyc/", format=fmt)
 print(dataset.files)
-print(dataset.to_table(use_threads=False, columns=['DOLocationID']).to_pandas())
+print(dataset.to_table(columns=['DOLocationID', 'total_amount', 'fare_amount'], filter=( ds.field('total_amount') > 200 )).to_pandas())
 EOF
 
 # execute the script
