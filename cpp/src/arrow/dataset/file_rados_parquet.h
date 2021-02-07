@@ -29,7 +29,6 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include <iostream>
 #include <vector>
 
 #include "arrow/api.h"
@@ -94,10 +93,8 @@ class ARROW_DS_EXPORT RadosCluster {
 
 class ARROW_DS_EXPORT DirectObjectAccess {
  public:
-  Status Init(std::shared_ptr<RadosCluster> cluster) {
-    cluster_ = cluster;
-    return Status::OK();
-  }
+  explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
+    : cluster_(std::move(cluster)) {}
 
   Status Exec(const std::string& path, const std::string& fn,
               std::shared_ptr<librados::bufferlist>& in,
@@ -109,8 +106,6 @@ class ARROW_DS_EXPORT DirectObjectAccess {
 
     uint64_t inode = dir_st.st_ino;
     
-    std::cerr << inode << "\n";
-
     std::stringstream ss;
     ss << std::hex << inode;
     std::string oid(ss.str() + ".00000000");

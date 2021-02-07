@@ -48,9 +48,6 @@ class RadosParquetScanTask : public ScanTask {
         options_->filter, options_->partition_expression, options_->projector.schema(),
         options_->dataset_schema, in));
 
-    // auto path =
-    //     fs::internal::RemoveAncestor("/mnt/cephfs/", source_.path()).value().to_string();
-
     Status s = doa_->Exec(source_.path(), "scan", in, out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
@@ -78,16 +75,14 @@ Result<std::shared_ptr<RadosParquetFileFormat>> RadosParquetFileFormat::Make(
     const std::string& path_to_config) {
   auto cluster = std::make_shared<RadosCluster>(path_to_config);
   RETURN_NOT_OK(cluster->Connect());
-  auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>();
-  RETURN_NOT_OK(doa->Init(cluster));
+  auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(cluster);
   return std::make_shared<RadosParquetFileFormat>(doa);
 }
 
 RadosParquetFileFormat::RadosParquetFileFormat(const std::string& path_to_config) {
   auto cluster = std::make_shared<RadosCluster>(path_to_config);
   cluster->Connect();
-  auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>();
-  doa->Init(cluster);
+  auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(cluster);
   doa_ = doa;
 }
 
@@ -95,9 +90,6 @@ Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
     const FileSource& source) const {
   std::shared_ptr<librados::bufferlist> in = std::make_shared<librados::bufferlist>();
   std::shared_ptr<librados::bufferlist> out = std::make_shared<librados::bufferlist>();
-
-  // auto path =
-  //     fs::internal::RemoveAncestor("/mnt/cephfs/", source.path()).value().to_string();
 
   Status s = doa_->Exec(source.path(), "read_schema", in, out);
   if (!s.ok()) return Status::ExecutionError(s.message());
