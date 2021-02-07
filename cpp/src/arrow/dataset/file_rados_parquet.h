@@ -100,8 +100,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
               std::shared_ptr<librados::bufferlist>& in,
               std::shared_ptr<librados::bufferlist>& out) {
     struct stat dir_st;  
-    int ret = stat(path.c_str(), &dir_st);  
-    if (ret < 0)
+    if (stat(path.c_str(), &dir_st) < 0)
       return Status::ExecutionError("stat returned non-zero exit code.");
 
     uint64_t inode = dir_st.st_ino;
