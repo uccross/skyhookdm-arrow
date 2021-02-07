@@ -80,7 +80,6 @@ RUN apt-get update -y -q && \
         libre2-dev \
         libsnappy-dev \
         librados-dev \
-        ceph-fuse \
         rados-objclass-dev \
         python3-rados \
         libssl-dev \
