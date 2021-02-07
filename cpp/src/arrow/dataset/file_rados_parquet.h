@@ -95,25 +95,6 @@ class ARROW_DS_EXPORT DirectObjectAccess {
  public:
   Status Init(std::shared_ptr<RadosCluster> cluster) {
     cluster_ = cluster;
-    const char id[] = "client.admin";
-
-    if (ceph_create(&cmount_, cluster->user_name.c_str()))
-      return Status::Invalid("libcephfs::ceph_create returned non-zero exit code.");
-
-    if (ceph_conf_read_file(cmount_, cluster->ceph_config_path.c_str()))
-      return Status::Invalid(
-          "libcephfs::ceph_conf_read_file returned non-zero exit code.");
-
-    if (ceph_init(cmount_))
-      return Status::Invalid("libcephfs::ceph_init returned non-zero exit code.");
-
-    if (ceph_select_filesystem(cmount_, "cephfs"))
-      return Status::Invalid(
-          "libcephfs::ceph_select_filesystem returned non-zero exit code.");
-
-    if (ceph_mount(cmount_, "/"))
-      return Status::Invalid("libcephfs::ceph_mount returned non-zero exit code.");
-
     return Status::OK();
   }
 
@@ -121,7 +102,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
               std::shared_ptr<librados::bufferlist>& in,
               std::shared_ptr<librados::bufferlist>& out) {
     struct stat dir_st;  
-    int ret = stat(path, &dir_st);  
+    int ret = stat(path.c_str(), &dir_st);  
     if (ret < 0)
       return Status::ExecutionError("stat returned non-zero exit code.");
 
@@ -143,7 +124,6 @@ class ARROW_DS_EXPORT DirectObjectAccess {
 
  protected:
   std::shared_ptr<RadosCluster> cluster_;
-  struct ceph_mount_info* cmount_;
 };
 
 class ARROW_DS_EXPORT RadosParquetFileFormat : public FileFormat {
