@@ -49,7 +49,7 @@ EOF
     mkdir -p $MON_DATA
 
     cat >> /etc/ceph/ceph.conf <<EOF
-    [mon.0]
+[mon.0]
 log file = ${test_dir}/log/mon.log
 chdir = ""
 mon cluster log file = ${test_dir}/log/mon-cluster.log
