@@ -22,11 +22,10 @@
 #include "arrow/dataset/file_base.h"
 #include "arrow/filesystem/filesystem.h"
 #include "arrow/filesystem/path_util.h"
+#include "arrow/filesystem/util_internal.h"
 #include "arrow/util/checked_cast.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/logging.h"
-#include "arrow/filesystem/util_internal.h"
-
 
 namespace arrow {
 namespace dataset {
@@ -53,10 +52,10 @@ class RadosParquetScanTask : public ScanTask {
       return Status::ExecutionError(s.message());
     }
 
-    char *scanned_table_buffer = new char[out->length()];
+    char* scanned_table_buffer = new char[out->length()];
     librados::bufferlist::iterator itr = out->begin();
     itr.copy(out->length(), scanned_table_buffer);
-    /// copying out from the bufferist into a char pointer 
+    /// copying out from the bufferist into a char pointer
     /// fixed the segmentation fault issue. Maybe we can use shallow copy.
 
     RecordBatchVector batches;

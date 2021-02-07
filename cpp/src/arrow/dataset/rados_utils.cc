@@ -118,8 +118,7 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part
   int64_t projection_schema_size = 0;
   char* projection_schema_size_buffer = new char[8];
   itr.copy(8, projection_schema_size_buffer);
-  ARROW_RETURN_NOT_OK(
-      CharToInt64(projection_schema_size_buffer, projection_schema_size));
+  ARROW_RETURN_NOT_OK(CharToInt64(projection_schema_size_buffer, projection_schema_size));
   char* projection_schema_buffer = new char[projection_schema_size];
   itr.copy(projection_schema_size, projection_schema_buffer);
 

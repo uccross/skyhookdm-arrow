@@ -20,8 +20,8 @@
 
 #pragma once
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <functional>
@@ -94,17 +94,17 @@ class ARROW_DS_EXPORT RadosCluster {
 class ARROW_DS_EXPORT DirectObjectAccess {
  public:
   explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
-    : cluster_(std::move(cluster)) {}
+      : cluster_(std::move(cluster)) {}
 
   Status Exec(const std::string& path, const std::string& fn,
               std::shared_ptr<librados::bufferlist>& in,
               std::shared_ptr<librados::bufferlist>& out) {
-    struct stat dir_st;  
+    struct stat dir_st;
     if (stat(path.c_str(), &dir_st) < 0)
       return Status::ExecutionError("stat returned non-zero exit code.");
 
     uint64_t inode = dir_st.st_ino;
-    
+
     std::stringstream ss;
     ss << std::hex << inode;
     std::string oid(ss.str() + ".00000000");
