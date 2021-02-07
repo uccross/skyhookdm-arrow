@@ -20,6 +20,10 @@
 
 #pragma once
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <functional>
 #include <memory>
 #include <sstream>
@@ -27,8 +31,6 @@
 #include <utility>
 #include <vector>
 
-#include <cephfs/ceph_ll_client.h>
-#include <cephfs/libcephfs.h>
 #include "arrow/api.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/discovery.h"
@@ -118,11 +120,12 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   Status Exec(const std::string& path, const std::string& fn,
               std::shared_ptr<librados::bufferlist>& in,
               std::shared_ptr<librados::bufferlist>& out) {
-    struct ceph_statx stx;
-    if (ceph_statx(cmount_, path.c_str(), &stx, 0, 0))
-      return Status::IOError("libcephfs::ceph_statx failed");
+    struct stat dir_st;  
+    int ret = stat(path, &dir_st);  
+    if (ret < 0)
+      return Status::ExecutionError("stat returned non-zero exit code.");
 
-    uint64_t inode = stx.stx_ino;
+    uint64_t inode = dir_st.st_ino;
 
     std::stringstream ss;
     ss << std::hex << inode;
