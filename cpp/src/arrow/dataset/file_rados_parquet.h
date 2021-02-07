@@ -29,6 +29,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <iostream>
 #include <vector>
 
 #include "arrow/api.h"
@@ -107,6 +108,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
       return Status::ExecutionError("stat returned non-zero exit code.");
 
     uint64_t inode = dir_st.st_ino;
+    
+    std::cerr << inode << "\n";
 
     std::stringstream ss;
     ss << std::hex << inode;
