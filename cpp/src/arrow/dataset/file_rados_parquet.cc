@@ -48,10 +48,10 @@ class RadosParquetScanTask : public ScanTask {
         options_->filter, options_->partition_expression, options_->projector.schema(),
         options_->dataset_schema, in));
 
-    auto path =
-        fs::internal::RemoveAncestor("/mnt/cephfs/", source_.path()).value().to_string();
+    // auto path =
+    //     fs::internal::RemoveAncestor("/mnt/cephfs/", source_.path()).value().to_string();
 
-    Status s = doa_->Exec(path, "scan", in, out);
+    Status s = doa_->Exec(source_.path(), "scan", in, out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
     }
@@ -96,10 +96,10 @@ Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
   std::shared_ptr<librados::bufferlist> in = std::make_shared<librados::bufferlist>();
   std::shared_ptr<librados::bufferlist> out = std::make_shared<librados::bufferlist>();
 
-  auto path =
-      fs::internal::RemoveAncestor("/mnt/cephfs/", source.path()).value().to_string();
+  // auto path =
+  //     fs::internal::RemoveAncestor("/mnt/cephfs/", source.path()).value().to_string();
 
-  Status s = doa_->Exec(path, "read_schema", in, out);
+  Status s = doa_->Exec(source.path(), "read_schema", in, out);
   if (!s.ok()) return Status::ExecutionError(s.message());
 
   std::vector<std::shared_ptr<Schema>> schemas;
