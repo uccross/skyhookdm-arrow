@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import pyarrow.dataset as ds
-
+import os
+from pyarrow.rados import SplittedParquetWriter
 
 def test_discovery():
     format_ = ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
@@ -44,6 +44,14 @@ def test_parition_pruning():
     print(table.to_pandas())
 
 
+def test_splitted_parquet_writer():
+    chunksize = 2 * pow(10, 6) # 2MB
+    writer = SplittedParquetWriter("data/parquet/v0.7.1.parquet",  os.getcwd(), chunksize)
+    writer.write()
+    num_files_written = mywriter.close()
+
+
 if __name__ == "__main__":
     test_discovery()
     test_parition_pruning()
+    test_splitted_parquet_writer()

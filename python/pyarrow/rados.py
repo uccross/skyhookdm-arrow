@@ -15,95 +15,52 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
+import os
 import pyarrow as pa
-import urllib
-import ast
-import rados
-try:
-    from pyarrow._rados import RadosDatasetFactoryOptions, _write_to_dataset
-except ImportError:
-    raise ImportError(
-        "The pyarrow installation is not built with support for rados."
-    )
+import pyarrow.parquet as pq
 
+class SplittedParquetWriter(object):
+    def __init__(self,source_path, destination_path, chunksize):
+        self.source_path = source_path
+        self.destination_path = destination_path
+        self.chunksize = chunksize
+        self.file = pq.ParquetFile(source_path)
+        self._schema = self.file.schema_arrow
+        self._fileno = -1
 
-_RADOS_URI_SCHEME = 'rados'
+    def __del__(self):
+        self.close()
 
+    def _create_new_file(self):
+        self._fileno += 1
+        _fd = open(os.path.join(
+            self.destination_path, f"file.{self._fileno}.parquet"), "wb")
+        return _fd
 
-def write_to_dataset(source, data, object_id):
-    if isinstance(source, (list, tuple)):
-        source = source[0]
-    if not is_valid_rados_uri(source):
-        raise ValueError(
-            "Invalid uri for rados."
-        )
-    rados_factory_options = parse_uri(source)
+    def _open_new_file(self):
+        self._current_fd = self._create_new_file()
+        self._current_sink = pa.PythonFile(self._current_fd, mode="w")
+        self._current_writer = pq.ParquetWriter(self._current_sink, self._schema)
 
-    batches = []
-    if isinstance(data, pa.Table):
-        batches = data.to_batches()
-    if isinstance(data, list) and len(data) > 0:
-        if isinstance(data[0], pa.RecordBatch):
-            batches = data
-    _write_to_dataset(batches, object_id, rados_factory_options)
+    def _close_current_file(self):
+        self._current_writer.close()
+        self._current_sink.close()
+        self._current_fd.close()
 
+    def write(self):
+        self._open_new_file()
+        for batch in self.file.iter_batches(): # default batch_size=64k
+            table = pa.Table.from_batches([batch])
+            self._current_writer.write_table(table) 
+            if self._current_sink.tell() < self.chunksize:
+                continue
+            else:
+                self._close_current_file()
+                self._open_new_file()
 
-def generate_uri(
-        ceph_config_path='/etc/ceph/ceph.conf',
-        cluster='ceph',
-        pool='test-pool',
-        objects=[],
-        username=None,
-        flags=None):
-    params = {}
-    params['ids'] = urllib.parse.quote(str(objects), safe='')
-    if username:
-        params['username'] = username
-    if flags:
-        params['flags'] = flags
-    params['pool'] = pool
-    params['cluster'] = cluster
-    query = urllib.parse.urlencode(params)
-    return "{}://{}?{}".format(_RADOS_URI_SCHEME, ceph_config_path, query)
+        self._close_current_file()
 
-
-def parse_uri(uri):
-    if not is_valid_rados_uri(uri):
-        return None
-    url_object = urllib.parse.urlparse(uri)
-    params = urllib.parse.parse_qs(url_object.query)
-    args = {}
-    args['ceph_config_path'] = url_object.path
-    if 'cluster' in params:
-        args['cluster_name'] = params['cluster'][0]
-    if 'pool' in params:
-        args['pool_name'] = params['pool'][0]
-    if 'username' in params:
-        args['user_name'] = params['username'][0]
-    if 'ids' in params:
-        ids = ast.literal_eval(urllib.parse.unquote(params['ids'][0]))
-        args['objects'] = ids
-    if 'flags' in params:
-        args['flags'] = int(params['flags'][0])
-    options = RadosDatasetFactoryOptions(**args)
-    return options
-
-
-def is_valid_rados_uri(uri):
-    url_object = urllib.parse.urlparse(uri)
-    if url_object.scheme == _RADOS_URI_SCHEME:
-        params = urllib.parse.parse_qs(url_object.query)
-        if params['cluster'] and params['pool']:
-            if _is_valid_ceph_conf(url_object.netloc):
-                return True
-    return False
-
-
-def _is_valid_ceph_conf(path):
-    try:
-        cluster = rados.Rados(conffile=path)
-        cluster.version()
-    except ImportError:
-        return False
-    return True
+    def close(self):
+        num_files_written = self._fileno + 1
+        self._fileno = -1
+        return num_files_written
