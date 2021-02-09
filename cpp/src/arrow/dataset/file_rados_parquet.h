@@ -59,6 +59,8 @@ class ARROW_DS_EXPORT RadosCluster {
         rados(new RadosWrapper()),
         ioCtx(new IoCtxWrapper()) {}
 
+  ~RadosCluster() { Shutdown(); }
+
   Status Connect() {
     if (rados->init2(user_name.c_str(), cluster_name.c_str(), flags))
       return Status::Invalid("librados::init2 returned non-zero exit code.");
@@ -75,7 +77,7 @@ class ARROW_DS_EXPORT RadosCluster {
     return Status::OK();
   }
 
-  Status Disconnect() {
+  Status Shutdown() {
     rados->shutdown();
     return Status::OK();
   }
