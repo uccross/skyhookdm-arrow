@@ -47,10 +47,19 @@ def test_parition_pruning():
 
 
 def test_splitted_parquet_writer():
-    chunksize = 2 * pow(10, 6) # 2MB
-    writer = SplittedParquetWriter("data/parquet/v0.7.1.parquet",  os.getcwd(), chunksize)
+    chunksize = 4 * 1000000 # 5MB
+    writer = SplittedParquetWriter("largefile.parquet",  os.getcwd(), chunksize
+    )
     writer.write()
     num_files_written = mywriter.close()
+    assert num_files_written == 5
+
+    original_file_rows = pq.read_table('largefile.parquet').num_rows
+    splitted_files_rows = 0
+    for i in range(num_files_written):
+        splitted_files_rows += pq.read_metadata(f"file.{i}.parquet").num_rows
+
+    assert splitted_files_rows == original_file_rows
 
 
 if __name__ == "__main__":
