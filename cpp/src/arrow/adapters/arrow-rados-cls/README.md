@@ -30,23 +30,14 @@ compute operations into the Storage backend, we created a new file format on top
 
 # Getting Started
 
-**NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
-
 * Clone the repository.
 ```bash
 git clone https://github.com/uccross/arrow --branch rados-dataset-dev
 ```
 
-* Install Archery, the daily development tool by Arrow community.
+* Run the `ubuntu-cls-demo` step in the docker-compose file. This step will start a single node Ceph cluster inside the container, mount CephFS, put sample data into CephFS, and open an example Jupyter notebook with PyArrow installed.
 ```bash
-cd arrow/
-pip install -e dev/archery
-```
-
-* Run the demo container. This step will start a single node Ceph cluster inside the container, mount CephFS, put sample data into CephFS, and open an example Jupyter notebook with PyArrow installed.
-```bash
-export UBUNTU=20.04
-archery docker run ubuntu-cls-demo
+docker-compose run --service-ports ubuntu-cls-demo
 ```
 
 # Features
