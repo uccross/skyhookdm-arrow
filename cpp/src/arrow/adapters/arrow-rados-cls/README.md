@@ -30,15 +30,23 @@ compute operations into the Storage backend, we created a new file format on top
 
 # Getting Started
 
-Follow these steps to start interacting with the Dataset API using our `RadosParquetFileFormat`:
+**NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
 
 * Clone the repository.
+```bash
 git clone https://github.com/uccross/arrow --branch rados-dataset-dev
+```
+
+* Install Archery, the daily development tool by Arrow community.
+```bash
+cd arrow/
+pip install -e dev/archery
+```
 
 * Run the demo container. This step will start a single node Ceph cluster inside the container, mount CephFS, put sample data into CephFS, and open an example Jupyter notebook with PyArrow installed.
 ```bash
 export UBUNTU=20.04
-docker-compose run ubuntu-cls-demo bash
+archery docker run ubuntu-cls-demo
 ```
 
 # Features
@@ -75,24 +83,27 @@ TODO
 
 # Setting up the development environment
 
-**NOTE:** Please make sure docker and docker-compose is installed.
+**NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
 
-1. Clone the repository and checkout into the development branch.
-
+1. Clone the repository.
 ```bash
-git clone https://github.com/uccross/arrow
+git clone https://github.com/uccross/arrow --branch rados-dataset-dev
+```
+
+2. Install Archery.
+```bash
 cd arrow/
-git checkout rados-dataset-dev/ 
+pip install -e dev/archery
 ```
 
 2. Build and test the C++ client.
-```
+```bash
 export UBUNTU=20.04
-docker-compose run ubuntu-cpp-cls.
+archery docker run ubuntu-cpp-cls.
 ```
 
 3. Build and test the Python client.
-```
+```bash
 export UBUNTU=20.04
-docker-compose run ubuntu-python-cls.
+archery docker run ubuntu-python-cls.
 ```
