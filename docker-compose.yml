@@ -104,6 +104,7 @@ x-hierarchy:
   - ubuntu-cpp:
     - ubuntu-cpp-cls
     - ubuntu-python-cls
+    - ubuntu-cls-demo
     - ubuntu-c-glib:
       - ubuntu-ruby
     - ubuntu-lint
