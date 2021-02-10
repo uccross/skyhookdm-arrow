@@ -30,6 +30,8 @@ compute operations into the Storage backend, we created a new file format on top
 
 # Getting Started
 
+**NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
+
 * Clone the repository.
 ```bash
 git clone https://github.com/uccross/arrow --branch rados-dataset-dev
