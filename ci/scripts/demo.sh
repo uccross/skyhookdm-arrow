@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,10 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+#!/bin/bash
 set -ex
 
-source_dir=${1}/cpp
-build_dir=${2}/cpp
+build_dir=/tmp
 test_dir=${build_dir}/test-cluster
 
 pushd ${build_dir}
@@ -100,12 +98,6 @@ EOF
 
     export CEPH_CONF="/etc/ceph/ceph.conf"
 
-    # copy the CLS libs to the appropriate locations.
-    mkdir -p /usr/lib/x86_64-linux-gnu/rados-classes/
-    mkdir -p /usr/lib/aarch64-linux-gnu/rados-classes/
-    cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
-    cp debug/libcls_arrow* /usr/lib/aarch64-linux-gnu/rados-classes/
-
     # mount a ceph filesystem to /mnt/cephfs in the user-space using ceph-fuse
     mkdir -p /mnt/cephfs
     ceph-fuse --id client.admin -m 127.0.0.1:6789  --client_fs cephfs /mnt/cephfs
@@ -118,9 +110,10 @@ EOF
     cp -r nyc /mnt/cephfs/
     sleep 15
 
-    pip install notebook
-    jupyter notebook --allow-root --no-browser --ip 0.0.0.0
-    
-    # unmount cephfs
-    umount /mnt/cephfs
 popd
+
+# start the notebook
+jupyter notebook --allow-root --no-browser  --ip 0.0.0.0
+
+# unmount cephfs
+umount /mnt/cephfs
