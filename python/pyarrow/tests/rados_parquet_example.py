@@ -18,7 +18,9 @@
 import os
 import pyarrow
 import pyarrow.dataset as ds
+import pyarrow.parquet as pq
 from pyarrow.rados import SplittedParquetWriter
+
 
 def test_discovery():
     format_ = ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
@@ -51,7 +53,7 @@ def test_splitted_parquet_writer():
     writer = SplittedParquetWriter("largefile.parquet",  os.getcwd(), chunksize
     )
     writer.write()
-    num_files_written = mywriter.close()
+    num_files_written = writer.close()
     assert num_files_written == 5
 
     original_file_rows = pq.read_table('largefile.parquet').num_rows
