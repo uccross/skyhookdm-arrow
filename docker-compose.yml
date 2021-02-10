@@ -1397,3 +1397,19 @@ services:
         /arrow/ci/scripts/python_build.sh /arrow /build &&
         /arrow/ci/scripts/java_build.sh /arrow /build &&
         /arrow/ci/scripts/integration_spark.sh /arrow /spark"]
+
+  ubuntu-cls-demo:
+    # Usage:
+    #   docker-compose build debian-java
+    #   docker-compose run debian-java
+    image: ubuntu-cls-demo
+    build:
+      context: cpp/src/arrow/adapters/arrow-rados-cls/docker/
+      dockerfile: cpp/src/arrow/adapters/arrow-rados-cls/docker/Dockerfile
+    volumes: &ubuntu-cls-vols
+      - .:/workspace
+    ports:
+      - 8888:8888
+    command: &ubuntu-cls-command >
+      /bin/bash -c "
+        cpp/src/arrow/adapters/arrow-rados-cls/docker/script.sh"
