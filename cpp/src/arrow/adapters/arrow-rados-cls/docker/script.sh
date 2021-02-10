@@ -96,6 +96,9 @@ EOF
 popd
 
 # start the notebook
+pip3 install notebook
+pip3 install --upgrade /pyarrow-*.whl
+
 jupyter notebook --allow-root --no-browser  --ip 0.0.0.0
 
 # unmount cephfs

@@ -1,7 +1,7 @@
 steps:
 - id: notebook
-  uses: docker://jcnitdgp25/skyhookdm-arrow:latest
-  runs: [./script.sh] 
+  uses: ./docker
+  runs: [./docker/script.sh] 
   options: 
     privileged: true
     ports:
