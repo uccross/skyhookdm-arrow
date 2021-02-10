@@ -16,6 +16,8 @@
 # under the License.
 
 import os
+import pyarrow
+import pyarrow.dataset as ds
 from pyarrow.rados import SplittedParquetWriter
 
 def test_discovery():
