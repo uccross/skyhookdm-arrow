@@ -22,27 +22,28 @@
 Apache Arrow provides a `Dataset` API, which acts as an abstraction over a collection of files in different storage backend like S3 and HDFS. It supports different file formats like CSV and Parquet through the `FileFormat` API. In SkyhookDM, since we require to pushdown
 compute operations into the Storage backend, we created a new file format on top of Parquet, namely a `RadosParquetFileFormat` which besides providing the benefits of Parquet, allows pushing down filter and projection operations into the storage backend to minimize data moved through the network.
 
-# Installation
-
-* For installing SkyhookDM with Rook, check out [this](https://github.com/JayjeetAtGithub/skyhookdm-arrow-docker/blob/master/README.md#deploying-skyhookdm-arrow-on-a-rook-cluster) guide.
-
-* TODO: add instructions for deploying on Cloudlab.
-
 # Getting Started
 
 **NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
 
 * Clone the repository.
 ```bash
-git clone https://github.com/uccross/arrow --branch rados-dataset-dev
+git clone --branch rados-dataset-dev https://github.com/uccross/arrow 
 ```
 
 * Run the `ubuntu-cls-demo` step in the docker-compose file. This step will start a single node Ceph cluster inside the container, mount CephFS, put sample data into CephFS, and open an example Jupyter notebook with PyArrow installed.
 ```bash
+cd arrow/
 docker-compose run --service-ports ubuntu-cls-demo
 ```
 
-# Features
+# Installation Instructions
+
+* For installing SkyhookDM with Rook, check out [this](https://github.com/JayjeetAtGithub/skyhookdm-arrow-docker/blob/master/README.md#deploying-skyhookdm-arrow-on-a-rook-cluster) guide.
+
+* TODO: add instructions for deploying on Cloudlab.
+
+# Salient Features
 
 * Enables pushing down filters, projections, compute operations to the Storage backend for minimal data transfer over the network.
 
@@ -54,7 +55,7 @@ docker-compose run --service-ports ubuntu-cls-demo
     1) Requires CephFS to be mounted. 
     2) Requires using the `SplittedParquetWriter` API to write arrow Tables.
 
-* Built on top of Ceph v15.2.x.
+* Built on top of latest Ceph v15.2.x.
 
 # Code Structure
 
@@ -80,10 +81,10 @@ TODO
 
 1. Clone the repository.
 ```bash
-git clone https://github.com/uccross/arrow --branch rados-dataset-dev
+git clone --branch rados-dataset-dev https://github.com/uccross/arrow
 ```
 
-2. Install Archery.
+2. Install [Archery](https://arrow.apache.org/docs/developers/archery.html#), the daily development tool by Apache Arrow community.
 ```bash
 cd arrow/
 pip install -e dev/archery
