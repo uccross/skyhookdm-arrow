@@ -118,7 +118,7 @@ EOF
     cp -r nyc /mnt/cephfs/
     sleep 15
 
-    pip install jupyterlab
+    pip install notebook
     jupyter notebook --allow-root --no-browser --ip 0.0.0.0
     
     # unmount cephfs

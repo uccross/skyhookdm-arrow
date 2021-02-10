@@ -30,12 +30,12 @@ compute operations into the Storage backend, we created a new file format on top
 
 # Getting Started
 
-TODO: create a reproducible getting started
+Follow these steps to start interacting with the Dataset API using our `RadosParquetFileFormat`:
 
-* Clone the Repository.
+* Clone the repository.
 git clone https://github.com/uccross/arrow --branch rados-dataset-dev
 
-* Run the demo container.
+* Run the demo container. This step will start a single node Ceph cluster inside the container, mount CephFS, put sample data into CephFS, and open an example Jupyter notebook with PyArrow installed.
 ```bash
 export UBUNTU=20.04
 docker-compose run ubuntu-cls-demo bash
