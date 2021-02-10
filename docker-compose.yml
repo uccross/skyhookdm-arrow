@@ -1404,6 +1404,7 @@ services:
       - .:/workspace
     ports:
       - 8888:8888
+    privileged: true
     command: &ubuntu-cls-command >
       /bin/bash -c "
         /workspace/cpp/src/arrow/adapters/arrow-rados-cls/docker/script.sh"
