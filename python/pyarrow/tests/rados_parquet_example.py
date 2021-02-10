@@ -16,7 +16,6 @@
 # under the License.
 
 import os
-import pyarrow
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from pyarrow.rados import SplittedParquetWriter
@@ -49,9 +48,9 @@ def test_parition_pruning():
 
 
 def test_splitted_parquet_writer():
-    chunksize = 4 * 1000000 # 5MB
-    writer = SplittedParquetWriter("largefile.parquet",  os.getcwd(), chunksize
-    )
+    chunksize = 4 * 1000000  # 4MB
+    writer = SplittedParquetWriter("largefile.parquet", os.getcwd(), chunksize
+                                   )
     writer.write()
     num_files_written = writer.close()
     assert num_files_written == 5

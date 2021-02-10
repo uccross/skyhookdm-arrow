@@ -19,8 +19,9 @@ import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+
 class SplittedParquetWriter(object):
-    def __init__(self,source_path, destination_path, chunksize):
+    def __init__(self, source_path, destination_path, chunksize):
         self.source_path = source_path
         self.destination_path = destination_path
         self.chunksize = chunksize
@@ -40,7 +41,8 @@ class SplittedParquetWriter(object):
     def _open_new_file(self):
         self._current_fd = self._create_new_file()
         self._current_sink = pa.PythonFile(self._current_fd, mode="w")
-        self._current_writer = pq.ParquetWriter(self._current_sink, self._schema)
+        self._current_writer = pq.ParquetWriter(
+            self._current_sink, self._schema)
 
     def _close_current_file(self):
         self._current_writer.close()
@@ -49,9 +51,9 @@ class SplittedParquetWriter(object):
 
     def write(self):
         self._open_new_file()
-        for batch in self.file.iter_batches(): # default batch_size=64k
+        for batch in self.file.iter_batches():  # default batch_size=64k
             table = pa.Table.from_batches([batch])
-            self._current_writer.write_table(table) 
+            self._current_writer.write_table(table)
             if self._current_sink.tell() < self.chunksize:
                 continue
             else:
