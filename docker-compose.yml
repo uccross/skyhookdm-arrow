@@ -1399,7 +1399,7 @@ services:
         /arrow/ci/scripts/integration_spark.sh /arrow /spark"]
 
   ubuntu-cls-demo:
-    build: ./cpp/src/arrow/adapters/arrow-rados-cls/docker/Dockerfile
+    build: ./cpp/src/arrow/adapters/arrow-rados-cls/docker
     volumes: &ubuntu-cls-vols
       - .:/workspace
     ports:
