@@ -104,6 +104,7 @@ x-hierarchy:
   - ubuntu-cpp:
     - ubuntu-cpp-cls
     - ubuntu-python-cls
+    - ubuntu-cls-demo
     - ubuntu-c-glib:
       - ubuntu-ruby
     - ubuntu-lint
@@ -1397,3 +1398,14 @@ services:
         /arrow/ci/scripts/python_build.sh /arrow /build &&
         /arrow/ci/scripts/java_build.sh /arrow /build &&
         /arrow/ci/scripts/integration_spark.sh /arrow /spark"]
+
+  ubuntu-cls-demo:
+    build: ./cpp/src/arrow/adapters/arrow-rados-cls/docker
+    volumes: &ubuntu-cls-vols
+      - .:/workspace
+    ports:
+      - 8888:8888
+    privileged: true
+    command: &ubuntu-cls-command >
+      /bin/bash -c "
+        /workspace/cpp/src/arrow/adapters/arrow-rados-cls/docker/script.sh"
