@@ -104,7 +104,6 @@ x-hierarchy:
   - ubuntu-cpp:
     - ubuntu-cpp-cls
     - ubuntu-python-cls
-    - ubuntu-cls-demo
     - ubuntu-c-glib:
       - ubuntu-ruby
     - ubuntu-lint
@@ -829,14 +828,6 @@ services:
         /arrow/ci/scripts/python_build.sh /arrow /build &&
         /arrow/ci/scripts/integration_ceph.sh /arrow /build &&
         /arrow/ci/scripts/python_test.sh /arrow"
-
-  ubuntu-cls-demo:
-    image: jcnitdgp25/skyhookdm-arrow:latest
-    ports:
-      - 8888:8888
-    command: &demo-cls-command >
-      /bin/bash -c "
-        /arrow/ci/scripts/demo.sh"
 
   conda-python-pandas:
     # Possible $PANDAS parameters:
