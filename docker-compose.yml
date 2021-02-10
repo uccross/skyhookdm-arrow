@@ -1406,4 +1406,4 @@ services:
       - 8888:8888
     command: &ubuntu-cls-command >
       /bin/bash -c "
-        cpp/src/arrow/adapters/arrow-rados-cls/docker/script.sh"
+        /workspace/cpp/src/arrow/adapters/arrow-rados-cls/docker/script.sh"
