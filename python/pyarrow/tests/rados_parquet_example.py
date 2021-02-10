@@ -15,7 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import os
 import pyarrow.dataset as ds
+import pyarrow.parquet as pq
+from pyarrow.rados import SplittedParquetWriter
 
 
 def test_discovery():
@@ -44,6 +47,23 @@ def test_parition_pruning():
     print(table.to_pandas())
 
 
+def test_splitted_parquet_writer():
+    chunksize = 4 * 1000000  # 4MB
+    writer = SplittedParquetWriter("largefile.parquet", os.getcwd(), chunksize
+                                   )
+    writer.write()
+    num_files_written = writer.close()
+    assert num_files_written == 5
+
+    original_file_rows = pq.read_table('largefile.parquet').num_rows
+    splitted_files_rows = 0
+    for i in range(num_files_written):
+        splitted_files_rows += pq.read_metadata(f"file.{i}.parquet").num_rows
+
+    assert splitted_files_rows == original_file_rows
+
+
 if __name__ == "__main__":
     test_discovery()
     test_parition_pruning()
+    test_splitted_parquet_writer()
