@@ -1399,13 +1399,7 @@ services:
         /arrow/ci/scripts/integration_spark.sh /arrow /spark"]
 
   ubuntu-cls-demo:
-    # Usage:
-    #   docker-compose build debian-java
-    #   docker-compose run debian-java
-    image: ubuntu-cls-demo
-    build:
-      context: cpp/src/arrow/adapters/arrow-rados-cls/docker/
-      dockerfile: cpp/src/arrow/adapters/arrow-rados-cls/docker/Dockerfile
+    build: ./cpp/src/arrow/adapters/arrow-rados-cls/docker/Dockerfile
     volumes: &ubuntu-cls-vols
       - .:/workspace
     ports:
