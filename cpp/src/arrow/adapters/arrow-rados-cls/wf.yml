@@ -1,6 +1,6 @@
 steps:
 - id: notebook
-  uses: jcnitdgp25/skyhookdm-arrow:latest
+  uses: docker://jcnitdgp25/skyhookdm-arrow:latest
   runs: [./script.sh] 
   options: 
     privileged: true
