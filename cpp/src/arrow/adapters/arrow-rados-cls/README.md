@@ -1,3 +1,22 @@
+<!---
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+
 # SkyhookDM-Arrow
 
 Apache Arrow provides a `Dataset` API, which acts as an abstraction over a collection of files in different storage backend like S3 and HDFS. It supports different file formats like CSV and Parquet through the `FileFormat` API. In SkyhookDM, since we require to pushdown
@@ -13,20 +32,13 @@ compute operations into the Storage backend, we created a new file format on top
 
 TODO: create a reproducible getting started
 
-```python
-import pyarrow as pa
-import pyarrow.dataset as ds
+* Clone the Repository.
+git clone https://github.com/uccross/arrow --branch rados-dataset-dev
 
-dataset = ds.dataset("file:///mnt/cephs/nyc", format=ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf"))
-
-# fetch the whole table
-dataset.to_table()
-
-# apply projection
-dataset.to_table(columns=["fare_amount", "VendorID"])
-
-# now also apply filtering
-dataset.to_table(columns=["fare_amount", "VendorID"], filter=(ds.field("fare_amount") > 100.0)
+* Run the demo container.
+```bash
+export UBUNTU=20.04
+docker-compose run ubuntu-cls-demo bash
 ```
 
 # Features
