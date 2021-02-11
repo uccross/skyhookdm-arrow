@@ -124,3 +124,25 @@ TEST(TestClsSDK, QueryOnPartitionKey) {
   std::cout << "Table size: " << table->num_rows() << "\n";
   std::cout << "Table: " << table->ToString() << "\n";
 }
+
+TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
+  std::string path_to_config = "/etc/ceph/ceph.conf";
+  auto format = arrow::dataset::RadosParquetFileFormat::Make(path_to_config).ValueOrDie();
+
+  std::string path;
+  auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
+  auto dataset = GetDatasetFromPath(fs, format, path);
+
+  std::vector<std::string> columns = {"total_amount", "VendorID", "payment_type"};
+  auto filter = arrow::dataset::and_(
+      arrow::dataset::greater(arrow::dataset::field_ref("payment_type"),
+                              arrow::dataset::literal(2)),
+      arrow::dataset::greater(arrow::dataset::field_ref("VendorID"),
+                              arrow::dataset::literal(1)));
+
+  auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
+
+  auto table = scanner->ToTable().ValueOrDie();
+  std::cout << "Table size: " << table->num_rows() << "\n";
+  std::cout << "Table: " << table->ToString() << "\n";
+}
