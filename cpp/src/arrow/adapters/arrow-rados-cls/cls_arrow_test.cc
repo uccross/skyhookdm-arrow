@@ -135,9 +135,10 @@ TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
 
   std::vector<std::string> columns = {"total_amount", "VendorID", "payment_type"};
   auto filter = arrow::dataset::and_(
-    arrow::dataset::greater(arrow::dataset::field_ref("payment_type"), arrow::dataset::literal(2)),
-    arrow::dataset::greater(arrow::dataset::field_ref("VendorID"), arrow::dataset::literal(1))
-  );
+      arrow::dataset::greater(arrow::dataset::field_ref("payment_type"),
+                              arrow::dataset::literal(2)),
+      arrow::dataset::greater(arrow::dataset::field_ref("VendorID"),
+                              arrow::dataset::literal(1)));
 
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
 
