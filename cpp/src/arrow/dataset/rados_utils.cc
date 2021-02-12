@@ -50,7 +50,7 @@ Status CharToInt64(char* buffer, int64_t& num) {
 Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
                                         std::shared_ptr<Schema> projection_schema,
                                         std::shared_ptr<Schema> dataset_schema,
-                                        std::shared_ptr<librados::bufferlist>& bl) {
+                                        librados::bufferlist& bl) {
   // serialize the filter expression's and the schema's.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, Serialize(filter));
   ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer, Serialize(part_expr));
@@ -78,20 +78,20 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
       Int64ToChar(dataset_schema_size_buffer, dataset_schema_buffer->size()));
 
   // append the filter expression size and data.
-  bl->append(filter_size_buffer, 8);
-  bl->append((char*)filter_buffer->data(), filter_buffer->size());
+  bl.append(filter_size_buffer, 8);
+  bl.append((char*)filter_buffer->data(), filter_buffer->size());
 
   // append the partition expression size and data
-  bl->append(part_expr_size_buffer, 8);
-  bl->append((char*)part_expr_buffer->data(), part_expr_buffer->size());
+  bl.append(part_expr_size_buffer, 8);
+  bl.append((char*)part_expr_buffer->data(), part_expr_buffer->size());
 
   // append the projection schema size and data.
-  bl->append(projection_schema_size_buffer, 8);
-  bl->append((char*)projection_schema_buffer->data(), projection_schema_buffer->size());
+  bl.append(projection_schema_size_buffer, 8);
+  bl.append((char*)projection_schema_buffer->data(), projection_schema_buffer->size());
 
   // append the dataset schema size and data.
-  bl->append(dataset_schema_size_buffer, 8);
-  bl->append((char*)dataset_schema_buffer->data(), dataset_schema_buffer->size());
+  bl.append(dataset_schema_size_buffer, 8);
+  bl.append((char*)dataset_schema_buffer->data(), dataset_schema_buffer->size());
 
   delete[] filter_size_buffer;
   delete[] part_expr_size_buffer;
@@ -104,8 +104,8 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
 Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part_expr,
                                             std::shared_ptr<Schema>* projection_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
-                                            std::shared_ptr<librados::bufferlist>& bl) {
-  librados::bufferlist::iterator itr = bl->begin();
+                                            librados::bufferlist& bl) {
+  librados::bufferlist::iterator itr = bl.begin();
 
   int64_t filter_size = 0;
   char* filter_size_buffer = new char[8];
@@ -171,7 +171,7 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part
 }
 
 Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
-                                  std::shared_ptr<librados::bufferlist>& bl) {
+                                  librados::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
   const auto options = ipc::IpcWriteOptions::Defaults();
@@ -182,7 +182,7 @@ Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
   ARROW_RETURN_NOT_OK(writer->Close());
 
   ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
-  bl->append((char*)buffer->data(), buffer->size());
+  bl.append((char*)buffer->data(), buffer->size());
   return Status::OK();
 }
 

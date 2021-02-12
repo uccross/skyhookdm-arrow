@@ -99,8 +99,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
       : cluster_(std::move(cluster)) {}
 
   Status Exec(const std::string& path, const std::string& fn,
-              std::shared_ptr<librados::bufferlist>& in,
-              std::shared_ptr<librados::bufferlist>& out) {
+              librados::bufferlist& in,
+              librados::bufferlist& out) {
     struct stat dir_st;
     if (stat(path.c_str(), &dir_st) < 0)
       return Status::ExecutionError("stat returned non-zero exit code.");
@@ -111,13 +111,11 @@ class ARROW_DS_EXPORT DirectObjectAccess {
     ss << std::hex << inode;
     std::string oid(ss.str() + ".00000000");
 
-    librados::bufferlist out_bl;
-    if (cluster_->ioCtx->exec(oid.c_str(), cluster_->cls_name.c_str(), fn.c_str(), *in,
-                              out_bl)) {
+    if (cluster_->ioCtx->exec(oid.c_str(), cluster_->cls_name.c_str(), fn.c_str(), in,
+                              out)) {
       return Status::ExecutionError("librados::exec returned non-zero exit code.");
     }
 
-    out = std::make_shared<librados::bufferlist>(out_bl);
     return Status::OK();
   }
 

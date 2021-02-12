@@ -184,13 +184,6 @@ static int read_schema(cls_method_context_t hctx, ceph::buffer::list* in,
   return 0;
 }
 
-static int write(cls_method_context_t hctx, ceph::buffer::list* in,
-                 ceph::buffer::list* out) {
-  if (cls_cxx_create(hctx, false) < 0) return -1;
-  if (cls_cxx_write(hctx, 0, in->length(), in) < 0) return -1;
-  return 0;
-}
-
 static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
                 ceph::buffer::list* out) {
   // the components required to construct a ParquetFragment.
@@ -198,11 +191,10 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   arrow::dataset::Expression partition_expression;
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
+  
   // deserialize the scan request
-  std::shared_ptr<ceph::buffer::list> in_ptr = std::make_shared<ceph::buffer::list>(*in);
-
   if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
-           &filter, &partition_expression, &projection_schema, &dataset_schema, in_ptr)
+           &filter, &partition_expression, &projection_schema, &dataset_schema, *in)
            .ok())
     return -1;
 
@@ -219,10 +211,10 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   CLS_LOG(0, "table rows: %d", table->num_rows());
 
   // serialize the resultant table to send back to the client
-  std::shared_ptr<ceph::buffer::list> bl = std::make_shared<ceph::buffer::list>();
+  ceph::buffer::list bl;
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
-  *out = *bl;
+  *out = bl;
   return 0;
 }
 
