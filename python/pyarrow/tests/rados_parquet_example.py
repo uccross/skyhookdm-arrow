@@ -62,7 +62,7 @@ def test_with_partition_pruning():
         (ds.field('payment_type') > 2) &
         (ds.field('VendorID') > 1)
     )
-    projection_cols = ['payment_type', 'tips_amount', 'VendorID']
+    projection_cols = ['payment_type', 'tip_amount', 'VendorID']
     partitioning = ds.partitioning(
         pa.schema([("payment_type", pa.int32()), ("VendorID", pa.int32())]),
         flavor="hive"
