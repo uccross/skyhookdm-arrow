@@ -18,6 +18,18 @@ on:
     - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow_test.cc'
     - '.github/workflows/skyhook-ci.yml'
 
+  pull_request:
+    paths:
+    - 'cpp/src/arrow/dataset/file_rados_parquet.cc'
+    - 'cpp/src/arrow/dataset/file_rados_parquet.h'
+    - 'cpp/src/arrow/dataset/rados_utils.cc'
+    - 'cpp/src/arrow/dataset/rados_utils.h'
+    - 'cpp/src/arrow/dataset/rados.cc'
+    - 'cpp/src/arrow/dataset/rados.h'
+    - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow.cc'
+    - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow_test.cc'
+    - '.github/workflows/skyhook-ci.yml'
+
 jobs:
   build:
     runs-on: ubuntu-latest
