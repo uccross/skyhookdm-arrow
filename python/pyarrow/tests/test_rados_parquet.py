@@ -18,33 +18,44 @@
 import os
 import pytest
 import pyarrow as pa
-import pyarrow.dataset as ds
 import pyarrow.parquet as pq
-from pyarrow.rados import SplittedParquetWriter
+
+
+skip = False
+try:
+    import pyarrow.dataset as ds
+    from pyarrow.rados import SplittedParquetWriter
+except ModuleNotFoundError:
+    skip = True
 
 
 @pytest.mark.rados
 def test_dataset_discovery():
+    if skip:
+        return
     rados_parquet_dataset = ds.dataset(
-        "file:///mnt/cephfs/nyc/", 
+        "file:///mnt/cephfs/nyc/",
         format=ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
     )
     parquet_dataset = ds.dataset(
-        "file:///mnt/cephfs/nyc/", 
+        "file:///mnt/cephfs/nyc/",
         format="parquet"
     )
     assert len(rados_parquet_dataset.files) == len(parquet_dataset.files)
     assert len(rados_parquet_dataset.files) == 8
     assert rados_parquet_dataset.schema == parquet_dataset.schema
 
+
 @pytest.mark.rados
 def test_without_partition_pruning():
+    if skip:
+        return
     rados_parquet_dataset = ds.dataset(
-        "file:///mnt/cephfs/nyc/", 
+        "file:///mnt/cephfs/nyc/",
         format=ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
     )
     parquet_dataset = ds.dataset(
-        "file:///mnt/cephfs/nyc/", 
+        "file:///mnt/cephfs/nyc/",
         format="parquet"
     )
 
@@ -57,8 +68,11 @@ def test_without_partition_pruning():
 
     assert rados_parquet_df.equals(parquet_df) == 1
 
+
 @pytest.mark.rados
 def test_with_partition_pruning():
+    if skip:
+        return
     filter_expression = (
         (ds.field('tip_amount') > 10) &
         (ds.field('payment_type') > 2) &
@@ -71,30 +85,34 @@ def test_with_partition_pruning():
     )
 
     rados_parquet_dataset = ds.dataset(
-        "file:///mnt/cephfs/nyc/", 
+        "file:///mnt/cephfs/nyc/",
         partitioning=partitioning,
         format=ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
     )
     parquet_dataset = ds.dataset(
-        "file:///mnt/cephfs/nyc/", 
+        "file:///mnt/cephfs/nyc/",
         partitioning=partitioning,
         format="parquet"
     )
 
     rados_parquet_df = rados_parquet_dataset.to_table(
         columns=projection_cols, filter=filter_expression).to_pandas()
-    
-    parquet_df = rados_parquet_dataset.to_table(
+
+    parquet_df = parquet_dataset.to_table(
         columns=projection_cols, filter=filter_expression).to_pandas()
-    
+
     assert rados_parquet_df.equals(parquet_df) == 1
+
 
 @pytest.mark.rados
 def test_splitted_parquet_writer():
-    os.system('wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/largefile.parquet')
+    if skip:
+        return
+    os.system("wget "
+              "https://raw.githubusercontent.com/"
+              "JayjeetAtGithub/zips/main/largefile.parquet")
     chunksize = 4 * 1000000  # 4MB
-    writer = SplittedParquetWriter("largefile.parquet", os.getcwd(), chunksize
-                                   )
+    writer = SplittedParquetWriter("largefile.parquet", os.getcwd(), chunksize)
     writer.write()
     num_files_written = writer.close()
     assert num_files_written == 5
