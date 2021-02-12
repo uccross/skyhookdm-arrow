@@ -127,7 +127,7 @@ EOF
     if [ ! -z "$ARROW_PYTHON" ]; then
     # run the end-to-end python tests
     wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/largefile.parquet
-    python $source_dir/python/pyarrow/tests/rados_parquet_example.py
+    python ${1}/python/pyarrow/tests/rados_parquet_example.py
     fi
 
 popd
