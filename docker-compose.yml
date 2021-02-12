@@ -804,7 +804,8 @@ services:
     command: &cpp-cls-command >
       /bin/bash -c "
         /arrow/ci/scripts/cpp_build.sh /arrow /build &&
-        /arrow/ci/scripts/integration_ceph.sh /arrow /build"
+        /arrow/ci/scripts/integration_ceph.sh /arrow /build &&
+        /arrow/ci/scripts/cpp_test.sh /arrow /build"
 
   ubuntu-python-cls:
     image: ${REPO}:${ARCH}-ubuntu-${UBUNTU}-python-3
