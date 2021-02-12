@@ -51,10 +51,10 @@ class RadosParquetScanTask : public ScanTask {
       return Status::ExecutionError(s.message());
     }
 
-    const char *data = std::move(out.c_str());
+    ceph::bufferlist *out_ptr = &out;
 
     RecordBatchVector batches;
-    auto buffer = std::make_shared<Buffer>((uint8_t*)data, out.length());
+    auto buffer = std::make_shared<Buffer>((uint8_t*)out_ptr->c_str(), out.length());
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
