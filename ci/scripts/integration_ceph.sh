@@ -130,7 +130,4 @@ EOF
     python $source_dir/python/pyarrow/tests/rados_parquet_example.py
     fi
 
-    # unmount cephfs
-    umount /mnt/cephfs
-
 popd

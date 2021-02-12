@@ -104,8 +104,9 @@ def test_splitted_parquet_writer():
 
 
 if __name__ == "__main__":
-    test_discovery()
-    test_parition_pruning()
+    test_dataset_discovery()
+    test_without_partition_pruning()
+    test_with_partition_pruning()
     test_splitted_parquet_writer()
     # unmount cephfs for graceful exit of the container
     os.system("umount -f /mnt/cephfs")
