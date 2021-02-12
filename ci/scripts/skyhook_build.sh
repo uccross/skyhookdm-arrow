@@ -2,7 +2,7 @@
 set -eux
 
 # c++ api and cls build
-ls -al
+ls -al /arrow
 cd /arrow/cpp
 
 mkdir -p debug
