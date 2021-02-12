@@ -51,10 +51,10 @@ class RadosParquetScanTask : public ScanTask {
       return Status::ExecutionError(s.message());
     }
 
-    // ceph::unique_leakable_ptr<buffer::raw> raw = ceph::buffer::claim_malloc(out.length(), out.c_str());
+    ceph::bufferptr(ceph::buffer::claim_char(out.length(), out.c_str()));
 
     RecordBatchVector batches;
-    auto buffer = std::make_shared<Buffer>(std::move((uint8_t*)out.c_str()), out.length());
+    auto buffer = std::make_shared<Buffer>(std::move((uint8_t*)ptr.c_str()), ptr.length());
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
