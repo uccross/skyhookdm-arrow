@@ -51,14 +51,16 @@ class RadosParquetScanTask : public ScanTask {
       return Status::ExecutionError(s.message());
     }
 
-    char* scanned_table_buffer = new char[out.length()];
-    librados::bufferlist::iterator itr = out.begin();
-    itr.copy(out.length(), scanned_table_buffer);
+    // char* scanned_table_buffer = new char[out.length()];
+    // librados::bufferlist::iterator itr = out.begin();
+    // itr.copy(out.length(), scanned_table_buffer);
     /// copying out from the bufferist into a char pointer
     /// fixed the segmentation fault issue. Maybe we can use shallow copy.
 
+    uint8_t* out_bfr = (uint8_t*)out.c_str();
+
     RecordBatchVector batches;
-    auto buffer = std::make_shared<Buffer>((uint8_t*)scanned_table_buffer, out.length());
+    auto buffer = std::make_shared<Buffer>(out_bfr, out.length());
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
