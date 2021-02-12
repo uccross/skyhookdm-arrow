@@ -15,6 +15,6 @@ WORKDIR /
 
 ADD . /arrow
 
-RUN ./ci/scripts/skyhook_build.sh 
+RUN /arrow/ci/scripts/skyhook_build.sh 
 
 RUN rm -rf /arrow
