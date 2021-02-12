@@ -16,6 +16,7 @@
 # under the License.
 
 import os
+import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from pyarrow.rados import SplittedParquetWriter
