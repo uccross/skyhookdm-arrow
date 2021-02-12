@@ -40,7 +40,7 @@ class RadosParquetScanTask : public ScanTask {
         doa_(std::move(doa)) {}
 
   Result<RecordBatchIterator> Execute() override {
-    librados::bufferlist in, out;
+    ceph::bufferlist in, out;
 
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
         options_->filter, options_->partition_expression, options_->projector.schema(),
@@ -52,7 +52,7 @@ class RadosParquetScanTask : public ScanTask {
     }
 
     // char* scanned_table_buffer = new char[out.length()];
-    // librados::bufferlist::iterator itr = out.begin();
+    // ceph::bufferlist::iterator itr = out.begin();
     // itr.copy(out.length(), scanned_table_buffer);
     /// copying out from the bufferist into a char pointer
     /// fixed the segmentation fault issue. Maybe we can use shallow copy.
@@ -90,7 +90,7 @@ RadosParquetFileFormat::RadosParquetFileFormat(const std::string& path_to_config
 
 Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
     const FileSource& source) const {
-  librados::bufferlist in, out;
+  ceph::bufferlist in, out;
 
   Status s = doa_->Exec(source.path(), "read_schema", in, out);
   if (!s.ok()) return Status::ExecutionError(s.message());

@@ -23,17 +23,17 @@
 namespace arrow {
 namespace dataset {
 
-int IoCtxWrapper::write_full(const std::string& oid, librados::bufferlist& bl) {
+int IoCtxWrapper::write_full(const std::string& oid, ceph::bufferlist& bl) {
   return this->ioCtx->write_full(oid, bl);
 }
 
-int IoCtxWrapper::read(const std::string& oid, librados::bufferlist& bl, size_t len,
+int IoCtxWrapper::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                        uint64_t offset) {
   return this->ioCtx->read(oid, bl, len, offset);
 }
 
 int IoCtxWrapper::exec(const std::string& oid, const char* cls, const char* method,
-                       librados::bufferlist& in, librados::bufferlist& out) {
+                       ceph::bufferlist& in, ceph::bufferlist& out) {
   return this->ioCtx->exec(oid, cls, method, in, out);
 }
 

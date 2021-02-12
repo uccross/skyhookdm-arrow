@@ -99,8 +99,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
       : cluster_(std::move(cluster)) {}
 
   Status Exec(const std::string& path, const std::string& fn,
-              librados::bufferlist& in,
-              librados::bufferlist& out) {
+              ceph::bufferlist& in,
+              ceph::bufferlist& out) {
     struct stat dir_st;
     if (stat(path.c_str(), &dir_st) < 0)
       return Status::ExecutionError("stat returned non-zero exit code.");

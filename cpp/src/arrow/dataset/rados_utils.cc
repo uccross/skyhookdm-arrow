@@ -50,7 +50,7 @@ Status CharToInt64(char* buffer, int64_t& num) {
 Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
                                         std::shared_ptr<Schema> projection_schema,
                                         std::shared_ptr<Schema> dataset_schema,
-                                        librados::bufferlist& bl) {
+                                        ceph::bufferlist& bl) {
   // serialize the filter expression's and the schema's.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, Serialize(filter));
   ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer, Serialize(part_expr));
@@ -104,8 +104,8 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
 Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part_expr,
                                             std::shared_ptr<Schema>* projection_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
-                                            librados::bufferlist& bl) {
-  librados::bufferlist::iterator itr = bl.begin();
+                                            ceph::bufferlist& bl) {
+  ceph::bufferlist::iterator itr = bl.begin();
 
   int64_t filter_size = 0;
   char* filter_size_buffer = new char[8];
@@ -171,7 +171,7 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part
 }
 
 Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
-                                  librados::bufferlist& bl) {
+                                  ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
   const auto options = ipc::IpcWriteOptions::Defaults();

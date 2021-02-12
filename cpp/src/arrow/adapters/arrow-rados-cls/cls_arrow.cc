@@ -77,7 +77,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     nbytes = std::min(nbytes, content_length_ - position);
 
     if (nbytes > 0) {
-      librados::bufferlist bl;
+      ceph::bufferlist bl;
       cls_cxx_read(hctx_, position, nbytes, &bl);
       return std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
     }
@@ -163,8 +163,8 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   return arrow::Status::OK();
 }
 
-static int read_schema(cls_method_context_t hctx, ceph::buffer::list* in,
-                       ceph::buffer::list* out) {
+static int read_schema(cls_method_context_t hctx, ceph::bufferlist* in,
+                       ceph::bufferlist* out) {
   std::shared_ptr<RandomAccessObject> source = std::make_shared<RandomAccessObject>(hctx);
   if (!source->Init().ok()) return -1;
 
@@ -177,14 +177,14 @@ static int read_schema(cls_method_context_t hctx, ceph::buffer::list* in,
 
   std::shared_ptr<arrow::Buffer> buffer =
       arrow::ipc::SerializeSchema(*schema).ValueOrDie();
-  ceph::buffer::list result;
+  ceph::bufferlist result;
   result.append((char*)buffer->data(), buffer->size());
   *out = result;
   return 0;
 }
 
-static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
-                ceph::buffer::list* out) {
+static int scan(cls_method_context_t hctx, ceph::bufferlist* in,
+                ceph::bufferlist* out) {
   // the components required to construct a ParquetFragment.
   arrow::dataset::Expression filter;
   arrow::dataset::Expression partition_expression;
@@ -210,7 +210,7 @@ static int scan(cls_method_context_t hctx, ceph::buffer::list* in,
   CLS_LOG(0, "table rows: %d", table->num_rows());
 
   // serialize the resultant table to send back to the client
-  ceph::buffer::list bl;
+  ceph::bufferlist bl;
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
   *out = bl;
