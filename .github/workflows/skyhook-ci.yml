@@ -1,0 +1,61 @@
+name: skyhook-ci
+
+# we need to build two type of images:
+# 1) for every release, uccross/skyhookdm-arrow:v0.1.0
+# 2) for every new commit pushed to `rados-dataset-dev`.
+on:
+  # this workflow runs only on push and release events.
+  push:
+    branches: [ rados-dataset-dev ]
+    paths:
+    - 'cpp/src/arrow/dataset/file_rados_parquet.cc'
+    - 'cpp/src/arrow/dataset/file_rados_parquet.h'
+    - 'cpp/src/arrow/dataset/rados_utils.cc'
+    - 'cpp/src/arrow/dataset/rados_utils.h'
+    - 'cpp/src/arrow/dataset/rados.cc'
+    - 'cpp/src/arrow/dataset/rados.h'
+    - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow.cc'
+    - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow_test.cc'
+    - '.github/workflows/skyhook-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env: 
+      DOCKER_ORG: uccross
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: build skyhook image
+      env:
+        CEPH_VERSION: v15.2.4
+      run: |
+        docker build \
+          -t $DOCKER_ORG/skyhookdm-arrow:latest \
+          --build-arg CEPH_VERSION=$CEPH_VERSION \
+          --file ci/docker/skyhook.dockerfile \
+          .
+    # dont push images built during pull requests
+    # - name: login to dockerhub
+    #   env:
+    #     DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    #   run: |
+    #     docker login -u jcnitdgp25 \
+    #                  --password "$DOCKER_PASSWORD"
+
+    # - name: push dev image
+    #   # if event is a commit push on rados-dataset-dev,
+    #   # build and push a :dev image
+    #   if: ${{ github.event_name == 'push' && github.ref == 'refs/head/rados-dataset-dev' }}
+    #   run: |
+    #     docker tag $DOCKER_ORG/skyhookdm-arrow:latest \ 
+    #                $DOCKER_ORG/skyhookdm-arrow:dev
+    #     docker push $DOCKER_ORG/skyhookdm-arrow:dev
+    
+    # - name: push release image
+    #   # if event is a release, with a tag starting with v0.x
+    #   if: ${{ github.event_name == 'release' }}
+    #   run: |
+    #     docker tag $DOCKER_ORG/skyhookdm-arrow:latest \
+    #                $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
+    #     docker push $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
