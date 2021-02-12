@@ -55,7 +55,7 @@ class RadosParquetScanTask : public ScanTask {
     const ceph::buffer::ptr ptr = itr.get_current_ptr();
 
     RecordBatchVector batches;
-    auto buffer = std::make_shared<Buffer>(ptr.c_str(), ptr.length());
+    auto buffer = std::make_shared<Buffer>((uint8_t*)ptr.c_str(), ptr.length());
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
