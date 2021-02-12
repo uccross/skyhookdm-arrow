@@ -33,7 +33,6 @@ CLS_NAME(arrow)
 
 cls_handle_t h_class;
 cls_method_handle_t h_read_schema;
-cls_method_handle_t h_write;
 cls_method_handle_t h_scan;
 
 class RandomAccessObject : public arrow::io::RandomAccessFile {
@@ -225,7 +224,5 @@ void __cls_init() {
 
   cls_register_cxx_method(h_class, "read_schema", CLS_METHOD_RD | CLS_METHOD_WR,
                           read_schema, &h_read_schema);
-  cls_register_cxx_method(h_class, "write", CLS_METHOD_RD | CLS_METHOD_WR, write,
-                          &h_write);
   cls_register_cxx_method(h_class, "scan", CLS_METHOD_RD | CLS_METHOD_WR, scan, &h_scan);
 }
