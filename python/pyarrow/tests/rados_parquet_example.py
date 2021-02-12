@@ -21,30 +21,70 @@ import pyarrow.parquet as pq
 from pyarrow.rados import SplittedParquetWriter
 
 
-def test_discovery():
-    format_ = ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
-    dataset = ds.dataset("file:///mnt/cephfs/nyc/", format=format_)
-    assert len(dataset.files) == 8
+def test_dataset_discovery():
+    rados_parquet_dataset = ds.dataset(
+        "file:///mnt/cephfs/nyc/", 
+        format=ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
+    )
+    parquet_dataset = ds.dataset(
+        "file:///mnt/cephfs/nyc/", 
+        format="parquet"
+    )
+    assert len(rados_parquet_dataset.files) == len(parquet_dataset.files)
+    assert len(rados_parquet_dataset.files) == 8
+    assert rados_parquet_dataset.schema == parquet_dataset.schema
 
-    print(dataset.to_table(
+
+def test_without_partition_pruning():
+    rados_parquet_dataset = ds.dataset(
+        "file:///mnt/cephfs/nyc/", 
+        format=ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
+    )
+    parquet_dataset = ds.dataset(
+        "file:///mnt/cephfs/nyc/", 
+        format="parquet"
+    )
+
+    rados_parquet_df = rados_parquet_dataset.to_table(
         columns=['DOLocationID', 'total_amount', 'fare_amount'],
         filter=(ds.field('total_amount') > 200)).to_pandas()
-    )
+    parquet_df = parquet_dataset.to_table(
+        columns=['DOLocationID', 'total_amount', 'fare_amount'],
+        filter=(ds.field('total_amount') > 200)).to_pandas()
+
+    assert rados_parquet_df.equals(parquet_df) == 1
 
 
-def test_parition_pruning():
-    format_ = ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
-    dataset = ds.dataset(
-        "file:///mnt/cephfs/nyc/",
-        format=format_,
-        partitioning=["payment_type", "VendorID"],
-        partition_base_dir="/mnt/cephfs/nyc"
+def test_with_partition_pruning():
+    filter_expression = (
+        (ds.field('tip_amount') > 10) &
+        (ds.field('payment_type') > 2) &
+        (ds.field('VendorID') > 1)
     )
-    table = dataset.to_table(
-        columns=["VendorID", "payment_type", "fare_amount"],
-        filter=(ds.field("payment_type") > 2)
+    projection_cols = ['payment_type', 'tips_amount', 'VendorID']
+    partitioning = ds.partitioning(
+        pa.schema([("payment_type", pa.int32()), ("VendorID", pa.int32())]),
+        flavor="hive"
     )
-    print(table.to_pandas())
+
+    rados_parquet_dataset = ds.dataset(
+        "file:///mnt/cephfs/nyc/", 
+        partitioning=partitioning,
+        format=ds.RadosParquetFileFormat(b"/etc/ceph/ceph.conf")
+    )
+    parquet_dataset = ds.dataset(
+        "file:///mnt/cephfs/nyc/", 
+        partitioning=partitioning,
+        format="parquet"
+    )
+
+    rados_parquet_df = rados_parquet_dataset.to_table(
+        columns=projection_cols, filter=filter_expression).to_pandas()
+    
+    parquet_df = rados_parquet_dataset.to_table(
+        columns=projection_cols, filter=filter_expression).to_pandas()
+    
+    assert rados_parquet_df.equals(parquet_df) == 1
 
 
 def test_splitted_parquet_writer():
@@ -67,3 +107,5 @@ if __name__ == "__main__":
     test_discovery()
     test_parition_pruning()
     test_splitted_parquet_writer()
+    # unmount cephfs for graceful exit of the container
+    os.system("umount -f /mnt/cephfs")
