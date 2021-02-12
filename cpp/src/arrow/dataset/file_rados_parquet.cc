@@ -51,7 +51,7 @@ class RadosParquetScanTask : public ScanTask {
       return Status::ExecutionError(s.message());
     }
 
-    ceph::bufferptr(ceph::buffer::claim_char(out.length(), out.c_str()));
+    ceph::bufferptr ptr(ceph::buffer::claim_char(out.length(), out.c_str()));
 
     RecordBatchVector batches;
     auto buffer = std::make_shared<Buffer>(std::move((uint8_t*)ptr.c_str()), ptr.length());
