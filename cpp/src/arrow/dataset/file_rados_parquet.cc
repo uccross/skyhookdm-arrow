@@ -40,21 +40,20 @@ class RadosParquetScanTask : public ScanTask {
         doa_(std::move(doa)) {}
 
   Result<RecordBatchIterator> Execute() override {
-    ceph::bufferlist in, out;
+    ceph::bufferlist *in = new ceph::bufferlist();
+    ceph::bufferlist *out = new ceph::bufferlist();
 
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
         options_->filter, options_->partition_expression, options_->projector.schema(),
         options_->dataset_schema, in));
 
-    Status s = doa_->Exec(source_.path(), "scan", in, out);
+    Status s = doa_->Exec(source_.path(), "scan", *in, *out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
     }
 
-    ceph::bufferlist *out_ptr = &out;
-
     RecordBatchVector batches;
-    auto buffer = std::make_shared<Buffer>((uint8_t*)out_ptr->c_str(), out.length());
+    auto buffer = std::make_shared<Buffer>((uint8_t*)out->c_str(), out->length());
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
