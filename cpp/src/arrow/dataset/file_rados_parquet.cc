@@ -45,7 +45,7 @@ class RadosParquetScanTask : public ScanTask {
 
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
         options_->filter, options_->partition_expression, options_->projector.schema(),
-        options_->dataset_schema, in));
+        options_->dataset_schema, *in));
 
     Status s = doa_->Exec(source_.path(), "scan", *in, *out);
     if (!s.ok()) {
