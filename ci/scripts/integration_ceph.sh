@@ -123,11 +123,4 @@ EOF
     if [ -f "$TESTS" ]; then
         debug/arrow-cls-cls-arrow-test
     fi
-
-    if [ ! -z "$ARROW_PYTHON" ]; then
-    # run the end-to-end python tests
-    wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/largefile.parquet
-    python ${1}/python/pyarrow/tests/rados_parquet_example.py
-    fi
-
 popd

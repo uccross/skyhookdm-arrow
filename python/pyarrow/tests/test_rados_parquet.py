@@ -16,12 +16,14 @@
 # under the License.
 
 import os
+import pytest
 import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from pyarrow.rados import SplittedParquetWriter
 
 
+@pytest.mark.rados
 def test_dataset_discovery():
     rados_parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/", 
@@ -35,7 +37,7 @@ def test_dataset_discovery():
     assert len(rados_parquet_dataset.files) == 8
     assert rados_parquet_dataset.schema == parquet_dataset.schema
 
-
+@pytest.mark.rados
 def test_without_partition_pruning():
     rados_parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/", 
@@ -55,7 +57,7 @@ def test_without_partition_pruning():
 
     assert rados_parquet_df.equals(parquet_df) == 1
 
-
+@pytest.mark.rados
 def test_with_partition_pruning():
     filter_expression = (
         (ds.field('tip_amount') > 10) &
@@ -87,8 +89,9 @@ def test_with_partition_pruning():
     
     assert rados_parquet_df.equals(parquet_df) == 1
 
-
+@pytest.mark.rados
 def test_splitted_parquet_writer():
+    os.system('wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/largefile.parquet')
     chunksize = 4 * 1000000  # 4MB
     writer = SplittedParquetWriter("largefile.parquet", os.getcwd(), chunksize
                                    )
@@ -102,12 +105,3 @@ def test_splitted_parquet_writer():
         splitted_files_rows += pq.read_metadata(f"file.{i}.parquet").num_rows
 
     assert splitted_files_rows == original_file_rows
-
-
-if __name__ == "__main__":
-    test_dataset_discovery()
-    test_without_partition_pruning()
-    test_with_partition_pruning()
-    test_splitted_parquet_writer()
-    # unmount cephfs for graceful exit of the container
-    os.system("umount -f /mnt/cephfs")
