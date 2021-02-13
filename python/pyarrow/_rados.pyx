@@ -39,7 +39,7 @@ cdef class RadosParquetFileFormat(FileFormat):
                 to_bytes(user_name), 
                 to_bytes(cluster_name)
             )
-        )
+        ))
 
     cdef void init(self, const shared_ptr[CFileFormat]& sp):
         FileFormat.init(self, sp)
