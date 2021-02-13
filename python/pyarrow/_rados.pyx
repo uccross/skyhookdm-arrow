@@ -34,10 +34,10 @@ cdef class RadosParquetFileFormat(FileFormat):
         ):
         self.init(shared_ptr[CFileFormat](
             new CRadosParquetFileFormat(
-                to_bytes(ceph_config_path), 
-                to_bytes(data_pool), 
-                to_bytes(user_name), 
-                to_bytes(cluster_name)
+                tobytes(ceph_config_path), 
+                tobytes(data_pool), 
+                tobytes(user_name), 
+                tobytes(cluster_name)
             )
         ))
 
