@@ -18,6 +18,10 @@ on:
     - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow_test.cc'
     - '.github/workflows/skyhook-ci.yml'
 
+  pull_request:
+    paths:
+    - '.github/workflows/skyhook-ci.yml'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,6 +46,7 @@ jobs:
           image/
     
     - name: login to dockerhub
+      if: ${{ github.event_name == 'push' }}
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
