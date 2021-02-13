@@ -18,18 +18,6 @@ on:
     - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow_test.cc'
     - '.github/workflows/skyhook-ci.yml'
 
-  pull_request:
-    paths:
-    - 'cpp/src/arrow/dataset/file_rados_parquet.cc'
-    - 'cpp/src/arrow/dataset/file_rados_parquet.h'
-    - 'cpp/src/arrow/dataset/rados_utils.cc'
-    - 'cpp/src/arrow/dataset/rados_utils.h'
-    - 'cpp/src/arrow/dataset/rados.cc'
-    - 'cpp/src/arrow/dataset/rados.h'
-    - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow.cc'
-    - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow_test.cc'
-    - '.github/workflows/skyhook-ci.yml'
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -53,22 +41,22 @@ jobs:
           --file image/docker/Dockerfile \
           image/
     
-    # dont push images built during pull requests
-    # - name: login to dockerhub
-    #   env:
-    #     DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    #   run: |
-    #     docker login -u jcnitdgp25 \
-    #                  --password "$DOCKER_PASSWORD"
+    - name: login to dockerhub
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker login -u "$DOCKER_USERNAME" \
+                     --password "$DOCKER_PASSWORD"
 
-    # - name: push dev image
-    #   # if event is a commit push on rados-dataset-dev,
-    #   # build and push a :dev image
-    #   if: ${{ github.event_name == 'push' && github.ref == 'refs/head/rados-dataset-dev' }}
-    #   run: |
-    #     docker tag $DOCKER_ORG/skyhookdm-arrow:latest \ 
-    #                $DOCKER_ORG/skyhookdm-arrow:dev
-    #     docker push $DOCKER_ORG/skyhookdm-arrow:dev
+    - name: push dev image
+      # if event is a commit push on rados-dataset-dev,
+      # build and push a image with a "dev" tag
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/head/rados-dataset-dev' }}
+      run: |
+        docker tag $DOCKER_ORG/skyhookdm-arrow:latest \ 
+                   $DOCKER_ORG/skyhookdm-arrow:dev
+        docker push $DOCKER_ORG/skyhookdm-arrow:dev
     
     # - name: push release image
     #   # if event is a release, with a tag starting with v0.x
