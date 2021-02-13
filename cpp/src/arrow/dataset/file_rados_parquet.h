@@ -49,8 +49,8 @@ namespace dataset {
 
 class ARROW_DS_EXPORT RadosCluster {
  public:
-  explicit RadosCluster(std::string conf_path)
-      : pool_name("cephfs_data"),
+  explicit RadosCluster(std::string conf_path, std::string data_pool_name)
+      : data_pool(data_pool_name),
         user_name("client.admin"),
         cluster_name("ceph"),
         ceph_config_path(conf_path),
@@ -71,7 +71,7 @@ class ARROW_DS_EXPORT RadosCluster {
     if (rados->connect())
       return Status::Invalid("librados::connect returned non-zero exit code.");
 
-    if (rados->ioctx_create(pool_name.c_str(), ioCtx))
+    if (rados->ioctx_create(data_pool.c_str(), ioCtx))
       return Status::Invalid("librados::ioctx_create returned non-zero exit code.");
 
     return Status::OK();
@@ -82,7 +82,7 @@ class ARROW_DS_EXPORT RadosCluster {
     return Status::OK();
   }
 
-  std::string pool_name;
+  std::string data_pool;
   std::string user_name;
   std::string cluster_name;
   std::string ceph_config_path;
