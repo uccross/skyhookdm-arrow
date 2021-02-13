@@ -37,6 +37,16 @@
 #include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
 
+
+std::shared_ptr<RadosParquetFileFormat> GetFormat() {
+  std::string ceph_config_path = "/etc/ceph/ceph.conf";
+  std::string data_pool_name = "cephfs_data";
+  std::string user_name = "client.admin";
+  std::string cluster_name = "ceph";
+  return arrow::dataset::RadosParquetFileFormat::Make(
+    ceph_config_path, data_pool_name, user_name, cluster_name).ValueOrDie();
+}
+
 std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromDirectory(
     std::shared_ptr<arrow::fs::FileSystem> fs,
     std::shared_ptr<arrow::dataset::RadosParquetFileFormat> format, std::string dir) {
@@ -90,8 +100,7 @@ std::shared_ptr<arrow::dataset::Scanner> GetScannerFromDataset(
 }
 
 TEST(TestClsSDK, SimpleQuery) {
-  std::string path_to_config = "/etc/ceph/ceph.conf";
-  auto format = arrow::dataset::RadosParquetFileFormat::Make(path_to_config).ValueOrDie();
+  auto format = GetFormat();
 
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
@@ -107,8 +116,7 @@ TEST(TestClsSDK, SimpleQuery) {
 }
 
 TEST(TestClsSDK, QueryOnPartitionKey) {
-  std::string path_to_config = "/etc/ceph/ceph.conf";
-  auto format = arrow::dataset::RadosParquetFileFormat::Make(path_to_config).ValueOrDie();
+  auto format = GetFormat();
 
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
@@ -126,10 +134,8 @@ TEST(TestClsSDK, QueryOnPartitionKey) {
 }
 
 TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
-  std::string path_to_config = "/etc/ceph/ceph.conf";
-  auto format = arrow::dataset::RadosParquetFileFormat::Make(path_to_config).ValueOrDie();
-
-  std::string path;
+  
+  auto format = GetFormat();
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   auto dataset = GetDatasetFromPath(fs, format, path);
 
