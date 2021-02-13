@@ -40,11 +40,12 @@
 
 std::shared_ptr<RadosParquetFileFormat> GetFormat() {
   std::string ceph_config_path = "/etc/ceph/ceph.conf";
-  std::string data_pool_name = "cephfs_data";
+  std::string data_pool = "cephfs_data";
   std::string user_name = "client.admin";
   std::string cluster_name = "ceph";
-  return arrow::dataset::RadosParquetFileFormat::Make(
-    ceph_config_path, data_pool_name, user_name, cluster_name).ValueOrDie();
+  return std::make_shared<arrow::dataset::RadosParquetFileFormat>(
+    ceph_config_path, data_pool, user_name, cluster_name
+  );
 }
 
 std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromDirectory(

@@ -49,7 +49,7 @@ namespace dataset {
 
 class ARROW_DS_EXPORT RadosCluster {
  public:
-  explicit RadosCluster(std::string ceph_config_path_, std::string data_pool_name_, std::string user_name_, std::string cluster_name_)
+  explicit RadosCluster(std::string ceph_config_path_, std::string data_pool_, std::string user_name_, std::string cluster_name_)
       : data_pool(data_pool_),
         user_name(user_name_),
         cluster_name(cluster_name_),
@@ -125,10 +125,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
 
 class ARROW_DS_EXPORT RadosParquetFileFormat : public FileFormat {
  public:
-  static Result<std::shared_ptr<RadosParquetFileFormat>> Make(
-      const std::string& path_to_config);
-
-  explicit RadosParquetFileFormat(const std::string& path_to_config);
+  explicit RadosParquetFileFormat(
+    const std::string&, const std::string&, const std::string&, const std::string&);
 
   explicit RadosParquetFileFormat(std::shared_ptr<DirectObjectAccess> doa)
       : doa_(std::move(doa)) {}
