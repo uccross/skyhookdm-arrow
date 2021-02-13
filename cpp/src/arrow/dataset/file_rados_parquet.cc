@@ -67,9 +67,9 @@ class RadosParquetScanTask : public ScanTask {
 };
 
 RadosParquetFileFormat::RadosParquetFileFormat(
-    const std::string& ceph_config_path, const std::string& data_pool_name, const std::string& user_name, const std::string& cluster_name) {
+    const std::string& ceph_config_path, const std::string& data_pool, const std::string& user_name, const std::string& cluster_name) {
   auto cluster = std::make_shared<RadosCluster>(
-    ceph_config_path, data_pool_name, user_name, cluster_name);
+    ceph_config_path, data_pool, user_name, cluster_name);
   cluster->Connect();
   auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(cluster);
   doa_ = doa;
