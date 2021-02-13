@@ -1,4 +1,4 @@
-name: skyhook-ci
+name: SkyhookDM-Arrow CI/CD
 
 # we need to build two type of images:
 # 1) for every release, uccross/skyhookdm-arrow:v0.1.0
@@ -36,7 +36,12 @@ jobs:
     env: 
       DOCKER_ORG: uccross
     steps:
-    - uses: actions/checkout@v2
+    - name: clone the repository
+      run: |
+        git clone \
+          --depth=1 \
+          https://github.com/uccross/skyhookdm-arrow-docker \
+          image/
 
     - name: build skyhook image
       env:
@@ -45,8 +50,9 @@ jobs:
         docker build \
           -t $DOCKER_ORG/skyhookdm-arrow:latest \
           --build-arg CEPH_VERSION=$CEPH_VERSION \
-          --file ci/docker/skyhook.dockerfile \
-          .
+          --file image/docker/Dockerfile \
+          image/
+    
     # dont push images built during pull requests
     # - name: login to dockerhub
     #   env:
