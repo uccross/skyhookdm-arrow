@@ -38,7 +38,7 @@
 #include "parquet/arrow/writer.h"
 
 
-std::shared_ptr<RadosParquetFileFormat> GetFormat() {
+std::shared_ptr<arrow::dataset::RadosParquetFileFormat> GetFormat() {
   std::string ceph_config_path = "/etc/ceph/ceph.conf";
   std::string data_pool = "cephfs_data";
   std::string user_name = "client.admin";
@@ -135,8 +135,8 @@ TEST(TestClsSDK, QueryOnPartitionKey) {
 }
 
 TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
-  
   auto format = GetFormat();
+  std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   auto dataset = GetDatasetFromPath(fs, format, path);
 
