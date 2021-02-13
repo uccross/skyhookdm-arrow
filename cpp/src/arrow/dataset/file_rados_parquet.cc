@@ -67,15 +67,18 @@ class RadosParquetScanTask : public ScanTask {
 };
 
 Result<std::shared_ptr<RadosParquetFileFormat>> RadosParquetFileFormat::Make(
-    const std::string& path_to_config, const std::string& data_pool_name) {
-  auto cluster = std::make_shared<RadosCluster>(path_to_config, data_pool_name);
+    const std::string& ceph_config_path, const std::string& data_pool_name, const std::string& user_name, const std::string& cluster_name) {
+  auto cluster = std::make_shared<RadosCluster>(
+    ceph_config_path, data_pool_name, user_name, cluster_name);
   RETURN_NOT_OK(cluster->Connect());
   auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(cluster);
   return std::make_shared<RadosParquetFileFormat>(doa);
 }
 
-RadosParquetFileFormat::RadosParquetFileFormat(const std::string& path_to_config, const std::string& data_pool_name) {
-  auto cluster = std::make_shared<RadosCluster>(path_to_config, data_pool_name);
+RadosParquetFileFormat::RadosParquetFileFormat(
+    const std::string& ceph_config_path, const std::string& data_pool_name, const std::string& user_name, const std::string& cluster_name) {
+  auto cluster = std::make_shared<RadosCluster>(
+    ceph_config_path, data_pool_name, user_name, cluster_name);
   cluster->Connect();
   auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(cluster);
   doa_ = doa;

@@ -49,11 +49,11 @@ namespace dataset {
 
 class ARROW_DS_EXPORT RadosCluster {
  public:
-  explicit RadosCluster(std::string config_path, std::string data_pool_name)
-      : data_pool(data_pool_name),
-        user_name("client.admin"),
-        cluster_name("ceph"),
-        ceph_config_path(config_path),
+  explicit RadosCluster(std::string ceph_config_path_, std::string data_pool_name_, std::string user_name_, std::string cluster_name_)
+      : data_pool(data_pool_),
+        user_name(user_name_),
+        cluster_name(cluster_name_),
+        ceph_config_path(ceph_config_path_),
         flags(0),
         cls_name("arrow"),
         rados(new RadosWrapper()),
