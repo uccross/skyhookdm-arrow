@@ -4,7 +4,8 @@ name: SkyhookDM-Arrow CI/CD
 # 1) for every release, uccross/skyhookdm-arrow:v0.1.0
 # 2) for every new commit pushed to `rados-dataset-dev`.
 on:
-  # this workflow runs only on push and release events.
+  # trigger development build
+  # on pushes to only files related to rados format api.
   push:
     branches: [ rados-dataset-dev ]
     paths:
@@ -18,9 +19,14 @@ on:
     - 'cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow_test.cc'
     - '.github/workflows/skyhook-ci.yml'
 
+  # trigger on PRs, only when this file is touched.
   pull_request:
     paths:
     - '.github/workflows/skyhook-ci.yml'
+
+  # trigger when a release is published
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -54,7 +60,7 @@ jobs:
         docker login -u "$DOCKER_USERNAME" \
                      --password "$DOCKER_PASSWORD"
 
-    - name: push dev image
+    - name: push development image
       # if event is a commit push on rados-dataset-dev,
       # build and push a image with a "dev" tag
       if: ${{ github.event_name == 'push' && github.ref == 'refs/head/rados-dataset-dev' }}
@@ -63,10 +69,10 @@ jobs:
                    $DOCKER_ORG/skyhookdm-arrow:dev
         docker push $DOCKER_ORG/skyhookdm-arrow:dev
     
-    # - name: push release image
-    #   # if event is a release, with a tag starting with v0.x
-    #   if: ${{ github.event_name == 'release' }}
-    #   run: |
-    #     docker tag $DOCKER_ORG/skyhookdm-arrow:latest \
-    #                $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
-    #     docker push $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
+    - name: push production image
+      # if event is a release, push image with a tag starting with v0.x
+      if: ${{ github.event_name == 'release' }}
+      run: |
+        docker tag $DOCKER_ORG/skyhookdm-arrow:latest \
+                   $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
+        docker push $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
