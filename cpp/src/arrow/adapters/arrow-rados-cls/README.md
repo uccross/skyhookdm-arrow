@@ -39,10 +39,10 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 # Installation Instructions
 
-* For installing SkyhookDM with Rook, check out [this](https://github.com/JayjeetAtGithub/skyhookdm-arrow-docker/blob/master/README.md#deploying-skyhookdm-arrow-on-a-rook-cluster) guide.
+* For installing SkyhookDM-Arrow with [Rook](https://rook.io) on Kubernetes, check out [this](https://github.com/uccross/skyhookdm-arrow-docker/blob/master/README.md#deploying-skyhookdm-arrow-on-a-rook-cluster) guide.
 
-* TODO: add instructions for deploying on Cloudlab.
-
+* For installing SkyhookDM-Arrow on CloudLab, check out [this](https://github.com/uccross/skyhookdm-workflows/tree/master/cloudlab#deploy-ceph-skyhookdm-on-cloudlab) guide.
+ 
 # Salient Features
 
 * Enables pushing down filters, projections, compute operations to the Storage backend for minimal data transfer over the network.
