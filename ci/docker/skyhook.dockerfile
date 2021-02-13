@@ -13,7 +13,7 @@ RUN dnf group install -y "Development Tools" && \
 
 WORKDIR /
 
-ADD . /arrow
+COPY . /arrow
 
 RUN /arrow/ci/scripts/skyhook_build.sh 
 
