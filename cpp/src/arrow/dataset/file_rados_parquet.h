@@ -49,11 +49,11 @@ namespace dataset {
 
 class ARROW_DS_EXPORT RadosCluster {
  public:
-  explicit RadosCluster(std::string conf_path)
-      : pool_name("cephfs_data"),
-        user_name("client.admin"),
-        cluster_name("ceph"),
-        ceph_config_path(conf_path),
+  explicit RadosCluster(std::string ceph_config_path_, std::string data_pool_, std::string user_name_, std::string cluster_name_)
+      : data_pool(data_pool_),
+        user_name(user_name_),
+        cluster_name(cluster_name_),
+        ceph_config_path(ceph_config_path_),
         flags(0),
         cls_name("arrow"),
         rados(new RadosWrapper()),
@@ -71,7 +71,7 @@ class ARROW_DS_EXPORT RadosCluster {
     if (rados->connect())
       return Status::Invalid("librados::connect returned non-zero exit code.");
 
-    if (rados->ioctx_create(pool_name.c_str(), ioCtx))
+    if (rados->ioctx_create(data_pool.c_str(), ioCtx))
       return Status::Invalid("librados::ioctx_create returned non-zero exit code.");
 
     return Status::OK();
@@ -82,7 +82,7 @@ class ARROW_DS_EXPORT RadosCluster {
     return Status::OK();
   }
 
-  std::string pool_name;
+  std::string data_pool;
   std::string user_name;
   std::string cluster_name;
   std::string ceph_config_path;
@@ -125,10 +125,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
 
 class ARROW_DS_EXPORT RadosParquetFileFormat : public FileFormat {
  public:
-  static Result<std::shared_ptr<RadosParquetFileFormat>> Make(
-      const std::string& path_to_config);
-
-  explicit RadosParquetFileFormat(const std::string& path_to_config);
+  explicit RadosParquetFileFormat(
+    const std::string&, const std::string&, const std::string&, const std::string&);
 
   explicit RadosParquetFileFormat(std::shared_ptr<DirectObjectAccess> doa)
       : doa_(std::move(doa)) {}

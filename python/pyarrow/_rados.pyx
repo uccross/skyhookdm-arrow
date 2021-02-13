@@ -25,10 +25,21 @@ cdef class RadosParquetFileFormat(FileFormat):
     cdef:
         CRadosParquetFileFormat* rados_parquet_format
 
-    def __init__(self, path_to_config):
+    def __init__(
+            self, 
+            ceph_config_path="/etc/ceph/ceph.conf", 
+            data_pool="cephfs_data", 
+            user_name="client.admin", 
+            cluster_name="ceph"
+        ):
         self.init(shared_ptr[CFileFormat](
-            new CRadosParquetFileFormat(path_to_config))
-        )
+            new CRadosParquetFileFormat(
+                tobytes(ceph_config_path), 
+                tobytes(data_pool), 
+                tobytes(user_name), 
+                tobytes(cluster_name)
+            )
+        ))
 
     cdef void init(self, const shared_ptr[CFileFormat]& sp):
         FileFormat.init(self, sp)
