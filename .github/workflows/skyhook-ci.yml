@@ -52,7 +52,7 @@ jobs:
           image/
     
     - name: login to dockerhub
-      if: ${{ github.event_name == 'push' }}
+      if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
@@ -70,8 +70,8 @@ jobs:
         docker push $DOCKER_ORG/skyhookdm-arrow:dev
     
     - name: push production image
-      # if event is a release, push image with a tag starting with v0.x
-      if: ${{ github.event_name == 'release' }}
+      # if event is a release, push image with a tag starting with `v`
+      if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/v') }}
       run: |
         docker tag $DOCKER_ORG/skyhookdm-arrow:latest \
                    $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
