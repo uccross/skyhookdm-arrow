@@ -75,8 +75,8 @@ chdir = ""
 osd data = ${OSD_DATA}
 osd journal = ${OSD_DATA}.journal
 osd journal size = 100
-osd objectstore = memstore
-osd class load list = lock log numops refcount replica_log statelog timeindex user version arrow
+osd objectstore = bluestore
+osd class load list = *
 EOF
 
     OSD_ID=$(ceph osd create)

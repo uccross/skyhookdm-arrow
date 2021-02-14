@@ -40,8 +40,8 @@ class RadosParquetScanTask : public ScanTask {
         doa_(std::move(doa)) {}
 
   Result<RecordBatchIterator> Execute() override {
-    ceph::bufferlist *in = new ceph::bufferlist();
-    ceph::bufferlist *out = new ceph::bufferlist();
+    ceph::bufferlist* in = new ceph::bufferlist();
+    ceph::bufferlist* out = new ceph::bufferlist();
 
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
         options_->filter, options_->partition_expression, options_->projector.schema(),
@@ -66,10 +66,12 @@ class RadosParquetScanTask : public ScanTask {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
-RadosParquetFileFormat::RadosParquetFileFormat(
-    const std::string& ceph_config_path, const std::string& data_pool, const std::string& user_name, const std::string& cluster_name) {
-  auto cluster = std::make_shared<RadosCluster>(
-    ceph_config_path, data_pool, user_name, cluster_name);
+RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_path,
+                                               const std::string& data_pool,
+                                               const std::string& user_name,
+                                               const std::string& cluster_name) {
+  auto cluster = std::make_shared<RadosCluster>(ceph_config_path, data_pool, user_name,
+                                                cluster_name);
   cluster->Connect();
   auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(cluster);
   doa_ = doa;

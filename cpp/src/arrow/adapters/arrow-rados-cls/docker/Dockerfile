@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM jcnitdgp25/skyhookdm-arrow:stable-0.1
+FROM uccross/skyhookdm-arrow:stable-0.1
 
 RUN yum -y update && \
     yum -y install python3 \

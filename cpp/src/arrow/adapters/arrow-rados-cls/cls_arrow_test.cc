@@ -37,15 +37,13 @@
 #include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
 
-
 std::shared_ptr<arrow::dataset::RadosParquetFileFormat> GetFormat() {
   std::string ceph_config_path = "/etc/ceph/ceph.conf";
   std::string data_pool = "cephfs_data";
   std::string user_name = "client.admin";
   std::string cluster_name = "ceph";
   return std::make_shared<arrow::dataset::RadosParquetFileFormat>(
-    ceph_config_path, data_pool, user_name, cluster_name
-  );
+      ceph_config_path, data_pool, user_name, cluster_name);
 }
 
 std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromDirectory(

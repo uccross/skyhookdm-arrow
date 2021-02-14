@@ -77,9 +77,9 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     nbytes = std::min(nbytes, content_length_ - position);
 
     if (nbytes > 0) {
-      ceph::bufferlist bl;
-      cls_cxx_read(hctx_, position, nbytes, &bl);
-      return std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
+      ceph::bufferlist* bl = new ceph::bufferlist();
+      cls_cxx_read(hctx_, position, nbytes, bl);
+      return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
     }
     return std::make_shared<arrow::Buffer>("");
   }
@@ -139,10 +139,6 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
   arrow::dataset::FileSource source(file);
 
-  std::unique_ptr<parquet::arrow::FileReader> reader;
-  ARROW_RETURN_NOT_OK(
-      parquet::arrow::OpenFile(file, arrow::default_memory_pool(), &reader));
-
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
   ARROW_ASSIGN_OR_RAISE(auto fragment,
                         format->MakeFragment(source, partition_expression));
@@ -183,14 +179,13 @@ static int read_schema(cls_method_context_t hctx, ceph::bufferlist* in,
   return 0;
 }
 
-static int scan(cls_method_context_t hctx, ceph::bufferlist* in,
-                ceph::bufferlist* out) {
+static int scan(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlist* out) {
   // the components required to construct a ParquetFragment.
   arrow::dataset::Expression filter;
   arrow::dataset::Expression partition_expression;
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
-  
+
   // deserialize the scan request
   if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
            &filter, &partition_expression, &projection_schema, &dataset_schema, *in)

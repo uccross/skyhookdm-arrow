@@ -49,7 +49,8 @@ namespace dataset {
 
 class ARROW_DS_EXPORT RadosCluster {
  public:
-  explicit RadosCluster(std::string ceph_config_path_, std::string data_pool_, std::string user_name_, std::string cluster_name_)
+  explicit RadosCluster(std::string ceph_config_path_, std::string data_pool_,
+                        std::string user_name_, std::string cluster_name_)
       : data_pool(data_pool_),
         user_name(user_name_),
         cluster_name(cluster_name_),
@@ -98,8 +99,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
       : cluster_(std::move(cluster)) {}
 
-  Status Exec(const std::string& path, const std::string& fn,
-              ceph::bufferlist& in,
+  Status Exec(const std::string& path, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
     struct stat dir_st;
     if (stat(path.c_str(), &dir_st) < 0)
@@ -125,8 +125,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
 
 class ARROW_DS_EXPORT RadosParquetFileFormat : public FileFormat {
  public:
-  explicit RadosParquetFileFormat(
-    const std::string&, const std::string&, const std::string&, const std::string&);
+  explicit RadosParquetFileFormat(const std::string&, const std::string&,
+                                  const std::string&, const std::string&);
 
   explicit RadosParquetFileFormat(std::shared_ptr<DirectObjectAccess> doa)
       : doa_(std::move(doa)) {}

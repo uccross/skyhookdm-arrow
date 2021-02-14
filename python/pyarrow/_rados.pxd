@@ -30,4 +30,9 @@ cdef extern from "arrow/dataset/file_rados_parquet.h" \
     cdef cppclass CRadosParquetFileFormat \
         "arrow::dataset::RadosParquetFileFormat"(
             CFileFormat):
-        CRadosParquetFileFormat(c_string ceph_config_path, c_string data_pool, c_string user_name, c_string cluster_name)
+        CRadosParquetFileFormat(
+            c_string ceph_config_path,
+            c_string data_pool,
+            c_string user_name,
+            c_string cluster_name
+        )

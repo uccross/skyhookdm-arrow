@@ -63,8 +63,8 @@ jobs:
     - name: push development image
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/rados-dataset-dev' }}
       run: |
-        docker tag $DOCKER_ORG/skyhookdm-arrow:latest $DOCKER_ORG/skyhookdm-arrow:dev
-        docker push $DOCKER_ORG/skyhookdm-arrow:dev
+        docker tag $DOCKER_ORG/skyhookdm-arrow:latest $DOCKER_ORG/skyhookdm-arrow:dev-$GITHUB_SHA
+        docker push $DOCKER_ORG/skyhookdm-arrow:dev-$GITHUB_SHA
     
     - name: push production image
       if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/v') }}
