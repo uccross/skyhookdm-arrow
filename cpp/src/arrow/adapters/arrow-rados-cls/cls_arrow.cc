@@ -139,10 +139,6 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
   arrow::dataset::FileSource source(file);
 
-  std::unique_ptr<parquet::arrow::FileReader> reader;
-  ARROW_RETURN_NOT_OK(
-      parquet::arrow::OpenFile(file, arrow::default_memory_pool(), &reader));
-
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
   ARROW_ASSIGN_OR_RAISE(auto fragment,
                         format->MakeFragment(source, partition_expression));
