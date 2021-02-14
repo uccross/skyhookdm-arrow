@@ -77,9 +77,9 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     nbytes = std::min(nbytes, content_length_ - position);
 
     if (nbytes > 0) {
-      ceph::bufferlist bl;
-      cls_cxx_read(hctx_, position, nbytes, &bl);
-      return std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
+      ceph::bufferlist *bl = new ceph::bufferlist();
+      cls_cxx_read(hctx_, position, nbytes, bl);
+      return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
     }
     return std::make_shared<arrow::Buffer>("");
   }

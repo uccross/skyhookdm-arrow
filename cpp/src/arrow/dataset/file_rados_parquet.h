@@ -159,5 +159,98 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public FileFormat {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
+class ARROW_DS_EXPORT RandomAccessObject : public arrow::io::RandomAccessFile {
+ public:
+  explicit ObjectInputFile(std::shared_ptr<RadosCluster> cluster, std::string &path)
+    : cluster_(std::move(cluster)),
+      path_(path) {}
+
+  arrow::Status Init() {
+    uint64_t size;
+    cluster_->ioCtx->stat(path, size);
+    content_length_ = size;
+    return Status::OK();
+  }
+
+  arrow::Status CheckClosed() const {
+    if (closed_) {
+      return arrow::Status::Invalid("Operation on closed stream");
+    }
+    return arrow::Status::OK();
+  }
+
+  arrow::Status CheckPosition(int64_t position, const char* action) const {
+    if (position < 0) {
+      return arrow::Status::Invalid("Cannot ", action, " from negative position");
+    }
+    if (position > content_length_) {
+      return arrow::Status::IOError("Cannot ", action, " past end of file");
+    }
+    return arrow::Status::OK();
+  }
+
+  arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) { return 0; }
+
+  arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) {
+    RETURN_NOT_OK(CheckClosed());
+    RETURN_NOT_OK(CheckPosition(position, "read"));
+
+    // No need to allocate more than the remaining number of bytes
+    nbytes = std::min(nbytes, content_length_ - position);
+
+    if (nbytes > 0) {
+      ceph::bufferlist bl;
+      cluster_->ioCtx->read(path, bl, nbytes, position);
+      return std::make_shared<arrow::Buffer>((uint8_t*)bl.data(), bl.length());
+    }
+    return std::make_shared<arrow::Buffer>("");
+  }
+
+  arrow::Result<std::shared_ptr<arrow::Buffer>> Read(int64_t nbytes) {
+    ARROW_ASSIGN_OR_RAISE(auto buffer, ReadAt(pos_, nbytes));
+    pos_ += buffer->size();
+    return std::move(buffer);
+  }
+
+  arrow::Result<int64_t> Read(int64_t nbytes, void* out) {
+    ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(pos_, nbytes, out));
+    pos_ += bytes_read;
+    return bytes_read;
+  }
+
+  arrow::Result<int64_t> GetSize() {
+    RETURN_NOT_OK(CheckClosed());
+    return content_length_;
+  }
+
+  arrow::Status Seek(int64_t position) {
+    RETURN_NOT_OK(CheckClosed());
+    RETURN_NOT_OK(CheckPosition(position, "seek"));
+
+    pos_ = position;
+    return arrow::Status::OK();
+  }
+
+  arrow::Result<int64_t> Tell() const {
+    RETURN_NOT_OK(CheckClosed());
+    return pos_;
+  }
+
+  arrow::Status Close() {
+    closed_ = true;
+    return arrow::Status::OK();
+  }
+
+  bool closed() const { return closed_; }
+
+ protected:
+  std::shared_ptr<RadosCluster> cluster_;
+  std::string path_;
+  bool closed_ = false;
+  int64_t pos_ = 0;
+  int64_t content_length_ = -1;
+};
+
+
 }  // namespace dataset
 }  // namespace arrow
