@@ -53,7 +53,7 @@ class SplittedParquetWriter(object):
         self._open_new_file()
         for batch in self.file.iter_batches():  # default batch_size=64k
             table = pa.Table.from_batches([batch])
-            self._current_writer.write_table(table)
+            self._current_writer.write_table(table, write_statistics=False)
             if self._current_sink.tell() < self.chunksize:
                 continue
             else:
