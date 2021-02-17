@@ -64,5 +64,9 @@ class SplittedParquetWriter(object):
 
     def close(self):
         num_files_written = self._fileno + 1
+        for i in range(num_files_written):
+            table = pq.read_table(f"file.{i}.parquet")
+            pq.write_table(table, where=f"file.{i}.parquet", row_group_size=table.num_rows)
+
         self._fileno = -1
         return num_files_written

@@ -69,5 +69,6 @@ jobs:
     - name: push production image
       if: ${{ github.event_name == 'release' && startsWith(github.ref, 'refs/tags/v') }}
       run: |
-        docker tag $DOCKER_ORG/skyhookdm-arrow:latest $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
-        docker push $DOCKER_ORG/skyhookdm-arrow:$GITHUB_REF
+        RELEASE_TAG=`echo $GITHUB_REF | cut -d'/' -f 3`
+        docker tag $DOCKER_ORG/skyhookdm-arrow:latest $DOCKER_ORG/skyhookdm-arrow:$RELEASE_TAG
+        docker push $DOCKER_ORG/skyhookdm-arrow:$RELEASE_TAG
