@@ -53,7 +53,7 @@ class SplittedParquetWriter(object):
         self._open_new_file()
         for batch in self.file.iter_batches():  # default batch_size=64k
             table = pa.Table.from_batches([batch])
-            self._current_writer.write_table(table, write_statistics=False)
+            self._current_writer.write_table(table)
             if self._current_sink.tell() < self.chunksize:
                 continue
             else:
@@ -64,5 +64,15 @@ class SplittedParquetWriter(object):
 
     def close(self):
         num_files_written = self._fileno + 1
+        for i in range(num_files_written):
+            table = pq.read_table(f"file.{i}.parquet")
+            print(f"Writing {i}")
+            pq.write_table(table, where=f"file.{i}.parquet", row_group_size=table.num_rows)
+
         self._fileno = -1
         return num_files_written
+
+
+writer = SplittedParquetWriter("largefile.parquet", os.getcwd(), 3 * 1000000)
+writer.write()
+writer.close()
