@@ -97,7 +97,9 @@ class ARROW_DS_EXPORT RadosCluster {
 class ARROW_DS_EXPORT DirectObjectAccess {
  public:
   explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
-      : cluster_(std::move(cluster)) {}
+      : cluster_(std::move(cluster)) {
+    aio_ctx_ = librados::Rados::aio_create_completion();
+  }
 
   Status Exec(const std::string& path, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
@@ -111,7 +113,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
     ss << std::hex << inode;
     std::string oid(ss.str() + ".00000000");
 
-    if (cluster_->ioCtx->exec(oid.c_str(), cluster_->cls_name.c_str(), fn.c_str(), in,
+    if (cluster_->ioCtx->exec(oid.c_str(), aio_ctx_, cluster_->cls_name.c_str(), fn.c_str(), in,
                               out)) {
       return Status::ExecutionError("librados::exec returned non-zero exit code.");
     }
@@ -120,6 +122,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   }
 
  protected:
+  librados::AioCompletion *aio_ctx_ = NULL;
   std::shared_ptr<RadosCluster> cluster_;
 };
 
