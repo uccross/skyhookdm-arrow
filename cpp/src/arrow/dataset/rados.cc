@@ -37,6 +37,11 @@ int IoCtxWrapper::exec(const std::string& oid, const char* cls, const char* meth
   return this->ioCtx->exec(oid, cls, method, in, out);
 }
 
+int IoCtxWrapper::aio_exec(const std::string& oid, librados::AioCompletion *aio_ctx, const char* cls, const char* method,
+                       ceph::bufferlist& in, ceph::bufferlist& out) {
+  return this->ioCtx->aio_exec(oid, aio_ctx, cls, method, in, out);
+}
+
 int IoCtxWrapper::stat(const std::string& oid, uint64_t* psize) {
   return this->ioCtx->stat(oid, psize, NULL);
 }

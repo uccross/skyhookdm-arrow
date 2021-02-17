@@ -55,6 +55,9 @@ class ARROW_DS_EXPORT IoCtxInterface {
   virtual int exec(const std::string& oid, const char* cls, const char* method,
                    ceph::bufferlist& in, ceph::bufferlist& out) = 0;
 
+  virtual int aio_exec(const std::string& oid, librados::AioCompletion *aio_ctx, const char* cls, const char* method,
+                   ceph::bufferlist& in, ceph::bufferlist& out) = 0;
+
   virtual std::vector<std::string> list() = 0;
 
   virtual int stat(const std::string& oid, uint64_t* psize) = 0;
@@ -74,6 +77,8 @@ class ARROW_DS_EXPORT IoCtxWrapper : public IoCtxInterface {
            uint64_t offset) override;
   int exec(const std::string& oid, const char* cls, const char* method,
            ceph::bufferlist& in, ceph::bufferlist& out) override;
+  int aio_exec(const std::string& oid, librados::AioCompletion *aio_ctx, const char* cls, const char* method,
+               ceph::bufferlist& in, ceph::bufferlist& out) override;
   std::vector<std::string> list() override;
 
   int stat(const std::string& oid, uint64_t* psize) override;
