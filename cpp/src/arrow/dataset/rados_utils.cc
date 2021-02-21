@@ -175,7 +175,7 @@ Status SerializeBatchesToBufferlist(RecordBatchVector& batches, ceph::bufferlist
 
   const auto options = ipc::IpcWriteOptions::Defaults();
   ARROW_ASSIGN_OR_RAISE(
-      auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
+      auto writer, ipc::MakeStreamWriter(buffer_output_stream, batches[0]->schema(), options));
 
   for (auto &batch : batches) {
     writer->WriteRecordBatch(*batch);
