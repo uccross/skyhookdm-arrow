@@ -178,6 +178,9 @@ class ARROW_DS_EXPORT Scanner {
   /// Scan result in memory before creating the Table.
   Result<std::shared_ptr<Table>> ToTable();
 
+  /// \brief Convert a Scanner into a RecordBatchVector.
+  Result<RecordBatchVector> ToBatches();
+
   /// \brief GetFragments returns an iterator over all Fragments in this scan.
   Result<FragmentIterator> GetFragments();
 

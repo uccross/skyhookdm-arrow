@@ -170,14 +170,17 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part
   return Status::OK();
 }
 
-Status SerializeTableToBufferlist(std::shared_ptr<Table>& table, ceph::bufferlist& bl) {
+Status SerializeBatchesToBufferlist(RecordBatchVector& batches, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
   const auto options = ipc::IpcWriteOptions::Defaults();
   ARROW_ASSIGN_OR_RAISE(
       auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
 
-  ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
+  for (auto &batch : batches) {
+    writer->WriteRecordBatch(*batch);
+  }
+
   ARROW_RETURN_NOT_OK(writer->Close());
 
   ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());

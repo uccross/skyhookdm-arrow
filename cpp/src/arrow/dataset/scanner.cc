@@ -199,7 +199,7 @@ struct TableAssemblyState {
   }
 };
 
-Result<std::shared_ptr<Table>> Scanner::ToTable() {
+Result<RecordBatchVector> Scanner::ToBatches() {
   ARROW_ASSIGN_OR_RAISE(auto scan_task_it, Scan());
   auto task_group = scan_context_->TaskGroup();
 
@@ -223,9 +223,12 @@ Result<std::shared_ptr<Table>> Scanner::ToTable() {
 
   // Wait for all tasks to complete, or the first error.
   RETURN_NOT_OK(task_group->Finish());
+  return FlattenRecordBatchVector(std::move(state->batches));
+}
 
-  return Table::FromRecordBatches(scan_options_->schema(),
-                                  FlattenRecordBatchVector(std::move(state->batches)));
+Result<std::shared_ptr<Table>> Scanner::ToTable() {
+  ARROW_ASSIGN_OR_RAISE(auto batches, ToBatches());
+  return Table::FromRecordBatches(scan_options_->schema(), batches);
 }
 
 }  // namespace dataset

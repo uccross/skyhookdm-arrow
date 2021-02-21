@@ -133,7 +133,7 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        arrow::dataset::Expression partition_expression,
                                        std::shared_ptr<arrow::Schema> projection_schema,
                                        std::shared_ptr<arrow::Schema> dataset_schema,
-                                       std::shared_ptr<arrow::Table>& t) {
+                                       arrow::RecordBatchVector& batches) {
   auto file = std::make_shared<RandomAccessObject>(hctx);
   ARROW_RETURN_NOT_OK(file->Init());
 
@@ -151,9 +151,9 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
 
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
-  ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
+  ARROW_ASSIGN_OR_RAISE(auto result, scanner->ToBatches());
 
-  t = table;
+  batches = result;
 
   ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
@@ -193,20 +193,17 @@ static int scan(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlis
     return -1;
 
   // scan the parquet object
-  std::shared_ptr<arrow::Table> table;
+  arrow::RecordBatchVector batches;
   arrow::Status s = ScanParquetObject(hctx, filter, partition_expression,
-                                      projection_schema, dataset_schema, table);
+                                      projection_schema, dataset_schema, batches);
   if (!s.ok()) {
     CLS_LOG(0, "error: %s", s.message().c_str());
     return -1;
   }
 
-  CLS_LOG(0, "table: %s", table->ToString().c_str());
-  CLS_LOG(0, "table rows: %d", table->num_rows());
-
-  // serialize the resultant table to send back to the client
+  // serialize the resultant batches to send back to the client
   ceph::bufferlist bl;
-  if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
+  if (!arrow::dataset::SerializeBatchesToBufferlist(batches, bl).ok()) return -1;
 
   *out = bl;
   return 0;
