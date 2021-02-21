@@ -57,8 +57,7 @@ class RadosParquetScanTask : public ScanTask {
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
-    rb_reader->ReadAll(&batches);
-    return MakeVectorIterator(batches);
+    return IteratorFromReader(rb_reader);
   }
 
  protected:
