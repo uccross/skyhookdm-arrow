@@ -201,9 +201,6 @@ static int scan(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlis
     return -1;
   }
 
-  CLS_LOG(0, "table: %s", table->ToString().c_str());
-  CLS_LOG(0, "table rows: %d", table->num_rows());
-
   // serialize the resultant table to send back to the client
   ceph::bufferlist bl;
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;

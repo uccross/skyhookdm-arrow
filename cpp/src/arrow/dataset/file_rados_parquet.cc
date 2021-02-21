@@ -57,8 +57,7 @@ class RadosParquetScanTask : public ScanTask {
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
-    rb_reader->ReadAll(&batches);
-    return MakeVectorIterator(batches);
+    return IteratorFromReader(rb_reader);
   }
 
  protected:
@@ -97,7 +96,6 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
-  options_->bypass_fap_scantask = true;
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
       std::move(options_), std::move(context), file->source(), std::move(doa_))};
   return MakeVectorIterator(v);
