@@ -96,9 +96,6 @@ class ARROW_DS_EXPORT ScanOptions {
   // The discovered Schema of the dataset.
   std::shared_ptr<Schema> dataset_schema;
 
-  // if bypass filterandproject scan task
-  bool bypass_fap_scantask = false;
-
  private:
   explicit ScanOptions(std::shared_ptr<Schema> schema);
 };

@@ -96,7 +96,6 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
-  options_->bypass_fap_scantask = true;
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
       std::move(options_), std::move(context), file->source(), std::move(doa_))};
   return MakeVectorIterator(v);
