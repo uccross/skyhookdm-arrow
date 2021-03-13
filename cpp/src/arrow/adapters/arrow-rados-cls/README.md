@@ -28,7 +28,7 @@ compute operations into the Storage backend, we created a new file format on top
 
 * Clone the repository.
 ```bash
-git clone --branch rados-dataset-dev https://github.com/uccross/arrow 
+git clone --branch v0.1.1 https://github.com/uccross/arrow
 ```
 
 * Run the `ubuntu-cls-demo` step in the docker-compose file. This step will start a single node Ceph cluster inside the container, mount CephFS, put sample data into CephFS, and open an example Jupyter notebook with PyArrow installed.
@@ -83,7 +83,7 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 1. Clone the repository.
 ```bash
-git clone --branch rados-dataset-dev https://github.com/uccross/arrow
+git clone --branch v0.1.1 https://github.com/uccross/arrow
 ```
 
 2. Install [Archery](https://arrow.apache.org/docs/developers/archery.html#), the daily development tool by Apache Arrow community.
