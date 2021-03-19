@@ -95,11 +95,11 @@ pip install -e dev/archery
 2. Build and test the C++ client.
 ```bash
 export UBUNTU=20.04
-archery docker run ubuntu-cpp-cls.
+archery docker run ubuntu-cpp-cls
 ```
 
 3. Build and test the Python client.
 ```bash
 export UBUNTU=20.04
-archery docker run ubuntu-python-cls.
+archery docker run ubuntu-python-cls
 ```
