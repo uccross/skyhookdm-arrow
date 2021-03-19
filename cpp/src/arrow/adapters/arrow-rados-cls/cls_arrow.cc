@@ -175,7 +175,7 @@ static int read_schema(cls_method_context_t hctx, ceph::bufferlist* in,
       arrow::ipc::SerializeSchema(*schema).ValueOrDie();
   ceph::bufferlist result;
   result.append((char*)buffer->data(), buffer->size());
-  *out = result;
+  out = &result;
   return 0;
 }
 
