@@ -175,7 +175,7 @@ static int read_schema(cls_method_context_t hctx, ceph::bufferlist* in,
       arrow::ipc::SerializeSchema(*schema).ValueOrDie();
   ceph::bufferlist result;
   result.append((char*)buffer->data(), buffer->size());
-  out = &result;
+  *out = result;
   return 0;
 }
 
@@ -202,10 +202,10 @@ static int scan(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlis
   }
 
   // serialize the resultant table to send back to the client
-  ceph::bufferlist bl;
+  ceph::bufferlist *bl = new ceph::bufferlist();
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
-  out = &bl;
+  out = bl;
   return 0;
 }
 

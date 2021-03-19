@@ -57,7 +57,7 @@ ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(
 
 /// \brief Serialize a Table to an Arrow IPC binary buffer.
 ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
-                                                  ceph::bufferlist& bl);
+                                                  ceph::bufferlist*& bl);
 
 }  // namespace dataset
 }  // namespace arrow
