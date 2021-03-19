@@ -202,10 +202,10 @@ static int scan(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlis
   }
 
   // serialize the resultant table to send back to the client
-  ceph::bufferlist *bl = new ceph::bufferlist();
+  ceph::bufferlist bl;
   if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
-  out = bl;
+  out = &bl;
   return 0;
 }
 
