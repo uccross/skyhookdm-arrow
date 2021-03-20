@@ -214,7 +214,7 @@ void __cls_init() {
 
   cls_register("arrow", &h_class);
 
-  cls_register_cxx_method(h_class, "read_schema", CLS_METHOD_RD | CLS_METHOD_WR,
+  cls_register_cxx_method(h_class, "read_schema", CLS_METHOD_RD,
                           read_schema, &h_read_schema);
-  cls_register_cxx_method(h_class, "scan", CLS_METHOD_RD | CLS_METHOD_WR, scan, &h_scan);
+  cls_register_cxx_method(h_class, "scan", CLS_METHOD_RD, scan, &h_scan);
 }
