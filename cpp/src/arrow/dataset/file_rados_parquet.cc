@@ -14,6 +14,7 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
+#include <iostream>
 #include "arrow/dataset/file_rados_parquet.h"
 
 #include "arrow/api.h"
@@ -66,7 +67,15 @@ class RadosParquetScanTask : public ScanTask {
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
                           arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
-    return IteratorFromReader(rb_reader);
+
+    std::shared_ptr<Table> rtable;
+    rb_reader->ReadAll(&rtable);
+    ARROW_LOG(INFO) << rtable->ToString() << "\n";
+    //std::cerr << rtable->ToString() << "\n";
+
+    delete out;
+    RecordBatchVector dummybatches;
+    return MakeVectorIterator(std::move(dummybatches));
   }
 
  protected:
