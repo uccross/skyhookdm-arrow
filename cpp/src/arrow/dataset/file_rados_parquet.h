@@ -99,14 +99,16 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
       : cluster_(std::move(cluster)) {}
 
-  Status Exec(const std::string& path, const std::string& fn, ceph::bufferlist& in,
-              ceph::bufferlist& out) {
-    struct stat dir_st;
-    if (stat(path.c_str(), &dir_st) < 0)
+  Status Stat(const std::string &path, struct stat &st) {
+    struct stat file_st;
+    if (stat(path.c_str(), &file_st) < 0)
       return Status::ExecutionError("stat returned non-zero exit code.");
+    st = file_st;
+    return Status::OK();
+  }
 
-    uint64_t inode = dir_st.st_ino;
-
+  Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
+              ceph::bufferlist& out) {
     std::stringstream ss;
     ss << std::hex << inode;
     std::string oid(ss.str() + ".00000000");
