@@ -87,8 +87,17 @@ Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
     const FileSource& source) const {
   ceph::bufferlist in, out;
 
-  Status s = doa_->Exec(source.path(), "read_schema", in, out);
-  if (!s.ok()) return Status::ExecutionError(s.message());
+  Status s;
+  struct stat st;
+  s = doa_->Stat(source_.path(), st);
+  if (!s.ok()) {
+    return Status::Invalid(s.message());
+  }
+
+  s = doa_->Exec(st.st_ino, "read_schema", in, out);
+  if (!s.ok()) {
+    return Status::Invalid(s.message());
+  }
 
   std::vector<std::shared_ptr<Schema>> schemas;
   ipc::DictionaryMemo empty_memo;
