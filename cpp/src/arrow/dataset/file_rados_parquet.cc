@@ -26,6 +26,8 @@
 #include "arrow/util/checked_cast.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/logging.h"
+#include "parquet/arrow/reader.h"
+#include "parquet/file_reader.h"
 
 namespace arrow {
 namespace dataset {
@@ -85,24 +87,9 @@ RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_pa
 
 Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
     const FileSource& source) const {
-  ceph::bufferlist in, out;
-
-  Status s;
-  struct stat st;
-  s = doa_->Stat(source.path(), st);
-  if (!s.ok()) {
-    return Status::Invalid(s.message());
-  }
-
-  s = doa_->Exec(st.st_ino, "read_schema_op", in, out);
-  if (!s.ok()) {
-    return Status::Invalid(s.message());
-  }
-
-  std::vector<std::shared_ptr<Schema>> schemas;
-  ipc::DictionaryMemo empty_memo;
-  io::BufferReader schema_reader((uint8_t*)out.c_str(), out.length());
-  ARROW_ASSIGN_OR_RAISE(auto schema, ipc::ReadSchema(&schema_reader, &empty_memo));
+  ARROW_ASSIGN_OR_RAISE(auto reader, GetReader(source));
+  std::shared_ptr<Schema> schema;
+  RETURN_NOT_OK(reader->GetSchema(&schema));
   return schema;
 }
 

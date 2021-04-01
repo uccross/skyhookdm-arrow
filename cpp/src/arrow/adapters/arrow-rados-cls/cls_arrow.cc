@@ -32,7 +32,7 @@ CLS_VER(1, 0)
 CLS_NAME(arrow)
 
 cls_handle_t h_class;
-cls_method_handle_t h_read_schema_op;
+// cls_method_handle_t h_read_schema_op;
 cls_method_handle_t h_scan_op;
 
 class RandomAccessObject : public arrow::io::RandomAccessFile {
@@ -151,24 +151,24 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   return arrow::Status::OK();
 }
 
-static int read_schema_op(cls_method_context_t hctx, ceph::bufferlist* in,
-                       ceph::bufferlist* out) {
-  std::shared_ptr<RandomAccessObject> source = std::make_shared<RandomAccessObject>(hctx);
+// static int read_schema_op(cls_method_context_t hctx, ceph::bufferlist* in,
+//                        ceph::bufferlist* out) {
+//   std::shared_ptr<RandomAccessObject> source = std::make_shared<RandomAccessObject>(hctx);
 
-  std::unique_ptr<parquet::arrow::FileReader> reader;
-  if (!parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader).ok())
-    return -1;
+//   std::unique_ptr<parquet::arrow::FileReader> reader;
+//   if (!parquet::arrow::OpenFile(source, arrow::default_memory_pool(), &reader).ok())
+//     return -1;
 
-  std::shared_ptr<arrow::Schema> schema;
-  if (!reader->GetSchema(&schema).ok()) return -1;
+//   std::shared_ptr<arrow::Schema> schema;
+//   if (!reader->GetSchema(&schema).ok()) return -1;
 
-  std::shared_ptr<arrow::Buffer> buffer =
-      arrow::ipc::SerializeSchema(*schema).ValueOrDie();
-  ceph::bufferlist result;
-  result.append((char*)buffer->data(), buffer->size());
-  *out = result;
-  return 0;
-}
+//   std::shared_ptr<arrow::Buffer> buffer =
+//       arrow::ipc::SerializeSchema(*schema).ValueOrDie();
+//   ceph::bufferlist result;
+//   result.append((char*)buffer->data(), buffer->size());
+//   *out = result;
+//   return 0;
+// }
 
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlist* out) {
   // the components required to construct a ParquetFragment.
@@ -206,7 +206,7 @@ void __cls_init() {
 
   cls_register("arrow", &h_class);
 
-  cls_register_cxx_method(h_class, "read_schema_op", CLS_METHOD_RD,
-                          read_schema_op, &h_read_schema_op);
+  // cls_register_cxx_method(h_class, "read_schema_op", CLS_METHOD_RD,
+  //                         read_schema_op, &h_read_schema_op);
   cls_register_cxx_method(h_class, "scan_op", CLS_METHOD_RD, scan_op, &h_scan_op);
 }

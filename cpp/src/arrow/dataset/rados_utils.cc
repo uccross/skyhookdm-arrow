@@ -144,9 +144,11 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part
   char* dataset_schema_buffer = new char[dataset_schema_size];
   itr.copy(dataset_schema_size, dataset_schema_buffer);
 
+  int64_t size = 0;
   char* file_size_buffer = new char[8];
   itr.copy(8, file_size_buffer);
-  ARROW_RETURN_NOT_OK(CharToInt64(file_size_buffer, file_size));
+  ARROW_RETURN_NOT_OK(CharToInt64(file_size_buffer, size));
+  file_size = size;
 
   ARROW_ASSIGN_OR_RAISE(auto filter_, Deserialize(std::make_shared<Buffer>(
                                           (uint8_t*)filter_buffer, filter_size)));
