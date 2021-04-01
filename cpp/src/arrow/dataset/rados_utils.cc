@@ -50,6 +50,7 @@ Status CharToInt64(char* buffer, int64_t& num) {
 Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
                                         std::shared_ptr<Schema> projection_schema,
                                         std::shared_ptr<Schema> dataset_schema,
+                                        int64_t file_size,
                                         ceph::bufferlist& bl) {
   // serialize the filter expression's and the schema's.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, Serialize(filter));
@@ -77,6 +78,10 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
   ARROW_RETURN_NOT_OK(
       Int64ToChar(dataset_schema_size_buffer, dataset_schema_buffer->size()));
 
+  char *file_size_buffer = new char[8];
+  ARROW_RETURN_NOT_OK(
+      Int64ToChar(file_size_buffer, file_size));
+
   // append the filter expression size and data.
   bl.append(filter_size_buffer, 8);
   bl.append((char*)filter_buffer->data(), filter_buffer->size());
@@ -93,10 +98,13 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
   bl.append(dataset_schema_size_buffer, 8);
   bl.append((char*)dataset_schema_buffer->data(), dataset_schema_buffer->size());
 
+  bl.append(file_size_buffer, 8);
+
   delete[] filter_size_buffer;
   delete[] part_expr_size_buffer;
   delete[] projection_schema_size_buffer;
   delete[] dataset_schema_size_buffer;
+  delete[] file_size_buffer;
 
   return Status::OK();
 }
@@ -104,6 +112,7 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
 Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part_expr,
                                             std::shared_ptr<Schema>* projection_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
+                                            int64_t &file_size,
                                             ceph::bufferlist& bl) {
   ceph::bufferlist::iterator itr = bl.begin();
 
@@ -134,6 +143,12 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part
   ARROW_RETURN_NOT_OK(CharToInt64(dataset_schema_size_buffer, dataset_schema_size));
   char* dataset_schema_buffer = new char[dataset_schema_size];
   itr.copy(dataset_schema_size, dataset_schema_buffer);
+
+  int64_t size = 0;
+  char* file_size_buffer = new char[8];
+  itr.copy(8, file_size_buffer);
+  ARROW_RETURN_NOT_OK(CharToInt64(file_size_buffer, size));
+  file_size = size;
 
   ARROW_ASSIGN_OR_RAISE(auto filter_, Deserialize(std::make_shared<Buffer>(
                                           (uint8_t*)filter_buffer, filter_size)));

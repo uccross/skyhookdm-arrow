@@ -37,6 +37,7 @@
 #include "arrow/dataset/file_base.h"
 #include "arrow/dataset/rados.h"
 #include "arrow/dataset/rados_utils.h"
+#include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/scanner.h"
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
@@ -125,7 +126,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   std::shared_ptr<RadosCluster> cluster_;
 };
 
-class ARROW_DS_EXPORT RadosParquetFileFormat : public FileFormat {
+class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
  public:
   explicit RadosParquetFileFormat(const std::string&, const std::string&,
                                   const std::string&, const std::string&);
