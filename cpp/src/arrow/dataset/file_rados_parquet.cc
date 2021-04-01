@@ -89,7 +89,7 @@ Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
 
   Status s;
   struct stat st;
-  s = doa_->Stat(source_.path(), st);
+  s = doa_->Stat(source.path(), st);
   if (!s.ok()) {
     return Status::Invalid(s.message());
   }
