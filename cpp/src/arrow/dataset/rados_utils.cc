@@ -112,7 +112,7 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
 Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part_expr,
                                             std::shared_ptr<Schema>* projection_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
-                                            int &file_size,
+                                            int64_t &file_size,
                                             ceph::bufferlist& bl) {
   ceph::bufferlist::iterator itr = bl.begin();
 
