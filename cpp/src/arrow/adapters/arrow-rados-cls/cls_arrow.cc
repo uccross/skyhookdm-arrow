@@ -159,7 +159,7 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   return arrow::Status::OK();
 }
 
-static int read_schema(cls_method_context_t hctx, ceph::bufferlist* in,
+static int read_schema_op(cls_method_context_t hctx, ceph::bufferlist* in,
                        ceph::bufferlist* out) {
   std::shared_ptr<RandomAccessObject> source = std::make_shared<RandomAccessObject>(hctx);
   if (!source->Init().ok()) return -1;
@@ -179,7 +179,7 @@ static int read_schema(cls_method_context_t hctx, ceph::bufferlist* in,
   return 0;
 }
 
-static int scan(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlist* out) {
+static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in, ceph::bufferlist* out) {
   // the components required to construct a ParquetFragment.
   arrow::dataset::Expression filter;
   arrow::dataset::Expression partition_expression;
@@ -214,7 +214,7 @@ void __cls_init() {
 
   cls_register("arrow", &h_class);
 
-  cls_register_cxx_method(h_class, "read_schema", CLS_METHOD_RD,
+  cls_register_cxx_method(h_class, "read_schema_op", CLS_METHOD_RD,
                           read_schema, &h_read_schema);
-  cls_register_cxx_method(h_class, "scan", CLS_METHOD_RD, scan, &h_scan);
+  cls_register_cxx_method(h_class, "scan_op", CLS_METHOD_RD, scan, &h_scan);
 }
