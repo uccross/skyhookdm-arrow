@@ -47,7 +47,14 @@ class RadosParquetScanTask : public ScanTask {
         options_->filter, options_->partition_expression, options_->projector.schema(),
         options_->dataset_schema, *in));
 
-    Status s = doa_->Exec(source_.path(), "scan", *in, *out);
+    Status s;
+    struct stat st;
+    s = doa_->Stat(source_.path(), st);
+    if (!s.ok()) {
+      return Status::Invalid(s.message());
+    }
+
+    s = doa_->Exec(st.st_ino, "scan", *in, *out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
     }
