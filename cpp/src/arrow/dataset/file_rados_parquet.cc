@@ -46,7 +46,7 @@ class RadosParquetScanTask : public ScanTask {
     ceph::bufferlist* out = new ceph::bufferlist();
 
     Status s;
-    struct stat st;
+    struct stat st{};
     s = doa_->Stat(source_.path(), st);
     if (!s.ok()) {
       return Status::Invalid(s.message());
