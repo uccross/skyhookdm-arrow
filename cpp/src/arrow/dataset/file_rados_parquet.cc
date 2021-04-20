@@ -103,7 +103,7 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   if (options_->filter == true) {
     /// fast path for 100% selectivity queries
     std::shared_ptr<ParquetFileFormat> format = std::make_shared<ParquetFileFormat>();
-    return format->ScanFile(options, context, fragment);
+    return format->ScanFile(options, context, file);
   }
 
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
