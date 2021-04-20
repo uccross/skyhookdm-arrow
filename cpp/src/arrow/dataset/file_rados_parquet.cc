@@ -100,7 +100,7 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
 
-  if (options_->filter == true) {
+  if (options_->IsSatisfiable()) {
     /// fast path for 100% selectivity queries
     std::shared_ptr<ParquetFileFormat> format = std::make_shared<ParquetFileFormat>();
     return format->ScanFile(options, context, file);
