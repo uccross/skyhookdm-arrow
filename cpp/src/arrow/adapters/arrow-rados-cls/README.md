@@ -41,7 +41,7 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 * For installing SkyhookDM-Arrow with [Rook](https://rook.io) on Kubernetes, check out [this](https://github.com/uccross/skyhookdm-arrow-docker/blob/master/README.md#deploying-skyhookdm-arrow-on-a-rook-cluster) guide.
 
-* For installing SkyhookDM-Arrow on CloudLab, check out [this](https://github.com/uccross/skyhookdm-workflows/tree/master/cloudlab#deploy-ceph-skyhookdm-on-cloudlab) guide.
+* For installing SkyhookDM-Arrow on CloudLab, check out [this](https://github.com/uccross/skyhookdm-workflows/tree/master/cloudlab#deploy-ceph-skyhookdm-on-cloudlab) guide. To deploy SkyhookDM on bare-metal in general, check out [this](docs/deploy.md) guide.
  
 # Salient Features
 
