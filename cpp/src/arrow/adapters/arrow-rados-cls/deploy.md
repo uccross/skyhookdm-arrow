@@ -6,7 +6,12 @@
 
 2. Build and Install SkyhookDM and PyArrow (with Skyhook extensions) using [this](./skyhook.sh) script.
 
-3. Restart the Ceph OSDs to load the SkyhookDM libraries.
+3. Update your Ceph configuration file with this line.
+```
+osd class load list = *
+```
+
+4. Restart the Ceph OSDs to load the changes.
 
 # Interacting with SkyhookDM
 
