@@ -4,9 +4,9 @@
 
 2. Create and Mount CephFS at some path, for example `/mnt/cephfs`.
 
-2. Build and Install SkyhookDM and PyArrow with Skyhook extensions using [this](./skyhook.sh) script.
+2. Build and Install SkyhookDM and PyArrow (with Skyhook extensions) using [this](./skyhook.sh) script.
 
-3. Restart the Ceph OSDs to load the Skyhook libraries.
+3. Restart the Ceph OSDs to load the SkyhookDM libraries.
 
 # Interacting with SkyhookDM
 
@@ -14,9 +14,7 @@
 
 2. Write a client script and get started with querying datasets in Skyhook. An example script is given below.
 ```python
-import pyarrow as pa
 import pyarrow.dataset as ds
-import pyarrow.parquet as pq
 
 format_ = ds.RadosParquetFileFormat("/path/to/cephconfig", "cephfs-data-pool-name")
 dataset_ = ds.dataset("file:///mnt/cephfs/dataset", format=format_)
