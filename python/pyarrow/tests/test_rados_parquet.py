@@ -35,7 +35,7 @@ def test_dataset_discovery():
         return
     rados_parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",
-        format=ds.RadosParquetFileFormat("/etc/ceph/ceph.conf")
+        format="rados-parquet"
     )
     parquet_dataset = ds.dataset(
         "file:///mnt/cephfs/nyc/",
