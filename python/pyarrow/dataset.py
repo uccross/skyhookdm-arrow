@@ -221,6 +221,8 @@ def _ensure_format(obj):
         return IpcFileFormat()
     elif obj == "csv":
         return CsvFileFormat()
+    elif obj == "rados-parquet":
+        return RadosParquetFileFormat("/etc/ceph/ceph.conf", "cephfs_data")
     else:
         raise ValueError("format '{}' is not supported".format(obj))
 
