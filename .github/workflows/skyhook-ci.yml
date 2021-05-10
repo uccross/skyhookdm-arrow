@@ -46,7 +46,7 @@ jobs:
         docker build \
           -t $DOCKER_ORG/skyhookdm-arrow:latest \
           --build-arg CEPH_VERSION=$CEPH_VERSION \
-          --file image/docker/Dockerfile \
+          --file cpp/src/arrow/adapters/arrow-rados-cls/docker/release/Dockerfile \
           cpp/src/arrow/adapters/arrow-rados-cls/docker/release/
 
     - name: login to dockerhub
