@@ -7,7 +7,7 @@ on:
   # trigger development build
   # on pushes to only files related to rados format api.
   push:
-    branches: [ rados-dataset-dev ]
+    branches: [rados-dataset-dev]
     paths:
     - 'cpp/src/arrow/dataset/file_rados_parquet.cc'
     - 'cpp/src/arrow/dataset/file_rados_parquet.h'
