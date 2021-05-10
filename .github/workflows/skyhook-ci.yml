@@ -1,4 +1,4 @@
-name: SkyhookDM-Arrow CI/CD
+name: SkyhookDM-Arrow
 
 # we need to build two type of images:
 # 1) for every release, uccross/skyhookdm-arrow:v0.1.0
