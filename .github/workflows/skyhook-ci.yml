@@ -34,12 +34,10 @@ jobs:
     env: 
       DOCKER_ORG: uccross
     steps:
-    - name: clone the repository
-      run: |
-        git clone \
-          --depth=1 \
-          https://github.com/uccross/skyhookdm-arrow-docker \
-          image/
+    - name: Checkout Arrow
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
     - name: build skyhook image
       env:
@@ -49,8 +47,8 @@ jobs:
           -t $DOCKER_ORG/skyhookdm-arrow:latest \
           --build-arg CEPH_VERSION=$CEPH_VERSION \
           --file image/docker/Dockerfile \
-          image/
-    
+          cpp/src/arrow/adapters/arrow-rados-cls/docker/release/
+
     - name: login to dockerhub
       if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
       env:
