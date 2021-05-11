@@ -273,9 +273,9 @@ Result<std::unique_ptr<parquet::arrow::FileReader>> ParquetFileFormat::GetReader
     arrow_properties.set_batch_size(options->batch_size);
   }
 
-  // if (context && !context->use_threads) {
-    arrow_properties.set_use_threads(true);
-  // }
+  if (context && !context->use_threads) {
+    arrow_properties.set_use_threads(reader_options.enable_parallel_column_conversion);
+  }
 
   std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
   RETURN_NOT_OK(parquet::arrow::FileReader::Make(
