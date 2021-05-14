@@ -131,6 +131,10 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   arrow::dataset::FileSource source(file);
 
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
+  arrow::dataset::ParquetFileFormat::ReaderOptions reader_options{};
+  reader_options.enable_parallel_column_conversion = true;
+  format->reader_options = reader_options;
+
   ARROW_ASSIGN_OR_RAISE(auto fragment,
                         format->MakeFragment(source, partition_expression));
 
@@ -140,6 +144,7 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
+  ARROW_RETURN_NOT_OK(builder->UseThreads(false));
 
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
