@@ -33,6 +33,10 @@
 #include "arrow/type_fwd.h"
 #include "arrow/util/type_fwd.h"
 
+#include <boost/asio/io_service.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread/thread.hpp>
+
 namespace arrow {
 namespace dataset {
 
