@@ -16,6 +16,7 @@
 // under the License.
 
 #include "arrow/dataset/rados_utils.h"
+#include "arrow/util/compression.h"
 
 #include <iostream>
 
@@ -188,7 +189,9 @@ Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part
 Status SerializeTableToBufferlist(std::shared_ptr<Table>& table, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
-  const auto options = ipc::IpcWriteOptions::Defaults();
+  ipc::IpcWriteOptions options = ipc::IpcWriteOptions::Defaults();
+  ARROW_ASSIGN_OR_RAISE(
+    options.codec, util::Codec::Create(Compression::LZ4_FRAME, std::numeric_limits<int>::min()));
   ARROW_ASSIGN_OR_RAISE(
       auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
 

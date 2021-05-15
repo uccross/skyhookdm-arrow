@@ -64,8 +64,10 @@ class RadosParquetScanTask : public ScanTask {
     RecordBatchVector batches;
     auto buffer = std::make_shared<Buffer>((uint8_t*)out->c_str(), out->length());
     auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
+    auto options = ipc::IpcReadOptions::Defaults();
+    options.use_threads = false;
     ARROW_ASSIGN_OR_RAISE(auto rb_reader,
-                          arrow::ipc::RecordBatchStreamReader::Open(buffer_reader));
+                          arrow::ipc::RecordBatchStreamReader::Open(buffer_reader, options));
     return IteratorFromReader(rb_reader);
   }
 
