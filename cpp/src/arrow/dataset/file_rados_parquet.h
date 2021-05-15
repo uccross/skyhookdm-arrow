@@ -35,9 +35,9 @@
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/discovery.h"
 #include "arrow/dataset/file_base.h"
+#include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/rados.h"
 #include "arrow/dataset/rados_utils.h"
-#include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/scanner.h"
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
@@ -100,7 +100,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
       : cluster_(std::move(cluster)) {}
 
-  Status Stat(const std::string &path, struct stat &st) {
+  Status Stat(const std::string& path, struct stat& st) {
     struct stat file_st;
     if (stat(path.c_str(), &file_st) < 0)
       return Status::ExecutionError("stat returned non-zero exit code.");

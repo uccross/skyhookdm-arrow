@@ -50,8 +50,7 @@ Status CharToInt64(char* buffer, int64_t& num) {
 Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
                                         std::shared_ptr<Schema> projection_schema,
                                         std::shared_ptr<Schema> dataset_schema,
-                                        int64_t file_size,
-                                        ceph::bufferlist& bl) {
+                                        int64_t file_size, ceph::bufferlist& bl) {
   // serialize the filter expression's and the schema's.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, Serialize(filter));
   ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer, Serialize(part_expr));
@@ -78,9 +77,8 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
   ARROW_RETURN_NOT_OK(
       Int64ToChar(dataset_schema_size_buffer, dataset_schema_buffer->size()));
 
-  char *file_size_buffer = new char[8];
-  ARROW_RETURN_NOT_OK(
-      Int64ToChar(file_size_buffer, file_size));
+  char* file_size_buffer = new char[8];
+  ARROW_RETURN_NOT_OK(Int64ToChar(file_size_buffer, file_size));
 
   // append the filter expression size and data.
   bl.append(filter_size_buffer, 8);
@@ -112,8 +110,7 @@ Status SerializeScanRequestToBufferlist(Expression filter, Expression part_expr,
 Status DeserializeScanRequestFromBufferlist(Expression* filter, Expression* part_expr,
                                             std::shared_ptr<Schema>* projection_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
-                                            int64_t &file_size,
-                                            ceph::bufferlist& bl) {
+                                            int64_t& file_size, ceph::bufferlist& bl) {
   ceph::bufferlist::iterator itr = bl.begin();
 
   int64_t filter_size = 0;

@@ -111,7 +111,8 @@ inline Result<ScanTaskIterator> GetScanTaskIterator(
     ARROW_ASSIGN_OR_RAISE(auto scan_task_it, fragment->Scan(options, context));
 
     if (fragment->type_name() == "rados-parquet") {
-      // if format is `rados-parquet`, then don't do filter and projection on the client side.
+      // if format is `rados-parquet`, then don't do filter and projection on the client
+      // side.
       return std::move(scan_task_it);
     }
 
