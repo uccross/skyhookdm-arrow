@@ -67,8 +67,8 @@ class SplittedParquetWriter(object):
         for i in range(num_files_written):
             table = pq.read_table(f"file.{i}.parquet")
             pq.write_table(
-                table, 
-                where=f"file.{i}.parquet", 
+                table,
+                where=f"file.{i}.parquet",
                 row_group_size=table.num_rows
             )
 
