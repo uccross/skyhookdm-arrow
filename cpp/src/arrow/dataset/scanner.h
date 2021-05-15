@@ -108,8 +108,8 @@ class ARROW_DS_EXPORT ScanOptions {
 class ARROW_DS_EXPORT BoostThreadPool {
   public:
     BoostThreadPool() {
-      io_service_ = std::make_shared<boost::asio::io_service>();
-      work_ = std::make_shared<boost::asio::io_service::work>(new boost::asio::io_service::work(*io_service_));
+      io_service_ = boost::make_shared<boost::asio::io_service>();
+      work_ = boost::make_shared<boost::asio::io_service::work>(new boost::asio::io_service::work(*io_service_));
       for (uint64_t i = 0; i < std::thread::hardware_concurrency(); i++) {
         threadpool_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));
       }
@@ -125,8 +125,8 @@ class ARROW_DS_EXPORT BoostThreadPool {
     }
 
   protected:
-    std::shared_ptr<boost::asio::io_service> io_service_;
-    std::shared_ptr<boost::asio::io_service::work> work_;
+    boost::shared_ptr<boost::asio::io_service> io_service_;
+    boost::shared_ptr<boost::asio::io_service::work> work_;
     boost::thread_group threadpool_;
 };
 
