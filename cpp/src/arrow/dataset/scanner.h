@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <thread>
 
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/expression.h"
@@ -108,7 +109,7 @@ class ARROW_DS_EXPORT BoostThreadPool {
   public:
     BoostThreadPool() {
       io_service_ = std::make_shared<boost::asio::io_service>();
-      work_ = std::make_shared<boost::asio::io_service::work>(new boost::asio::io_service::work(*io_service));
+      work_ = std::make_shared<boost::asio::io_service::work>(new boost::asio::io_service::work(*io_service_));
       for (int i = 0; i < std::thread::hardware_concurrency(); i++) {
         threadpool_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
       }
@@ -127,7 +128,7 @@ class ARROW_DS_EXPORT BoostThreadPool {
     std::shared_ptr<boost::asio::io_service> io_service_;
     std::shared_ptr<boost::asio::io_service::work> work_;
     boost::thread_group threadpool_;
-}
+};
 
 /// \brief Read record batches from a range of a single data fragment. A
 /// ScanTask is meant to be a unit of work to be dispatched. The implementation
