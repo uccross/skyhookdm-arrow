@@ -117,8 +117,9 @@ class ARROW_DS_EXPORT BoostThreadPool {
       }
     }
 
-    void Append(std::function<(void)> task) {
-      io_service_->post(boost::bind(task));
+    template <typename F>
+    void Append(F&& f) {
+      io_service_->post(std::forward<F>(f));
     }
 
     void stop() {
