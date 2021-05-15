@@ -118,7 +118,7 @@ class ARROW_DS_EXPORT BoostThreadPool {
     }
 
     void Append(std::function<Status()> task) {
-      io_service_->post(boost::bind(task, this));
+      io_service_->post(boost::bind(task));
     }
 
     void stop() {
