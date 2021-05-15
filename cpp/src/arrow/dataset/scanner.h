@@ -111,7 +111,7 @@ class ARROW_DS_EXPORT BoostThreadPool {
       io_service_ = std::make_shared<boost::asio::io_service>();
       work_ = std::make_shared<boost::asio::io_service::work>(new boost::asio::io_service::work(*io_service_));
       for (uint64_t i = 0; i < std::thread::hardware_concurrency(); i++) {
-        threadpool_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+        threadpool_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));
       }
     }
 
