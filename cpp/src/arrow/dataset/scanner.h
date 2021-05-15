@@ -34,10 +34,8 @@
 #include "arrow/type_fwd.h"
 #include "arrow/util/type_fwd.h"
 
-#include <boost/asio/io_service.hpp>
-#include <boost/bind.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/make_shared.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/thread_pool.hpp>
 
 
 namespace arrow {
@@ -107,30 +105,21 @@ class ARROW_DS_EXPORT ScanOptions {
   explicit ScanOptions(std::shared_ptr<Schema> schema);
 };
 
-class ARROW_DS_EXPORT BoostThreadPool {
+class ARROW_DS_EXPORT AsyncThreadPool {
   public:
-    BoostThreadPool() {
-      io_service_ = boost::make_shared<boost::asio::io_service>();
-      work_ = boost::make_shared<boost::asio::io_service::work>(*io_service_);
-      for (uint64_t i = 0; i < std::thread::hardware_concurrency(); i++) {
-        threadpool_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));
-      }
-    }
+    AsyncThreadPool(std::size_t threads)
+    : workers(threads) { }
 
     template <typename F>
-    void Append(F&& f) {
-      io_service_->post(std::forward<F>(f));
+    void post(F&& f) {
+        boost::asio::post(workers, std::forward<F>(f));
     }
 
-    void stop() {
-      work_.reset();
-      threadpool_.join_all();
+    void wait() {
+        workers.wait();
     }
-
-  protected:
-    boost::shared_ptr<boost::asio::io_service> io_service_;
-    boost::shared_ptr<boost::asio::io_service::work> work_;
-    boost::thread_group threadpool_;
+private:
+    boost::asio::thread_pool workers;
 };
 
 /// \brief Read record batches from a range of a single data fragment. A
