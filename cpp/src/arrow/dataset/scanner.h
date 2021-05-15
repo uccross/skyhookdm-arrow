@@ -115,8 +115,8 @@ class ARROW_DS_EXPORT AsyncThreadPool {
         boost::asio::post(workers, std::forward<F>(f));
     }
 
-    void wait() {
-        workers.wait();
+    void join() {
+        workers.join();
     }
 private:
     boost::asio::thread_pool workers;
