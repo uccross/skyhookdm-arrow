@@ -111,7 +111,7 @@ class ARROW_DS_EXPORT AsyncThreadPool {
     : workers(threads) { }
 
     template <typename F>
-    void post(F&& f) {
+    void Append(F&& f) {
         boost::asio::post(workers, std::forward<F>(f));
     }
 
