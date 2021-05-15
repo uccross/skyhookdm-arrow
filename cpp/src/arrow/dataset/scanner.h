@@ -100,6 +100,31 @@ class ARROW_DS_EXPORT ScanOptions {
   explicit ScanOptions(std::shared_ptr<Schema> schema);
 };
 
+class ARROW_DS_EXPORT BoostThreadPool {
+  public:
+    BoostThreadPool() {
+      io_service_ = std::make_shared<boost::asio::io_service>();
+      work_ = std::make_shared<boost::asio::io_service::work>(new boost::asio::io_service::work(*io_service));
+      for (int i = 0; i < std::thread::hardware_concurrency(); i++) {
+        threadpool_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+      }
+    }
+
+    void Append(std::function<Status()> task) {
+      io_service_.post(boost::bind(task));
+    }
+
+    void stop() {
+      work_.reset();
+      threadpool_.join_all();
+    }
+
+  protected:
+    std::shared_ptr<boost::asio::io_service> io_service_;
+    std::shared_ptr<boost::asio::io_service::work> work_;
+    boost::thread_group threadpool_;
+}
+
 /// \brief Read record batches from a range of a single data fragment. A
 /// ScanTask is meant to be a unit of work to be dispatched. The implementation
 /// must be thread and concurrent safe.
