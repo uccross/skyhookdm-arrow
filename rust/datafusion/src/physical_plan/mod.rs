@@ -18,7 +18,7 @@
 //! Traits for physical query plan, supporting parallel execution for partitioned relations.
 
 use std::fmt::{Debug, Display};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::{any::Any, pin::Pin};
 
 use crate::execution::context::ExecutionContextState;
@@ -33,6 +33,7 @@ use async_trait::async_trait;
 use futures::stream::Stream;
 
 use self::merge::MergeExec;
+use hashbrown::HashMap;
 
 /// Trait for types that stream [arrow::record_batch::RecordBatch]
 pub trait RecordBatchStream: Stream<Item = ArrowResult<RecordBatch>> {
@@ -44,7 +45,59 @@ pub trait RecordBatchStream: Stream<Item = ArrowResult<RecordBatch>> {
 }
 
 /// Trait for a stream of record batches.
-pub type SendableRecordBatchStream = Pin<Box<dyn RecordBatchStream + Send>>;
+pub type SendableRecordBatchStream = Pin<Box<dyn RecordBatchStream + Send + Sync>>;
+
+/// SQL metric type
+#[derive(Debug, Clone)]
+pub enum MetricType {
+    /// Simple counter
+    Counter,
+    /// Wall clock time in nanoseconds
+    TimeNanos,
+}
+
+/// SQL metric such as counter (number of input or output rows) or timing information about
+/// a physical operator.
+#[derive(Debug, Clone)]
+pub struct SQLMetric {
+    /// Metric name
+    name: String,
+    /// Metric value
+    value: usize,
+    /// Metric type
+    metric_type: MetricType,
+}
+
+impl SQLMetric {
+    /// Create a new metric for tracking a counter
+    pub fn counter(name: &str) -> Arc<Mutex<SQLMetric>> {
+        Arc::new(Mutex::new(SQLMetric::new(name, MetricType::Counter)))
+    }
+
+    /// Create a new metric for tracking time in nanoseconds
+    pub fn time_nanos(name: &str) -> Arc<Mutex<SQLMetric>> {
+        Arc::new(Mutex::new(SQLMetric::new(name, MetricType::TimeNanos)))
+    }
+
+    /// Create a new SQLMetric
+    pub fn new(name: &str, metric_type: MetricType) -> Self {
+        Self {
+            name: name.to_owned(),
+            value: 0,
+            metric_type,
+        }
+    }
+
+    /// Add to the value
+    pub fn add(&mut self, n: usize) {
+        self.value += n;
+    }
+
+    /// Get the current value
+    pub fn value(&self) -> usize {
+        self.value
+    }
+}
 
 /// Physical query planner that converts a `LogicalPlan` to an
 /// `ExecutionPlan` suitable for execution.
@@ -84,6 +137,11 @@ pub trait ExecutionPlan: Debug + Send + Sync {
 
     /// creates an iterator
     async fn execute(&self, partition: usize) -> Result<SendableRecordBatchStream>;
+
+    /// Return a snapshot of the metrics collected during execution
+    fn metrics(&self) -> HashMap<String, SQLMetric> {
+        HashMap::new()
+    }
 }
 
 /// Execute the [ExecutionPlan] and collect the results in memory
@@ -150,7 +208,7 @@ impl Partitioning {
 }
 
 /// Distribution schemes
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Distribution {
     /// Unspecified distribution
     UnspecifiedDistribution,
@@ -159,6 +217,7 @@ pub enum Distribution {
 }
 
 /// Represents the result from an expression
+#[derive(Clone)]
 pub enum ColumnarValue {
     /// Array of values
     Array(ArrayRef),
@@ -202,6 +261,9 @@ pub trait PhysicalExpr: Send + Sync + Display + Debug {
 /// * knows its accumulator's state's field
 /// * knows the expressions from whose its accumulator will receive values
 pub trait AggregateExpr: Send + Sync + Debug {
+    /// Returns the aggregate expression as [`Any`](std::any::Any) so that it can be
+    /// downcast to a specific implementation.
+    fn as_any(&self) -> &dyn Any;
     /// the field of the final result of this aggregation.
     fn field(&self) -> Result<Field>;
 
@@ -232,10 +294,10 @@ pub trait Accumulator: Send + Sync + Debug {
     fn state(&self) -> Result<Vec<ScalarValue>>;
 
     /// updates the accumulator's state from a vector of scalars.
-    fn update(&mut self, values: &Vec<ScalarValue>) -> Result<()>;
+    fn update(&mut self, values: &[ScalarValue]) -> Result<()>;
 
     /// updates the accumulator's state from a vector of arrays.
-    fn update_batch(&mut self, values: &Vec<ArrayRef>) -> Result<()> {
+    fn update_batch(&mut self, values: &[ArrayRef]) -> Result<()> {
         if values.is_empty() {
             return Ok(());
         };
@@ -249,10 +311,10 @@ pub trait Accumulator: Send + Sync + Debug {
     }
 
     /// updates the accumulator's state from a vector of scalars.
-    fn merge(&mut self, states: &Vec<ScalarValue>) -> Result<()>;
+    fn merge(&mut self, states: &[ScalarValue]) -> Result<()>;
 
     /// updates the accumulator's state from a vector of states.
-    fn merge_batch(&mut self, states: &Vec<ArrayRef>) -> Result<()> {
+    fn merge_batch(&mut self, states: &[ArrayRef]) -> Result<()> {
         if states.is_empty() {
             return Ok(());
         };
@@ -273,6 +335,7 @@ pub mod aggregates;
 pub mod array_expressions;
 pub mod coalesce_batches;
 pub mod common;
+#[cfg(feature = "crypto_expressions")]
 pub mod crypto_expressions;
 pub mod csv;
 pub mod datetime_expressions;
@@ -293,9 +356,14 @@ pub mod merge;
 pub mod parquet;
 pub mod planner;
 pub mod projection;
+#[cfg(feature = "regex_expressions")]
+pub mod regex_expressions;
 pub mod repartition;
 pub mod sort;
 pub mod string_expressions;
 pub mod type_coercion;
 pub mod udaf;
 pub mod udf;
+#[cfg(feature = "unicode_expressions")]
+pub mod unicode_expressions;
+pub mod union;

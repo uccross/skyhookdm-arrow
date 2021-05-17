@@ -150,6 +150,21 @@ std::shared_ptr<arrow::Table> Table__SelectColumns(
 namespace arrow {
 namespace r {
 
+arrow::Status check_consistent_column_length(
+    const std::vector<std::shared_ptr<arrow::ChunkedArray>>& columns) {
+  if (columns.size()) {
+    int64_t num_rows = columns[0]->length();
+
+    for (const auto& column : columns) {
+      if (column->length() != num_rows) {
+        return arrow::Status::Invalid("All columns must have the same length");
+      }
+    }
+  }
+
+  return arrow::Status::OK();
+}
+
 arrow::Status InferSchemaFromDots(SEXP lst, SEXP schema_sxp, int num_fields,
                                   std::shared_ptr<arrow::Schema>& schema) {
   // maybe a schema was given
@@ -257,15 +272,23 @@ arrow::Status AddMetadataFromDots(SEXP lst, int num_fields,
 arrow::Status CollectTableColumns(
     SEXP lst, const std::shared_ptr<arrow::Schema>& schema, int num_fields, bool inferred,
     std::vector<std::shared_ptr<arrow::ChunkedArray>>& columns) {
+  if (!inferred && schema->num_fields() != num_fields) {
+    cpp11::stop("incompatible. schema has %d fields, and %d columns are supplied",
+                schema->num_fields(), num_fields);
+  }
   auto extract_one_column = [&columns, &schema, inferred](int j, SEXP x,
-                                                          cpp11::r_string) {
+                                                          std::string name) {
+    if (!inferred && schema->field(j)->name() != name) {
+      cpp11::stop("field at index %d has name '%s' != '%s'", j + 1,
+                  schema->field(j)->name().c_str(), name.c_str());
+    }
     if (Rf_inherits(x, "ChunkedArray")) {
       columns[j] = cpp11::as_cpp<std::shared_ptr<arrow::ChunkedArray>>(x);
     } else if (Rf_inherits(x, "Array")) {
       columns[j] = std::make_shared<arrow::ChunkedArray>(
           cpp11::as_cpp<std::shared_ptr<arrow::Array>>(x));
     } else {
-      auto array = arrow::r::Array__from_vector(x, schema->field(j)->type(), inferred);
+      auto array = arrow::r::vec_to_arrow(x, schema->field(j)->type(), inferred);
       columns[j] = std::make_shared<arrow::ChunkedArray>(array);
     }
   };
@@ -318,6 +341,8 @@ std::shared_ptr<arrow::Table> Table__from_dots(SEXP lst, SEXP schema_sxp) {
   std::vector<std::shared_ptr<arrow::ChunkedArray>> columns(num_fields);
   StopIfNotOk(
       arrow::r::CollectTableColumns(lst, schema, num_fields, infer_schema, columns));
+
+  StopIfNotOk(arrow::r::check_consistent_column_length(columns));
 
   return arrow::Table::Make(schema, columns);
 }

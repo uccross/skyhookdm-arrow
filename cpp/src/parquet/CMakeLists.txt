@@ -21,24 +21,6 @@ add_custom_target(parquet-benchmarks)
 add_custom_target(parquet-tests)
 add_dependencies(parquet-all parquet parquet-tests parquet-benchmarks)
 
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/.parquetcppversion" PARQUET_VERSION)
-string(REPLACE "\n" "" PARQUET_VERSION "${PARQUET_VERSION}")
-string(REGEX MATCH "^([0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)" VERSION ${PARQUET_VERSION})
-if(NOT VERSION)
-  message(FATAL_ERROR "invalid .parquetcppversion")
-endif()
-set(PARQUET_VERSION "${PARQUET_VERSION}" PARENT_SCOPE)
-
-string(REGEX
-       REPLACE "^([0-9]+)\.[0-9]+\.[0-9]+(-.+)?$" "\\1" PARQUET_VERSION_MAJOR
-               "${PARQUET_VERSION}")
-string(REGEX
-       REPLACE "^[0-9]+\.([0-9]+)\.[0-9]+(-.+)?$" "\\1" PARQUET_VERSION_MINOR
-               "${PARQUET_VERSION}")
-string(REGEX
-       REPLACE "^[0-9]+\.[0-9]+\.([0-9]+)(-.+)?$" "\\1" PARQUET_VERSION_PATCH
-               "${PARQUET_VERSION}")
-
 function(ADD_PARQUET_TEST REL_TEST_NAME)
   set(one_value_args)
   set(multi_value_args EXTRA_DEPENDENCIES LABELS)
@@ -129,13 +111,6 @@ else()
   set(ARROW_LIBRARIES_FOR_STATIC_TESTS arrow_testing_shared arrow_shared)
 endif()
 
-set(PARQUET_BOOST_LINK_LIBS)
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
-  add_definitions(-DPARQUET_USE_BOOST_REGEX)
-  list(APPEND PARQUET_BOOST_LINK_LIBS ${BOOST_REGEX_LIBRARY})
-endif()
-
 set(PARQUET_MIN_TEST_LIBS GTest::gtest_main GTest::gtest)
 
 if(APPLE)
@@ -181,14 +156,13 @@ set(PARQUET_SRCS
     column_reader.cc
     column_scanner.cc
     column_writer.cc
-    deprecated_io.cc
     encoding.cc
-    encryption.cc
+    encryption/encryption.cc
+    encryption/internal_file_decryptor.cc
+    encryption/internal_file_encryptor.cc
     exception.cc
     file_reader.cc
     file_writer.cc
-    internal_file_decryptor.cc
-    internal_file_encryptor.cc
     level_comparison.cc
     level_conversion.cc
     metadata.cc
@@ -226,9 +200,21 @@ if(ARROW_HAVE_RUNTIME_AVX2)
 endif()
 
 if(PARQUET_REQUIRE_ENCRYPTION)
-  set(PARQUET_SRCS ${PARQUET_SRCS} encryption_internal.cc)
+  set(PARQUET_SRCS ${PARQUET_SRCS} encryption/encryption_internal.cc)
+  # Encryption key management
+  set(PARQUET_SRCS
+      ${PARQUET_SRCS}
+      encryption/crypto_factory.cc
+      encryption/file_key_unwrapper.cc
+      encryption/file_key_wrapper.cc
+      encryption/kms_client.cc
+      encryption/key_material.cc
+      encryption/key_metadata.cc
+      encryption/key_toolkit.cc
+      encryption/key_toolkit_internal.cc
+      encryption/local_wrap_kms_client.cc)
 else()
-  set(PARQUET_SRCS ${PARQUET_SRCS} encryption_internal_nossl.cc)
+  set(PARQUET_SRCS ${PARQUET_SRCS} encryption/encryption_internal_nossl.cc)
 endif()
 
 if(NOT PARQUET_MINIMAL_DEPENDENCY)
@@ -236,12 +222,11 @@ if(NOT PARQUET_MINIMAL_DEPENDENCY)
 
   # These are libraries that we will link privately with parquet_shared (as they
   # do not need to be linked transitively by other linkers)
-  set(PARQUET_SHARED_PRIVATE_LINK_LIBS ${PARQUET_BOOST_LINK_LIBS} thrift::thrift)
+  set(PARQUET_SHARED_PRIVATE_LINK_LIBS thrift::thrift)
 
   # Link publicly with parquet_static (because internal users need to
   # transitively link all dependencies)
-  set(PARQUET_STATIC_LINK_LIBS ${PARQUET_STATIC_LINK_LIBS} ${PARQUET_BOOST_LINK_LIBS}
-                               thrift::thrift)
+  set(PARQUET_STATIC_LINK_LIBS ${PARQUET_STATIC_LINK_LIBS} thrift::thrift)
 
   # Although we don't link parquet_objlib against anything, we need it to depend
   # on these libs as we may generate their headers via ExternalProject_Add
@@ -331,6 +316,7 @@ endif()
 
 add_subdirectory(api)
 add_subdirectory(arrow)
+add_subdirectory(encryption)
 
 arrow_install_all_headers("parquet")
 
@@ -342,7 +328,6 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/parquet_version.h"
 add_parquet_test(internals-test
                  SOURCES
                  bloom_filter_test.cc
-                 deprecated_io_test.cc
                  properties_test.cc
                  statistics_test.cc
                  encoding_test.cc
@@ -389,9 +374,19 @@ add_parquet_test(arrow-internals-test
 if(PARQUET_REQUIRE_ENCRYPTION)
   add_parquet_test(encryption-test
                    SOURCES
-                   encryption_write_configurations_test.cc
-                   encryption_read_configurations_test.cc
-                   encryption_properties_test.cc
+                   encryption/write_configurations_test.cc
+                   encryption/read_configurations_test.cc
+                   encryption/properties_test.cc
+                   encryption/test_encryption_util.cc
+                   test_util.cc)
+  add_parquet_test(encryption-key-management-test
+                   SOURCES
+                   encryption/key_management_test.cc
+                   encryption/key_metadata_test.cc
+                   encryption/key_wrapping_test.cc
+                   encryption/test_encryption_util.cc
+                   encryption/test_in_memory_kms.cc
+                   encryption/two_level_cache_with_expiration_test.cc
                    test_util.cc)
 endif()
 

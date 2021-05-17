@@ -1022,7 +1022,7 @@ class BinaryTask
   def available_apt_targets
     [
       ["debian", "buster", "main"],
-      ["ubuntu", "xenial", "main"],
+      ["debian", "bullseye", "main"],
       ["ubuntu", "bionic", "main"],
       ["ubuntu", "focal", "main"],
       ["ubuntu", "groovy", "main"],
@@ -1047,7 +1047,11 @@ class BinaryTask
     else
       available_apt_targets.select do |distribution, code_name, component|
         env_apt_targets.any? do |env_apt_target|
-          "#{distribution}-#{code_name}".start_with?(env_apt_target)
+          if env_apt_target.include?("-")
+            env_apt_target.start_with?("#{distribution}-#{code_name}")
+          else
+            env_apt_target == distribution
+          end
         end
       end
     end
@@ -1078,8 +1082,8 @@ class BinaryTask
           Dir.glob("#{source_dir_prefix}*/**/*") do |path|
             next if File.directory?(path)
             base_name = File.basename(path)
-            if base_name.start_with?("apache-arrow-archive-keyring")
-              package_name = "apache-arrow-archive-keyring"
+            if base_name.start_with?("apache-arrow-apt-source")
+              package_name = "apache-arrow-apt-source"
             else
               package_name = "apache-arrow"
             end
@@ -1100,13 +1104,13 @@ class BinaryTask
                           destination_path,
                           progress_reporter)
             case base_name
-            when /\A[^_]+-archive-keyring_.*\.deb\z/
-              latest_archive_keyring_package_path = [
+            when /\A[^_]+-apt-source_.*\.deb\z/
+              latest_apt_source_package_path = [
                 distribution_dir,
                 "#{package_name}-latest-#{code_name}.deb"
               ].join("/")
               copy_artifact(path,
-                            latest_archive_keyring_package_path,
+                            latest_apt_source_package_path,
                             progress_reporter)
             end
           end
@@ -1233,6 +1237,73 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
     CONF
   end
 
+  def apt_update(repositories_dir)
+    apt_targets.each do |distribution, code_name, component|
+      base_dir = "#{repositories_dir}/#{distribution}"
+      pool_dir = "#{base_dir}/pool/#{code_name}"
+      next unless File.exist?(pool_dir)
+      dists_dir = "#{base_dir}/dists/#{code_name}"
+      rm_rf(dists_dir, verbose: verbose?)
+      generate_apt_release(dists_dir, code_name, component, "source")
+      apt_architectures.each do |architecture|
+        generate_apt_release(dists_dir, code_name, component, architecture)
+      end
+
+      generate_conf_file = Tempfile.new("apt-ftparchive-generate.conf")
+      File.open(generate_conf_file.path, "w") do |conf|
+        conf.puts(generate_apt_ftp_archive_generate_conf(code_name,
+                                                         component))
+      end
+      cd(base_dir, verbose: verbose?) do
+        sh("apt-ftparchive",
+           "generate",
+           generate_conf_file.path,
+           out: default_output,
+           verbose: verbose?)
+      end
+
+      Dir.glob("#{dists_dir}/Release*") do |release|
+        rm_f(release, verbose: verbose?)
+      end
+      Dir.glob("#{base_dir}/*.db") do |db|
+        rm_f(db, verbose: verbose?)
+      end
+      release_conf_file = Tempfile.new("apt-ftparchive-release.conf")
+      File.open(release_conf_file.path, "w") do |conf|
+        conf.puts(generate_apt_ftp_archive_release_conf(code_name,
+                                                        component))
+      end
+      release_file = Tempfile.new("apt-ftparchive-release")
+      sh("apt-ftparchive",
+         "-c", release_conf_file.path,
+         "release",
+         dists_dir,
+         out: release_file.path,
+         verbose: verbose?)
+      release_path = "#{dists_dir}/Release"
+      signed_release_path = "#{release_path}.gpg"
+      in_release_path = "#{dists_dir}/InRelease"
+      mv(release_file.path, release_path, verbose: verbose?)
+      chmod(0644, release_path, verbose: verbose?)
+      sh("gpg",
+         "--sign",
+         "--detach-sign",
+         "--armor",
+         "--local-user", gpg_key_id,
+         "--output", signed_release_path,
+         release_path,
+         out: default_output,
+         verbose: verbose?)
+      sh("gpg",
+         "--clear-sign",
+         "--local-user", gpg_key_id,
+         "--output", in_release_path,
+         release_path,
+         out: default_output,
+         verbose: verbose?)
+    end
+  end
+
   def define_apt_rc_tasks
     directory apt_rc_repositories_dir
 
@@ -1249,70 +1320,11 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
 
         desc "Update RC APT repositories"
         task :update do
+          apt_update(apt_rc_repositories_dir)
           apt_targets.each do |distribution, code_name, component|
             base_dir = "#{apt_rc_repositories_dir}/#{distribution}"
-            pool_dir = "#{base_dir}/pool/#{code_name}"
-            next unless File.exist?(pool_dir)
             dists_dir = "#{base_dir}/dists/#{code_name}"
-            rm_rf(dists_dir, verbose: verbose?)
-            generate_apt_release(dists_dir, code_name, component, "source")
-            apt_architectures.each do |architecture|
-              generate_apt_release(dists_dir, code_name, component, architecture)
-            end
-
-            generate_conf_file = Tempfile.new("apt-ftparchive-generate.conf")
-            File.open(generate_conf_file.path, "w") do |conf|
-              conf.puts(generate_apt_ftp_archive_generate_conf(code_name,
-                                                               component))
-            end
-            cd(base_dir, verbose: verbose?) do
-              sh("apt-ftparchive",
-                 "generate",
-                 generate_conf_file.path,
-                 out: default_output,
-                 verbose: verbose?)
-            end
-
-            Dir.glob("#{dists_dir}/Release*") do |release|
-              rm_f(release, verbose: verbose?)
-            end
-            Dir.glob("#{base_dir}/*.db") do |db|
-              rm_f(db, verbose: verbose?)
-            end
-            release_conf_file = Tempfile.new("apt-ftparchive-release.conf")
-            File.open(release_conf_file.path, "w") do |conf|
-              conf.puts(generate_apt_ftp_archive_release_conf(code_name,
-                                                              component))
-            end
-            release_file = Tempfile.new("apt-ftparchive-release")
-            sh("apt-ftparchive",
-               "-c", release_conf_file.path,
-               "release",
-               dists_dir,
-               out: release_file.path,
-               verbose: verbose?)
-            release_path = "#{dists_dir}/Release"
-            signed_release_path = "#{release_path}.gpg"
-            in_release_path = "#{dists_dir}/InRelease"
-            mv(release_file.path, release_path, verbose: verbose?)
-            chmod(0644, release_path, verbose: verbose?)
-            sh("gpg",
-               "--sign",
-               "--detach-sign",
-               "--armor",
-               "--local-user", gpg_key_id,
-               "--output", signed_release_path,
-               release_path,
-               out: default_output,
-               verbose: verbose?)
-            sh("gpg",
-               "--clear-sign",
-               "--local-user", gpg_key_id,
-               "--output", in_release_path,
-               release_path,
-               out: default_output,
-               verbose: verbose?)
-
+            next unless File.exist?(dists_dir)
             sign_dir("#{distribution} #{code_name}",
                      dists_dir)
           end
@@ -1427,7 +1439,11 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
     else
       available_yum_targets.select do |distribution, distribution_version|
         env_yum_targets.any? do |env_yum_target|
-          "#{distribution}-#{distribution_version}".start_with?(env_yum_target)
+          if env_yum_target.include?("-")
+            env_yum_target.start_with?("#{distribution}-#{distribution_version}")
+          else
+            env_yum_target == distribution
+          end
         end
       end
     end
@@ -1469,6 +1485,33 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
       thread_pool << rpm
     end
     thread_pool.join
+  end
+
+  def rpm_sign(directory)
+    unless system("rpm", "-q",
+                  rpm_gpg_key_package_name(gpg_key_id),
+                  out: IO::NULL)
+      gpg_key = Tempfile.new(["apache-arrow-binary", ".asc"])
+      sh("gpg",
+         "--armor",
+         "--export", gpg_key_id,
+         out: gpg_key.path,
+         verbose: verbose?)
+      sh("rpm",
+         "--import", gpg_key.path,
+         out: default_output,
+         verbose: verbose?)
+      gpg_key.close!
+    end
+
+    yum_targets.each do |distribution, distribution_version|
+      source_dir = [
+        directory,
+        distribution,
+        distribution_version,
+      ].join("/")
+      sign_rpms(source_dir)
+    end
   end
 
   def define_rpm_tasks
@@ -1542,31 +1585,15 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
 
       desc "Sign RPM packages"
       task :sign do
-        unless system("rpm", "-q",
-                      rpm_gpg_key_package_name(gpg_key_id),
-                      out: IO::NULL)
-          gpg_key = Tempfile.new(["apache-arrow-binary", ".asc"])
-          sh("gpg",
-             "--armor",
-             "--export", gpg_key_id,
-             out: gpg_key.path,
-             verbose: verbose?)
-          sh("rpm",
-             "--import", gpg_key.path,
-             out: default_output,
-             verbose: verbose?)
-          gpg_key.close!
-        end
-
+        rpm_sign(rpm_dir)
         yum_targets.each do |distribution, distribution_version|
           source_dir = [
             rpm_dir,
             distribution,
             distribution_version,
           ].join("/")
-          sign_rpms(source_dir)
           sign_dir("#{distribution}-#{distribution_version}",
-                   rpm_dir)
+                   source_dir)
         end
       end
 
@@ -1597,6 +1624,33 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
     task :rpm => rpm_tasks
   end
 
+  def yum_update(repositories_dir)
+    yum_distributions.each do |distribution|
+      distribution_dir = "#{repositories_dir}/#{distribution}"
+      Dir.glob("#{distribution_dir}/**/repodata") do |repodata|
+        rm_rf(repodata, verbose: verbose?)
+      end
+    end
+
+    yum_targets.each do |distribution, distribution_version|
+      base_dir = [
+        repositories_dir,
+        distribution,
+        distribution_version,
+      ].join("/")
+      base_dir = Pathname(base_dir)
+      next unless base_dir.directory?
+      base_dir.glob("*") do |arch_dir|
+        next unless arch_dir.directory?
+        sh(ENV["CREATEREPO"] || "createrepo",
+           "--update",
+           arch_dir.to_s,
+           out: default_output,
+           verbose: verbose?)
+      end
+    end
+  end
+
   def define_yum_rc_tasks
     directory yum_rc_repositories_dir
 
@@ -1614,13 +1668,7 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
 
         desc "Update RC Yum repositories"
         task :update => yum_rc_repositories_dir do
-          yum_distributions.each do |distribution|
-            distribution_dir = "#{yum_rc_repositories_dir}/#{distribution}"
-            Dir.glob("#{distribution_dir}/**/repodata") do |repodata|
-              rm_rf(repodata, verbose: verbose?)
-            end
-          end
-
+          yum_update(yum_rc_repositories_dir)
           yum_targets.each do |distribution, distribution_version|
             base_dir = [
               yum_rc_repositories_dir,
@@ -1631,11 +1679,6 @@ APT::FTPArchive::Release::Description "#{apt_repository_description}";
             next unless base_dir.directory?
             base_dir.glob("*") do |arch_dir|
               next unless arch_dir.directory?
-              sh("createrepo",
-                 "--update",
-                 arch_dir.to_s,
-                 out: default_output,
-                 verbose: verbose?)
               sign_label =
                 "#{distribution}-#{distribution_version} #{arch_dir.basename}"
               sign_dir(sign_label,

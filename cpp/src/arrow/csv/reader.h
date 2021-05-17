@@ -20,10 +20,13 @@
 #include <memory>
 
 #include "arrow/csv/options.h"  // IWYU pragma: keep
+#include "arrow/io/interfaces.h"
 #include "arrow/record_batch.h"
 #include "arrow/result.h"
 #include "arrow/type.h"
 #include "arrow/type_fwd.h"
+#include "arrow/util/future.h"
+#include "arrow/util/thread_pool.h"
 #include "arrow/util/visibility.h"
 
 namespace arrow {
@@ -40,13 +43,20 @@ class ARROW_EXPORT TableReader {
 
   /// Read the entire CSV file and convert it to a Arrow Table
   virtual Result<std::shared_ptr<Table>> Read() = 0;
+  /// Read the entire CSV file and convert it to a Arrow Table
+  virtual Future<std::shared_ptr<Table>> ReadAsync() = 0;
 
   /// Create a TableReader instance
-  static Result<std::shared_ptr<TableReader>> Make(MemoryPool* pool,
+  static Result<std::shared_ptr<TableReader>> Make(io::IOContext io_context,
                                                    std::shared_ptr<io::InputStream> input,
                                                    const ReadOptions&,
                                                    const ParseOptions&,
                                                    const ConvertOptions&);
+
+  ARROW_DEPRECATED("Use MemoryPool-less variant (the IOContext holds a pool already)")
+  static Result<std::shared_ptr<TableReader>> Make(
+      MemoryPool* pool, io::IOContext io_context, std::shared_ptr<io::InputStream> input,
+      const ReadOptions&, const ParseOptions&, const ConvertOptions&);
 };
 
 /// Experimental
@@ -55,12 +65,15 @@ class ARROW_EXPORT StreamingReader : public RecordBatchReader {
   virtual ~StreamingReader() = default;
 
   /// Create a StreamingReader instance
-  ///
-  /// Currently, the StreamingReader is always single-threaded (parallel
-  /// readahead is not supported).
   static Result<std::shared_ptr<StreamingReader>> Make(
-      MemoryPool* pool, std::shared_ptr<io::InputStream> input, const ReadOptions&,
-      const ParseOptions&, const ConvertOptions&);
+      io::IOContext io_context, std::shared_ptr<io::InputStream> input,
+      const ReadOptions&, const ParseOptions&, const ConvertOptions&);
+
+  ARROW_DEPRECATED("Use IOContext-based overload")
+  static Result<std::shared_ptr<StreamingReader>> Make(
+      MemoryPool* pool, std::shared_ptr<io::InputStream> input,
+      const ReadOptions& read_options, const ParseOptions& parse_options,
+      const ConvertOptions& convert_options);
 };
 
 }  // namespace csv

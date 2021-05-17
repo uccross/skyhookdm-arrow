@@ -18,8 +18,10 @@
 use std::{any::Any, sync::Arc};
 
 use arrow::array::*;
-use arrow::compute::kernels::arithmetic::{add, divide, multiply, subtract};
-use arrow::compute::kernels::boolean::{and, or};
+use arrow::compute::kernels::arithmetic::{
+    add, divide, divide_scalar, multiply, subtract,
+};
+use arrow::compute::kernels::boolean::{and_kleene, or_kleene};
 use arrow::compute::kernels::comparison::{eq, gt, gt_eq, lt, lt_eq, neq};
 use arrow::compute::kernels::comparison::{
     eq_scalar, gt_eq_scalar, gt_scalar, lt_eq_scalar, lt_scalar, neq_scalar,
@@ -37,7 +39,7 @@ use arrow::record_batch::RecordBatch;
 
 use crate::error::{DataFusionError, Result};
 use crate::logical_plan::Operator;
-use crate::physical_plan::expressions::cast;
+use crate::physical_plan::expressions::try_cast;
 use crate::physical_plan::{ColumnarValue, PhysicalExpr};
 use crate::scalar::ScalarValue;
 
@@ -162,10 +164,10 @@ macro_rules! compute_op {
 
 macro_rules! binary_string_array_op_scalar {
     ($LEFT:expr, $RIGHT:expr, $OP:ident) => {{
-        let result = match $LEFT.data_type() {
+        let result: Result<Arc<dyn Array>> = match $LEFT.data_type() {
             DataType::Utf8 => compute_utf8_op_scalar!($LEFT, $RIGHT, $OP, StringArray),
             other => Err(DataFusionError::Internal(format!(
-                "Unsupported data type {:?}",
+                "Data type {:?} not supported for scalar operation on string array",
                 other
             ))),
         };
@@ -178,7 +180,7 @@ macro_rules! binary_string_array_op {
         match $LEFT.data_type() {
             DataType::Utf8 => compute_utf8_op!($LEFT, $RIGHT, $OP, StringArray),
             other => Err(DataFusionError::Internal(format!(
-                "Unsupported data type {:?}",
+                "Data type {:?} not supported for binary operation on string arrays",
                 other
             ))),
         }
@@ -202,18 +204,44 @@ macro_rules! binary_primitive_array_op {
             DataType::Float32 => compute_op!($LEFT, $RIGHT, $OP, Float32Array),
             DataType::Float64 => compute_op!($LEFT, $RIGHT, $OP, Float64Array),
             other => Err(DataFusionError::Internal(format!(
-                "Unsupported data type {:?}",
+                "Data type {:?} not supported for binary operation on primitive arrays",
                 other
             ))),
         }
     }};
 }
 
+/// Invoke a compute kernel on an array and a scalar
+/// The binary_primitive_array_op_scalar macro only evaluates for primitive
+/// types like integers and floats.
+macro_rules! binary_primitive_array_op_scalar {
+    ($LEFT:expr, $RIGHT:expr, $OP:ident) => {{
+        let result: Result<Arc<dyn Array>> = match $LEFT.data_type() {
+            DataType::Int8 => compute_op_scalar!($LEFT, $RIGHT, $OP, Int8Array),
+            DataType::Int16 => compute_op_scalar!($LEFT, $RIGHT, $OP, Int16Array),
+            DataType::Int32 => compute_op_scalar!($LEFT, $RIGHT, $OP, Int32Array),
+            DataType::Int64 => compute_op_scalar!($LEFT, $RIGHT, $OP, Int64Array),
+            DataType::UInt8 => compute_op_scalar!($LEFT, $RIGHT, $OP, UInt8Array),
+            DataType::UInt16 => compute_op_scalar!($LEFT, $RIGHT, $OP, UInt16Array),
+            DataType::UInt32 => compute_op_scalar!($LEFT, $RIGHT, $OP, UInt32Array),
+            DataType::UInt64 => compute_op_scalar!($LEFT, $RIGHT, $OP, UInt64Array),
+            DataType::Float32 => compute_op_scalar!($LEFT, $RIGHT, $OP, Float32Array),
+            DataType::Float64 => compute_op_scalar!($LEFT, $RIGHT, $OP, Float64Array),
+            other => Err(DataFusionError::Internal(format!(
+                "Data type {:?} not supported for scalar operation on primitive array",
+                other
+            ))),
+        };
+        Some(result)
+    }};
+}
+
 /// The binary_array_op_scalar macro includes types that extend beyond the primitive,
 /// such as Utf8 strings.
+#[macro_export]
 macro_rules! binary_array_op_scalar {
     ($LEFT:expr, $RIGHT:expr, $OP:ident) => {{
-        let result = match $LEFT.data_type() {
+        let result: Result<Arc<dyn Array>> = match $LEFT.data_type() {
             DataType::Int8 => compute_op_scalar!($LEFT, $RIGHT, $OP, Int8Array),
             DataType::Int16 => compute_op_scalar!($LEFT, $RIGHT, $OP, Int16Array),
             DataType::Int32 => compute_op_scalar!($LEFT, $RIGHT, $OP, Int32Array),
@@ -232,7 +260,7 @@ macro_rules! binary_array_op_scalar {
                 compute_op_scalar!($LEFT, $RIGHT, $OP, Date32Array)
             }
             other => Err(DataFusionError::Internal(format!(
-                "Unsupported data type {:?}",
+                "Data type {:?} not supported for scalar operation on dyn array",
                 other
             ))),
         };
@@ -267,7 +295,7 @@ macro_rules! binary_array_op {
                 compute_op!($LEFT, $RIGHT, $OP, Date64Array)
             }
             other => Err(DataFusionError::Internal(format!(
-                "Unsupported data type {:?}",
+                "Data type {:?} not supported for binary operation on dyn arrays",
                 other
             ))),
         }
@@ -423,6 +451,9 @@ impl PhysicalExpr for BinaryExpr {
                     Operator::NotLike => {
                         binary_string_array_op_scalar!(array, scalar.clone(), nlike)
                     }
+                    Operator::Divide => {
+                        binary_primitive_array_op_scalar!(array, scalar.clone(), divide)
+                    }
                     // if scalar operation is not supported - fallback to array implementation
                     _ => None,
                 }
@@ -474,7 +505,7 @@ impl PhysicalExpr for BinaryExpr {
             Operator::Divide => binary_primitive_array_op!(left, right, divide),
             Operator::And => {
                 if left_data_type == DataType::Boolean {
-                    boolean_op!(left, right, and)
+                    boolean_op!(left, right, and_kleene)
                 } else {
                     return Err(DataFusionError::Internal(format!(
                         "Cannot evaluate binary expression {:?} with types {:?} and {:?}",
@@ -486,7 +517,7 @@ impl PhysicalExpr for BinaryExpr {
             }
             Operator::Or => {
                 if left_data_type == DataType::Boolean {
-                    boolean_op!(left, right, or)
+                    boolean_op!(left, right, or_kleene)
                 } else {
                     return Err(DataFusionError::Internal(format!(
                         "Cannot evaluate binary expression {:?} with types {:?} and {:?}",
@@ -516,8 +547,8 @@ fn binary_cast(
     let cast_type = common_binary_type(lhs_type, op, rhs_type)?;
 
     Ok((
-        cast(lhs, input_schema, cast_type.clone())?,
-        cast(rhs, input_schema, cast_type)?,
+        try_cast(lhs, input_schema, cast_type.clone())?,
+        try_cast(rhs, input_schema, cast_type)?,
     ))
 }
 
@@ -944,6 +975,112 @@ mod tests {
         let result = arithmetic_op.evaluate(&batch)?.into_array(batch.num_rows());
 
         assert_eq!(result.as_ref(), &expected);
+        Ok(())
+    }
+
+    fn apply_logic_op(
+        schema: SchemaRef,
+        left: BooleanArray,
+        right: BooleanArray,
+        op: Operator,
+        expected: BooleanArray,
+    ) -> Result<()> {
+        let arithmetic_op = binary_simple(col("a"), op, col("b"));
+        let data: Vec<ArrayRef> = vec![Arc::new(left), Arc::new(right)];
+        let batch = RecordBatch::try_new(schema, data)?;
+        let result = arithmetic_op.evaluate(&batch)?.into_array(batch.num_rows());
+
+        assert_eq!(result.as_ref(), &expected);
+        Ok(())
+    }
+
+    #[test]
+    fn and_with_nulls_op() -> Result<()> {
+        let schema = Schema::new(vec![
+            Field::new("a", DataType::Boolean, true),
+            Field::new("b", DataType::Boolean, true),
+        ]);
+        let a = BooleanArray::from(vec![
+            Some(true),
+            Some(false),
+            None,
+            Some(true),
+            Some(false),
+            None,
+            Some(true),
+            Some(false),
+            None,
+        ]);
+        let b = BooleanArray::from(vec![
+            Some(true),
+            Some(true),
+            Some(true),
+            Some(false),
+            Some(false),
+            Some(false),
+            None,
+            None,
+            None,
+        ]);
+
+        let expected = BooleanArray::from(vec![
+            Some(true),
+            Some(false),
+            None,
+            Some(false),
+            Some(false),
+            Some(false),
+            None,
+            Some(false),
+            None,
+        ]);
+        apply_logic_op(Arc::new(schema), a, b, Operator::And, expected)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn or_with_nulls_op() -> Result<()> {
+        let schema = Schema::new(vec![
+            Field::new("a", DataType::Boolean, true),
+            Field::new("b", DataType::Boolean, true),
+        ]);
+        let a = BooleanArray::from(vec![
+            Some(true),
+            Some(false),
+            None,
+            Some(true),
+            Some(false),
+            None,
+            Some(true),
+            Some(false),
+            None,
+        ]);
+        let b = BooleanArray::from(vec![
+            Some(true),
+            Some(true),
+            Some(true),
+            Some(false),
+            Some(false),
+            Some(false),
+            None,
+            None,
+            None,
+        ]);
+
+        let expected = BooleanArray::from(vec![
+            Some(true),
+            Some(true),
+            Some(true),
+            Some(true),
+            Some(false),
+            None,
+            Some(true),
+            None,
+            None,
+        ]);
+        apply_logic_op(Arc::new(schema), a, b, Operator::Or, expected)?;
+
         Ok(())
     }
 

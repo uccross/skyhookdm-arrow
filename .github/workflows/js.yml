@@ -32,8 +32,6 @@ on:
       - 'js/**'
 
 env:
-  DOCKER_BUILDKIT: 0
-  COMPOSE_DOCKER_CLI_BUILD: 1
   ARCHERY_DOCKER_USER: ${{ secrets.DOCKERHUB_USER }}
   ARCHERY_DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -115,7 +113,7 @@ jobs:
   #         node-version: ${{ matrix.node }}
   #     - name: Install Platform Dependencies
   #       shell: bash
-  #       run: npm install -g cross-env
+  #       run: yarn add -g cross-env
   #     - name: Build
   #       shell: bash
   #       run: ci/scripts/js_build.sh $(pwd)

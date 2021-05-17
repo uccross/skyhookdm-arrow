@@ -32,6 +32,18 @@ set(ARROW_DATASET_SRCS
 set(ARROW_DATASET_LINK_STATIC arrow_static)
 set(ARROW_DATASET_LINK_SHARED arrow_shared)
 
+if(ARROW_RADOS)
+  find_package(librados REQUIRED)
+  include_directories(${LIBRADOS_INCLUDE_DIR})
+
+  set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${LIBRADOS_LIBRARIES})
+  set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${LIBRADOS_LIBRARIES})
+
+  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} file_rados_parquet.cc)
+  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados_utils.cc)
+  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados.cc)
+endif()
+
 if(ARROW_CSV)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} file_csv.cc)
 endif()
@@ -118,4 +130,17 @@ endif()
 
 if(ARROW_PARQUET)
   add_arrow_dataset_test(file_parquet_test)
+endif()
+
+if(ARROW_BUILD_BENCHMARKS)
+  add_arrow_benchmark(expression_benchmark PREFIX "arrow-dataset")
+  add_arrow_benchmark(file_benchmark PREFIX "arrow-dataset")
+
+  if(ARROW_BUILD_STATIC)
+    target_link_libraries(arrow-dataset-expression-benchmark PUBLIC arrow_dataset_static)
+    target_link_libraries(arrow-dataset-file-benchmark PUBLIC arrow_dataset_static)
+  else()
+    target_link_libraries(arrow-dataset-expression-benchmark PUBLIC arrow_dataset_shared)
+    target_link_libraries(arrow-dataset-file-benchmark PUBLIC arrow_dataset_shared)
+  endif()
 endif()

@@ -19,26 +19,27 @@
 
 use std::sync::Arc;
 
-use super::{aggregates, empty::EmptyExec, expressions::binary, functions, udaf};
+use super::{
+    aggregates, empty::EmptyExec, expressions::binary, functions,
+    hash_join::PartitionMode, udaf, union::UnionExec,
+};
 use crate::error::{DataFusionError, Result};
 use crate::execution::context::ExecutionContextState;
 use crate::logical_plan::{
     DFSchema, Expr, LogicalPlan, Operator, Partitioning as LogicalPartitioning, PlanType,
     StringifiedPlan, UserDefinedLogicalNode,
 };
-use crate::physical_plan::coalesce_batches::CoalesceBatchesExec;
 use crate::physical_plan::explain::ExplainExec;
+use crate::physical_plan::expressions;
 use crate::physical_plan::expressions::{CaseExpr, Column, Literal, PhysicalSortExpr};
 use crate::physical_plan::filter::FilterExec;
 use crate::physical_plan::hash_aggregate::{AggregateMode, HashAggregateExec};
 use crate::physical_plan::hash_join::HashJoinExec;
 use crate::physical_plan::limit::{GlobalLimitExec, LocalLimitExec};
-use crate::physical_plan::merge::MergeExec;
 use crate::physical_plan::projection::ProjectionExec;
 use crate::physical_plan::repartition::RepartitionExec;
 use crate::physical_plan::sort::SortExec;
 use crate::physical_plan::udf;
-use crate::physical_plan::{expressions, Distribution};
 use crate::physical_plan::{hash_utils, Partitioning};
 use crate::physical_plan::{AggregateExpr, ExecutionPlan, PhysicalExpr, PhysicalPlanner};
 use crate::prelude::JoinType;
@@ -49,6 +50,7 @@ use arrow::compute::can_cast_types;
 use arrow::compute::SortOptions;
 use arrow::datatypes::{Schema, SchemaRef};
 use expressions::col;
+use log::debug;
 
 /// This trait exposes the ability to plan an [`ExecutionPlan`] out of a [`LogicalPlan`].
 pub trait ExtensionPlanner {
@@ -101,66 +103,21 @@ impl DefaultPhysicalPlanner {
         Self { extension_planners }
     }
 
-    /// Create a physical plan from a logical plan
+    /// Optimize a physical plan
     fn optimize_plan(
         &self,
         plan: Arc<dyn ExecutionPlan>,
         ctx_state: &ExecutionContextState,
     ) -> Result<Arc<dyn ExecutionPlan>> {
-        let children = plan
-            .children()
-            .iter()
-            .map(|child| self.optimize_plan(child.clone(), ctx_state))
-            .collect::<Result<Vec<_>>>()?;
+        let optimizers = &ctx_state.config.physical_optimizers;
+        debug!("Physical plan:\n{:?}", plan);
 
-        if children.is_empty() {
-            // leaf node, children cannot be replaced
-            Ok(plan.clone())
-        } else {
-            // wrap operators in CoalesceBatches to avoid lots of tiny batches when we have
-            // highly selective filters
-            let plan_any = plan.as_any();
-            //TODO we should do this in a more generic way either by wrapping all operators
-            // or having an API so that operators can declare when their inputs or outputs
-            // need to be wrapped in a coalesce batches operator.
-            // See https://issues.apache.org/jira/browse/ARROW-11068
-            let wrap_in_coalesce = plan_any.downcast_ref::<FilterExec>().is_some()
-                || plan_any.downcast_ref::<HashJoinExec>().is_some()
-                || plan_any.downcast_ref::<RepartitionExec>().is_some();
-
-            //TODO we should also do this for HashAggregateExec but we need to update tests
-            // as part of this work - see https://issues.apache.org/jira/browse/ARROW-11068
-            // || plan_any.downcast_ref::<HashAggregateExec>().is_some();
-
-            let plan = if wrap_in_coalesce {
-                //TODO we should add specific configuration settings for coalescing batches and
-                // we should do that once https://issues.apache.org/jira/browse/ARROW-11059 is
-                // implemented. For now, we choose half the configured batch size to avoid copies
-                // when a small number of rows are removed from a batch
-                let target_batch_size = ctx_state.config.batch_size / 2;
-                Arc::new(CoalesceBatchesExec::new(plan.clone(), target_batch_size))
-            } else {
-                plan.clone()
-            };
-
-            let children = plan.children().clone();
-
-            match plan.required_child_distribution() {
-                Distribution::UnspecifiedDistribution => plan.with_new_children(children),
-                Distribution::SinglePartition => plan.with_new_children(
-                    children
-                        .iter()
-                        .map(|child| {
-                            if child.output_partitioning().partition_count() == 1 {
-                                child.clone()
-                            } else {
-                                Arc::new(MergeExec::new(child.clone()))
-                            }
-                        })
-                        .collect(),
-                ),
-            }
+        let mut new_plan = plan;
+        for optimizer in optimizers {
+            new_plan = optimizer.optimize(new_plan, &ctx_state.config)?;
         }
+        debug!("Optimized physical plan:\n{:?}", new_plan);
+        Ok(new_plan)
     }
 
     /// Create a physical plan from a logical plan
@@ -176,8 +133,9 @@ impl DefaultPhysicalPlanner {
                 source,
                 projection,
                 filters,
+                limit,
                 ..
-            } => source.scan(projection, batch_size, filters),
+            } => source.scan(projection, batch_size, filters, *limit),
             LogicalPlan::Aggregate {
                 input,
                 group_expr,
@@ -185,7 +143,8 @@ impl DefaultPhysicalPlanner {
                 ..
             } => {
                 // Initially need to perform the aggregate and then merge the partitions
-                let input_exec = self.create_physical_plan(input, ctx_state)?;
+                let input_exec = self.create_initial_plan(input, ctx_state)?;
+                let input_schema = input_exec.schema();
                 let physical_input_schema = input_exec.as_ref().schema();
                 let logical_input_schema = input.as_ref().schema();
 
@@ -219,6 +178,7 @@ impl DefaultPhysicalPlanner {
                     groups.clone(),
                     aggregates.clone(),
                     input_exec,
+                    input_schema.clone(),
                 )?);
 
                 let final_group: Vec<Arc<dyn PhysicalExpr>> =
@@ -235,10 +195,11 @@ impl DefaultPhysicalPlanner {
                         .collect(),
                     aggregates,
                     initial_aggr,
+                    input_schema,
                 )?))
             }
             LogicalPlan::Projection { input, expr, .. } => {
-                let input_exec = self.create_physical_plan(input, ctx_state)?;
+                let input_exec = self.create_initial_plan(input, ctx_state)?;
                 let input_schema = input.as_ref().schema();
                 let runtime_expr = expr
                     .iter()
@@ -258,17 +219,24 @@ impl DefaultPhysicalPlanner {
             LogicalPlan::Filter {
                 input, predicate, ..
             } => {
-                let input = self.create_physical_plan(input, ctx_state)?;
+                let input = self.create_initial_plan(input, ctx_state)?;
                 let input_schema = input.as_ref().schema();
                 let runtime_expr =
                     self.create_physical_expr(predicate, &input_schema, ctx_state)?;
                 Ok(Arc::new(FilterExec::try_new(runtime_expr, input)?))
             }
+            LogicalPlan::Union { inputs, .. } => {
+                let physical_plans = inputs
+                    .iter()
+                    .map(|input| self.create_initial_plan(input, ctx_state))
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(Arc::new(UnionExec::new(physical_plans)))
+            }
             LogicalPlan::Repartition {
                 input,
                 partitioning_scheme,
             } => {
-                let input = self.create_physical_plan(input, ctx_state)?;
+                let input = self.create_initial_plan(input, ctx_state)?;
                 let input_schema = input.schema();
                 let physical_partitioning = match partitioning_scheme {
                     LogicalPartitioning::RoundRobinBatch(n) => {
@@ -290,7 +258,7 @@ impl DefaultPhysicalPlanner {
                 )?))
             }
             LogicalPlan::Sort { expr, input, .. } => {
-                let input = self.create_physical_plan(input, ctx_state)?;
+                let input = self.create_initial_plan(input, ctx_state)?;
                 let input_schema = input.as_ref().schema();
 
                 let sort_expr = expr
@@ -315,11 +283,7 @@ impl DefaultPhysicalPlanner {
                     })
                     .collect::<Result<Vec<_>>>()?;
 
-                Ok(Arc::new(SortExec::try_new(
-                    sort_expr,
-                    input,
-                    ctx_state.config.concurrency,
-                )?))
+                Ok(Arc::new(SortExec::try_new(sort_expr, input)?))
             }
             LogicalPlan::Join {
                 left,
@@ -328,20 +292,41 @@ impl DefaultPhysicalPlanner {
                 join_type,
                 ..
             } => {
-                let left = self.create_physical_plan(left, ctx_state)?;
-                let right = self.create_physical_plan(right, ctx_state)?;
+                let left = self.create_initial_plan(left, ctx_state)?;
+                let right = self.create_initial_plan(right, ctx_state)?;
                 let physical_join_type = match join_type {
                     JoinType::Inner => hash_utils::JoinType::Inner,
                     JoinType::Left => hash_utils::JoinType::Left,
                     JoinType::Right => hash_utils::JoinType::Right,
                 };
+                if ctx_state.config.concurrency > 1 && ctx_state.config.repartition_joins
+                {
+                    let left_expr = keys.iter().map(|x| col(&x.0)).collect();
+                    let right_expr = keys.iter().map(|x| col(&x.1)).collect();
 
-                Ok(Arc::new(HashJoinExec::try_new(
-                    left,
-                    right,
-                    &keys,
-                    &physical_join_type,
-                )?))
+                    // Use hash partition by defualt to parallelize hash joins
+                    Ok(Arc::new(HashJoinExec::try_new(
+                        Arc::new(RepartitionExec::try_new(
+                            left,
+                            Partitioning::Hash(left_expr, ctx_state.config.concurrency),
+                        )?),
+                        Arc::new(RepartitionExec::try_new(
+                            right,
+                            Partitioning::Hash(right_expr, ctx_state.config.concurrency),
+                        )?),
+                        &keys,
+                        &physical_join_type,
+                        PartitionMode::Partitioned,
+                    )?))
+                } else {
+                    Ok(Arc::new(HashJoinExec::try_new(
+                        left,
+                        right,
+                        &keys,
+                        &physical_join_type,
+                        PartitionMode::CollectLeft,
+                    )?))
+                }
             }
             LogicalPlan::EmptyRelation {
                 produce_one_row,
@@ -352,7 +337,7 @@ impl DefaultPhysicalPlanner {
             ))),
             LogicalPlan::Limit { input, n, .. } => {
                 let limit = *n;
-                let input = self.create_physical_plan(input, ctx_state)?;
+                let input = self.create_initial_plan(input, ctx_state)?;
 
                 // GlobalLimitExec requires a single partition for input
                 let input = if input.output_partitioning().partition_count() == 1 {
@@ -363,11 +348,7 @@ impl DefaultPhysicalPlanner {
                     Arc::new(LocalLimitExec::new(input, limit))
                 };
 
-                Ok(Arc::new(GlobalLimitExec::new(
-                    input,
-                    limit,
-                    ctx_state.config.concurrency,
-                )))
+                Ok(Arc::new(GlobalLimitExec::new(input, limit)))
             }
             LogicalPlan::CreateExternalTable { .. } => {
                 // There is no default plan for "CREATE EXTERNAL
@@ -384,7 +365,7 @@ impl DefaultPhysicalPlanner {
                 stringified_plans,
                 schema,
             } => {
-                let input = self.create_physical_plan(plan, ctx_state)?;
+                let input = self.create_initial_plan(plan, ctx_state)?;
 
                 let mut stringified_plans = stringified_plans
                     .iter()
@@ -408,7 +389,7 @@ impl DefaultPhysicalPlanner {
                 let inputs = node
                     .inputs()
                     .into_iter()
-                    .map(|input_plan| self.create_physical_plan(input_plan, ctx_state))
+                    .map(|input_plan| self.create_initial_plan(input_plan, ctx_state))
                     .collect::<Result<Vec<_>>>()?;
 
                 let maybe_plan = self.extension_planners.iter().try_fold(
@@ -538,6 +519,11 @@ impl DefaultPhysicalPlanner {
                 )?))
             }
             Expr::Cast { expr, data_type } => expressions::cast(
+                self.create_physical_expr(expr, input_schema, ctx_state)?,
+                input_schema,
+                data_type.clone(),
+            ),
+            Expr::TryCast { expr, data_type } => expressions::try_cast(
                 self.create_physical_expr(expr, input_schema, ctx_state)?,
                 input_schema,
                 data_type.clone(),
@@ -744,10 +730,13 @@ fn tuple_err<T, R>(value: (Result<T>, Result<R>)) -> Result<(T, R)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::logical_plan::{DFField, DFSchema, DFSchemaRef};
     use crate::physical_plan::{csv::CsvReadOptions, expressions, Partitioning};
     use crate::prelude::ExecutionConfig;
     use crate::scalar::ScalarValue;
+    use crate::{
+        catalog::catalog::MemoryCatalogList,
+        logical_plan::{DFField, DFSchema, DFSchemaRef},
+    };
     use crate::{
         logical_plan::{col, lit, sum, LogicalPlanBuilder},
         physical_plan::SendableRecordBatchStream,
@@ -759,7 +748,7 @@ mod tests {
 
     fn make_ctx_state() -> ExecutionContextState {
         ExecutionContextState {
-            datasources: HashMap::new(),
+            catalog_list: Arc::new(MemoryCatalogList::new()),
             scalar_functions: HashMap::new(),
             var_provider: HashMap::new(),
             aggregate_functions: HashMap::new(),
@@ -782,16 +771,17 @@ mod tests {
         let logical_plan = LogicalPlanBuilder::scan_csv(&path, options, None)?
             // filter clause needs the type coercion rule applied
             .filter(col("c7").lt(lit(5_u8)))?
-            .project(&[col("c1"), col("c2")])?
-            .aggregate(&[col("c1")], &[sum(col("c2"))])?
-            .sort(&[col("c1").sort(true, true)])?
+            .project(vec![col("c1"), col("c2")])?
+            .aggregate(vec![col("c1")], vec![sum(col("c2"))])?
+            .sort(vec![col("c1").sort(true, true)])?
             .limit(10)?
             .build()?;
 
         let plan = plan(&logical_plan)?;
 
         // verify that the plan correctly casts u8 to i64
-        let expected = "BinaryExpr { left: Column { name: \"c7\" }, op: Lt, right: CastExpr { expr: Literal { value: UInt8(5) }, cast_type: Int64 } }";
+        // the cast here is implicit so has CastOptions with safe=true
+        let expected = "BinaryExpr { left: Column { name: \"c7\" }, op: Lt, right: TryCastExpr { expr: Literal { value: UInt8(5) }, cast_type: Int64 } }";
         assert!(format!("{:?}", plan).contains(expected));
 
         Ok(())
@@ -825,7 +815,8 @@ mod tests {
         let plan = plan(&logical_plan)?;
 
         // c12 is f64, c7 is u8 -> cast c7 to f64
-        let expected = "predicate: BinaryExpr { left: CastExpr { expr: Column { name: \"c7\" }, cast_type: Float64 }, op: Lt, right: Column { name: \"c12\" } }";
+        // the cast here is implicit so has CastOptions with safe=true
+        let expected = "predicate: BinaryExpr { left: TryCastExpr { expr: Column { name: \"c7\" }, cast_type: Float64 }, op: Lt, right: Column { name: \"c12\" } }";
         assert!(format!("{:?}", plan).contains(expected));
         Ok(())
     }
@@ -855,18 +846,18 @@ mod tests {
         ];
         for case in cases {
             let logical_plan = LogicalPlanBuilder::scan_csv(&path, options, None)?
-                .project(&[case.clone()]);
+                .project(vec![case.clone()]);
             let message = format!(
                 "Expression {:?} expected to error due to impossible coercion",
                 case
             );
-            assert!(logical_plan.is_err(), message);
+            assert!(logical_plan.is_err(), "{}", message);
         }
         Ok(())
     }
 
     #[test]
-    fn default_extension_planner() -> Result<()> {
+    fn default_extension_planner() {
         let ctx_state = make_ctx_state();
         let planner = DefaultPhysicalPlanner::default();
         let logical_plan = LogicalPlan::Extension {
@@ -874,7 +865,8 @@ mod tests {
         };
         let plan = planner.create_physical_plan(&logical_plan, &ctx_state);
 
-        let expected_error = "No installed planner was able to convert the custom node to an execution plan: NoOp";
+        let expected_error =
+            "No installed planner was able to convert the custom node to an execution plan: NoOp";
         match plan {
             Ok(_) => panic!("Expected planning failure"),
             Err(e) => assert!(
@@ -884,11 +876,10 @@ mod tests {
                 expected_error
             ),
         }
-        Ok(())
     }
 
     #[test]
-    fn bad_extension_planner() -> Result<()> {
+    fn bad_extension_planner() {
         // Test that creating an execution plan whose schema doesn't
         // match the logical plan's schema generates an error.
         let ctx_state = make_ctx_state();
@@ -930,7 +921,6 @@ mod tests {
                 expected_error
             ),
         }
-        Ok(())
     }
 
     #[test]
@@ -947,11 +937,12 @@ mod tests {
         let logical_plan = LogicalPlanBuilder::scan_csv(&path, options, None)?
             // filter clause needs the type coercion rule applied
             .filter(col("c12").lt(lit(0.05)))?
-            .project(&[col("c1").in_list(list, false)])?
+            .project(vec![col("c1").in_list(list, false)])?
             .build()?;
         let execution_plan = plan(&logical_plan)?;
         // verify that the plan correctly adds cast from Int64(1) to Utf8
-        let expected = "InListExpr { expr: Column { name: \"c1\" }, list: [Literal { value: Utf8(\"a\") }, CastExpr { expr: Literal { value: Int64(1) }, cast_type: Utf8 }], negated: false }";
+        let expected = "InListExpr { expr: Column { name: \"c1\" }, list: [Literal { value: Utf8(\"a\") }, CastExpr { expr: Literal { value: Int64(1) }, cast_type: Utf8, cast_options: CastOptions { safe: false } }], negated: false }";
+        println!("{:?}", execution_plan);
         assert!(format!("{:?}", execution_plan).contains(expected));
 
         // expression: "a in (true, 'a')"
@@ -962,7 +953,7 @@ mod tests {
         let logical_plan = LogicalPlanBuilder::scan_csv(&path, options, None)?
             // filter clause needs the type coercion rule applied
             .filter(col("c12").lt(lit(0.05)))?
-            .project(&[col("c12").lt_eq(lit(0.025)).in_list(list, false)])?
+            .project(vec![col("c12").lt_eq(lit(0.025)).in_list(list, false)])?
             .build()?;
         let execution_plan = plan(&logical_plan);
 
@@ -976,6 +967,29 @@ mod tests {
                 expected_error
             ),
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn hash_agg_input_schema() -> Result<()> {
+        let testdata = arrow::util::test_util::arrow_test_data();
+        let path = format!("{}/csv/aggregate_test_100.csv", testdata);
+
+        let options = CsvReadOptions::new().schema_infer_max_records(100);
+        let logical_plan = LogicalPlanBuilder::scan_csv(&path, options, None)?
+            .aggregate(vec![col("c1")], vec![sum(col("c2"))])?
+            .build()?;
+
+        let execution_plan = plan(&logical_plan)?;
+        let final_hash_agg = execution_plan
+            .as_any()
+            .downcast_ref::<HashAggregateExec>()
+            .expect("hash aggregate");
+        assert_eq!("SUM(c2)", final_hash_agg.schema().field(1).name());
+        // we need access to the input to the partial aggregate so that other projects can
+        // implement serde
+        assert_eq!("c2", final_hash_agg.input_schema().field(1).name());
 
         Ok(())
     }
@@ -1025,8 +1039,8 @@ mod tests {
 
         fn from_template(
             &self,
-            _exprs: &Vec<Expr>,
-            _inputs: &Vec<LogicalPlan>,
+            _exprs: &[Expr],
+            _inputs: &[LogicalPlan],
         ) -> Arc<dyn UserDefinedLogicalNode + Send + Sync> {
             unimplemented!("NoOp");
         }

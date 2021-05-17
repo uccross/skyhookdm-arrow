@@ -20,7 +20,7 @@
 use crate::error::Result;
 use crate::record_batch::RecordBatch;
 use crate::{array::*, util::bit_chunk_iterator::BitChunkIterator};
-use std::{iter::Enumerate, sync::Arc};
+use std::iter::Enumerate;
 
 /// Function that can filter arbitrary arrays
 pub type Filter<'a> = Box<Fn(&ArrayData) -> ArrayData + 'a>;
@@ -42,7 +42,7 @@ enum State {
 /// slots of a [BooleanArray] are true. Each interval corresponds to a contiguous region of memory to be
 /// "taken" from an array to be filtered.
 #[derive(Debug)]
-struct SlicesIterator<'a> {
+pub(crate) struct SlicesIterator<'a> {
     iter: Enumerate<BitChunkIterator<'a>>,
     state: State,
     filter_count: usize,
@@ -57,7 +57,7 @@ struct SlicesIterator<'a> {
 }
 
 impl<'a> SlicesIterator<'a> {
-    fn new(filter: &'a BooleanArray) -> Self {
+    pub(crate) fn new(filter: &'a BooleanArray) -> Self {
         let values = &filter.data_ref().buffers()[0];
 
         // this operation is performed before iteration
@@ -227,7 +227,7 @@ pub fn filter(array: &Array, filter: &BooleanArray) -> Result<ArrayRef> {
         MutableArrayData::new(vec![array.data_ref()], false, iter.filter_count);
     iter.for_each(|(start, end)| mutable.extend(0, start, end));
     let data = mutable.freeze();
-    Ok(make_array(Arc::new(data)))
+    Ok(make_array(data))
 }
 
 /// Returns a new [RecordBatch] with arrays containing only values matching the filter.
@@ -241,7 +241,7 @@ pub fn filter_record_batch(
     let filtered_arrays = record_batch
         .columns()
         .iter()
-        .map(|a| make_array(Arc::new(filter(&a.data()))))
+        .map(|a| make_array(filter(&a.data())))
         .collect();
     RecordBatch::try_new(record_batch.schema(), filtered_arrays)
 }

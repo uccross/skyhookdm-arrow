@@ -20,6 +20,7 @@ FROM ${base}
 
 RUN apt-get update -y -q && \
     apt-get install -y -q \
+        unzip \
         python3 \
         python3-pip \
         python3-dev && \
@@ -28,6 +29,8 @@ RUN apt-get update -y -q && \
 
 RUN ln -s /usr/bin/python3 /usr/local/bin/python && \
     ln -s /usr/bin/pip3 /usr/local/bin/pip
+
+RUN pip install -U pip setuptools
 
 COPY python/requirements-build.txt \
      python/requirements-test.txt \

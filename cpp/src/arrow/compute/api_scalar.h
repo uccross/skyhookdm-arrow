@@ -45,7 +45,7 @@ struct ArithmeticOptions : public FunctionOptions {
 struct ARROW_EXPORT MatchSubstringOptions : public FunctionOptions {
   explicit MatchSubstringOptions(std::string pattern) : pattern(std::move(pattern)) {}
 
-  /// The exact substring to look for inside input values.
+  /// The exact substring (or regex, depending on kernel) to look for inside input values.
   std::string pattern;
 };
 
@@ -65,6 +65,28 @@ struct ARROW_EXPORT SplitPatternOptions : public SplitOptions {
       : SplitOptions(max_splits, reverse), pattern(std::move(pattern)) {}
 
   /// The exact substring to look for inside input values.
+  std::string pattern;
+};
+
+struct ARROW_EXPORT ReplaceSubstringOptions : public FunctionOptions {
+  explicit ReplaceSubstringOptions(std::string pattern, std::string replacement,
+                                   int64_t max_replacements = -1)
+      : pattern(std::move(pattern)),
+        replacement(std::move(replacement)),
+        max_replacements(max_replacements) {}
+
+  /// Pattern to match, literal, or regular expression depending on which kernel is used
+  std::string pattern;
+  /// String to replace the pattern with
+  std::string replacement;
+  /// Max number of substrings to replace (-1 means unbounded)
+  int64_t max_replacements;
+};
+
+struct ARROW_EXPORT ExtractRegexOptions : public FunctionOptions {
+  explicit ExtractRegexOptions(std::string pattern) : pattern(std::move(pattern)) {}
+
+  /// Regular expression with named capture fields
   std::string pattern;
 };
 
@@ -115,10 +137,25 @@ struct CompareOptions : public FunctionOptions {
 };
 
 struct ARROW_EXPORT ProjectOptions : public FunctionOptions {
-  explicit ProjectOptions(std::vector<std::string> n) : field_names(std::move(n)) {}
+  ProjectOptions(std::vector<std::string> n, std::vector<bool> r,
+                 std::vector<std::shared_ptr<const KeyValueMetadata>> m)
+      : field_names(std::move(n)),
+        field_nullability(std::move(r)),
+        field_metadata(std::move(m)) {}
+
+  explicit ProjectOptions(std::vector<std::string> n)
+      : field_names(std::move(n)),
+        field_nullability(field_names.size(), true),
+        field_metadata(field_names.size(), NULLPTR) {}
 
   /// Names for wrapped columns
   std::vector<std::string> field_names;
+
+  /// Nullability bits for wrapped columns
+  std::vector<bool> field_nullability;
+
+  /// Metadata attached to wrapped columns
+  std::vector<std::shared_ptr<const KeyValueMetadata>> field_metadata;
 };
 
 /// @}
@@ -175,6 +212,20 @@ ARROW_EXPORT
 Result<Datum> Divide(const Datum& left, const Datum& right,
                      ArithmeticOptions options = ArithmeticOptions(),
                      ExecContext* ctx = NULLPTR);
+
+/// \brief Raise the values of base array to the power of the exponent array values.
+/// Array values must be the same length. If either base or exponent is null the result
+/// will be null.
+///
+/// \param[in] left the base
+/// \param[in] right the exponent
+/// \param[in] options arithmetic options (enable/disable overflow checking), optional
+/// \param[in] ctx the function execution context, optional
+/// \return the elementwise base value raised to the power of exponent
+ARROW_EXPORT
+Result<Datum> Power(const Datum& left, const Datum& right,
+                    ArithmeticOptions options = ArithmeticOptions(),
+                    ExecContext* ctx = NULLPTR);
 
 /// \brief Compare a numeric array with a scalar.
 ///

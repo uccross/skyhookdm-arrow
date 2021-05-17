@@ -33,6 +33,7 @@
 #include "arrow/dataset/dataset_internal.h"
 #include "arrow/dataset/discovery.h"
 #include "arrow/dataset/file_base.h"
+#include "arrow/dataset/scanner_internal.h"
 #include "arrow/filesystem/localfs.h"
 #include "arrow/filesystem/mockfs.h"
 #include "arrow/filesystem/path_util.h"
@@ -41,25 +42,31 @@
 #include "arrow/table.h"
 #include "arrow/testing/generator.h"
 #include "arrow/testing/gtest_util.h"
+#include "arrow/testing/random.h"
+#include "arrow/util/async_generator.h"
 #include "arrow/util/io_util.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/logging.h"
 #include "arrow/util/make_unique.h"
+#include "arrow/util/thread_pool.h"
 
 namespace arrow {
 namespace dataset {
 
 const std::shared_ptr<Schema> kBoringSchema = schema({
+    field("bool", boolean()),
+    field("i8", int8()),
     field("i32", int32()),
     field("i32_req", int32(), /*nullable=*/false),
+    field("u32", uint32()),
     field("i64", int64()),
-    field("date64", date64()),
     field("f32", float32()),
     field("f32_req", float32(), /*nullable=*/false),
     field("f64", float64()),
-    field("bool", boolean()),
+    field("date64", date64()),
     field("str", utf8()),
     field("dict_str", dictionary(int32(), utf8())),
+    field("dict_i32", dictionary(int32(), int32())),
     field("ts_ns", timestamp(TimeUnit::NANO)),
 });
 
@@ -98,7 +105,7 @@ std::unique_ptr<GeneratedRecordBatch<Gen>> MakeGeneratedRecordBatch(
 
 std::unique_ptr<RecordBatchReader> MakeGeneratedRecordBatch(
     std::shared_ptr<Schema> schema, int64_t batch_size, int64_t batch_repetitions) {
-  auto batch = ConstantArrayGenerator::Zeroes(batch_size, schema);
+  auto batch = random::GenerateBatch(schema->fields(), batch_size, /*seed=*/0);
   int64_t i = 0;
   return MakeGeneratedRecordBatch(
       schema, [batch, i, batch_repetitions](std::shared_ptr<RecordBatch>* out) mutable {
@@ -132,11 +139,19 @@ class DatasetFixtureMixin : public ::testing::Test {
     }
   }
 
+  /// \brief Assert the value of the next batch yielded by the reader
+  void AssertBatchEquals(RecordBatchReader* expected, const RecordBatch& batch) {
+    std::shared_ptr<RecordBatch> lhs;
+    ASSERT_OK(expected->ReadNext(&lhs));
+    EXPECT_NE(lhs, nullptr);
+    AssertBatchesEqual(*lhs, batch);
+  }
+
   /// \brief Ensure that record batches found in reader are equals to the
   /// record batches yielded by the data fragment.
   void AssertFragmentEquals(RecordBatchReader* expected, Fragment* fragment,
                             bool ensure_drained = true) {
-    ASSERT_OK_AND_ASSIGN(auto it, fragment->Scan(options_, ctx_));
+    ASSERT_OK_AND_ASSIGN(auto it, fragment->Scan(options_));
 
     ARROW_EXPECT_OK(it.Visit([&](std::shared_ptr<ScanTask> task) -> Status {
       AssertScanTaskEquals(expected, task.get(), false);
@@ -169,12 +184,64 @@ class DatasetFixtureMixin : public ::testing::Test {
   /// record batches yielded by a scanner.
   void AssertScannerEquals(RecordBatchReader* expected, Scanner* scanner,
                            bool ensure_drained = true) {
-    ASSERT_OK_AND_ASSIGN(auto it, scanner->Scan());
+    ASSERT_OK_AND_ASSIGN(auto it, scanner->ScanBatches());
 
-    ARROW_EXPECT_OK(it.Visit([&](std::shared_ptr<ScanTask> task) -> Status {
-      AssertScanTaskEquals(expected, task.get(), false);
+    ARROW_EXPECT_OK(it.Visit([&](TaggedRecordBatch batch) -> Status {
+      std::shared_ptr<RecordBatch> lhs;
+      RETURN_NOT_OK(expected->ReadNext(&lhs));
+      EXPECT_NE(lhs, nullptr);
+      AssertBatchesEqual(*lhs, *batch.record_batch);
       return Status::OK();
     }));
+
+    if (ensure_drained) {
+      EnsureRecordBatchReaderDrained(expected);
+    }
+  }
+
+  /// \brief Ensure that record batches found in reader are equals to the
+  /// record batches yielded by a scanner.
+  void AssertScanBatchesEquals(RecordBatchReader* expected, Scanner* scanner,
+                               bool ensure_drained = true) {
+    ASSERT_OK_AND_ASSIGN(auto it, scanner->ScanBatches());
+
+    ARROW_EXPECT_OK(it.Visit([&](TaggedRecordBatch batch) -> Status {
+      AssertBatchEquals(expected, *batch.record_batch);
+      return Status::OK();
+    }));
+
+    if (ensure_drained) {
+      EnsureRecordBatchReaderDrained(expected);
+    }
+  }
+
+  /// \brief Ensure that record batches found in reader are equals to the
+  /// record batches yielded by a scanner.
+  void AssertScanBatchesUnorderedEquals(RecordBatchReader* expected, Scanner* scanner,
+                                        int expected_batches_per_fragment,
+                                        bool ensure_drained = true) {
+    ASSERT_OK_AND_ASSIGN(auto it, scanner->ScanBatchesUnordered());
+
+    int fragment_counter = 0;
+    bool saw_last_fragment = false;
+    int batch_counter = 0;
+    auto visitor = [&](EnumeratedRecordBatch batch) -> Status {
+      if (batch_counter == 0) {
+        EXPECT_FALSE(saw_last_fragment);
+      }
+      EXPECT_EQ(batch_counter++, batch.record_batch.index);
+      auto last_batch = batch_counter == expected_batches_per_fragment;
+      EXPECT_EQ(last_batch, batch.record_batch.last);
+      EXPECT_EQ(fragment_counter, batch.fragment.index);
+      if (last_batch) {
+        fragment_counter++;
+        batch_counter = 0;
+      }
+      saw_last_fragment = batch.fragment.last;
+      AssertBatchEquals(expected, *batch.record_batch.value);
+      return Status::OK();
+    };
+    ARROW_EXPECT_OK(it.Visit(visitor));
 
     if (ensure_drained) {
       EnsureRecordBatchReaderDrained(expected);
@@ -197,7 +264,9 @@ class DatasetFixtureMixin : public ::testing::Test {
  protected:
   void SetSchema(std::vector<std::shared_ptr<Field>> fields) {
     schema_ = schema(std::move(fields));
-    options_ = ScanOptions::Make(schema_);
+    options_ = std::make_shared<ScanOptions>();
+    options_->dataset_schema = schema_;
+    ASSERT_OK(SetProjection(options_.get(), schema_->field_names()));
     SetFilter(literal(true));
   }
 
@@ -205,10 +274,17 @@ class DatasetFixtureMixin : public ::testing::Test {
     ASSERT_OK_AND_ASSIGN(options_->filter, filter.Bind(*schema_));
   }
 
+  void SetProjectedColumns(std::vector<std::string> column_names) {
+    ASSERT_OK(SetProjection(options_.get(), std::move(column_names)));
+  }
+
   std::shared_ptr<Schema> schema_;
   std::shared_ptr<ScanOptions> options_;
-  std::shared_ptr<ScanContext> ctx_ = std::make_shared<ScanContext>();
 };
+
+template <typename P>
+class DatasetFixtureMixinWithParam : public DatasetFixtureMixin,
+                                     public ::testing::WithParamInterface<P> {};
 
 /// \brief A dummy FileFormat implementation
 class DummyFileFormat : public FileFormat {
@@ -230,9 +306,9 @@ class DummyFileFormat : public FileFormat {
   }
 
   /// \brief Open a file for scanning (always returns an empty iterator)
-  Result<ScanTaskIterator> ScanFile(std::shared_ptr<ScanOptions> options,
-                                    std::shared_ptr<ScanContext> context,
-                                    FileFragment* fragment) const override {
+  Result<ScanTaskIterator> ScanFile(
+      const std::shared_ptr<ScanOptions>& options,
+      const std::shared_ptr<FileFragment>& fragment) const override {
     return MakeEmptyIterator<std::shared_ptr<ScanTask>>();
   }
 
@@ -270,9 +346,9 @@ class JSONRecordBatchFileFormat : public FileFormat {
   }
 
   /// \brief Open a file for scanning
-  Result<ScanTaskIterator> ScanFile(std::shared_ptr<ScanOptions> options,
-                                    std::shared_ptr<ScanContext> context,
-                                    FileFragment* fragment) const override {
+  Result<ScanTaskIterator> ScanFile(
+      const std::shared_ptr<ScanOptions>& options,
+      const std::shared_ptr<FileFragment>& fragment) const override {
     ARROW_ASSIGN_OR_RAISE(auto file, fragment->source().Open());
     ARROW_ASSIGN_OR_RAISE(int64_t size, file->GetSize());
     ARROW_ASSIGN_OR_RAISE(auto buffer, file->Read(size));
@@ -281,8 +357,7 @@ class JSONRecordBatchFileFormat : public FileFormat {
 
     ARROW_ASSIGN_OR_RAISE(auto schema, Inspect(fragment->source()));
     std::shared_ptr<RecordBatch> batch = RecordBatchFromJSON(schema, view);
-    return ScanTaskIteratorFromRecordBatch({batch}, std::move(options),
-                                           std::move(context));
+    return ScanTaskIteratorFromRecordBatch({batch}, std::move(options));
   }
 
   Result<std::shared_ptr<FileWriter>> MakeWriter(
@@ -369,7 +444,7 @@ struct MakeFileSystemDatasetMixin {
 
   std::shared_ptr<fs::FileSystem> fs_;
   std::shared_ptr<Dataset> dataset_;
-  std::shared_ptr<ScanOptions> options_ = ScanOptions::Make(schema({}));
+  std::shared_ptr<ScanOptions> options_;
 };
 
 static const std::string& PathOf(const std::shared_ptr<Fragment>& fragment) {
@@ -565,7 +640,9 @@ class WriteFileSystemDatasetMixin : public MakeFileSystemDatasetMixin {
                          FileSystemDatasetFactory::Make(fs_, s, source_format, options));
     ASSERT_OK_AND_ASSIGN(dataset_, factory->Finish());
 
-    scan_options_ = ScanOptions::Make(source_schema_);
+    scan_options_ = std::make_shared<ScanOptions>();
+    scan_options_->dataset_schema = source_schema_;
+    ASSERT_OK(SetProjection(scan_options_.get(), source_schema_->field_names()));
   }
 
   void SetWriteOptions(std::shared_ptr<FileWriteOptions> file_write_options) {
@@ -577,7 +654,8 @@ class WriteFileSystemDatasetMixin : public MakeFileSystemDatasetMixin {
 
   void DoWrite(std::shared_ptr<Partitioning> desired_partitioning) {
     write_options_.partitioning = desired_partitioning;
-    auto scanner = std::make_shared<Scanner>(dataset_, scan_options_, scan_context_);
+    auto scanner_builder = ScannerBuilder(dataset_, scan_options_);
+    ASSERT_OK_AND_ASSIGN(auto scanner, scanner_builder.Finish());
     ASSERT_OK(FileSystemDataset::Write(write_options_, scanner));
 
     // re-discover the written dataset
@@ -745,7 +823,7 @@ class WriteFileSystemDatasetMixin : public MakeFileSystemDatasetMixin {
       }
 
       ASSERT_OK_AND_ASSIGN(auto scanner, ScannerBuilder(actual_physical_schema, fragment,
-                                                        std::make_shared<ScanContext>())
+                                                        std::make_shared<ScanOptions>())
                                              .Finish());
       ASSERT_OK_AND_ASSIGN(auto actual_table, scanner->ToTable());
       ASSERT_OK_AND_ASSIGN(actual_table, actual_table->CombineChunks());
@@ -772,7 +850,6 @@ class WriteFileSystemDatasetMixin : public MakeFileSystemDatasetMixin {
   std::shared_ptr<Dataset> written_;
   FileSystemDatasetWriteOptions write_options_;
   std::shared_ptr<ScanOptions> scan_options_;
-  std::shared_ptr<ScanContext> scan_context_ = std::make_shared<ScanContext>();
 };
 
 }  // namespace dataset

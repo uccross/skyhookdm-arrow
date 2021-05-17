@@ -40,13 +40,13 @@ RUN \
   apt update ${quiet} && \
   apt install -y -V ${quiet} \
     build-essential \
+    ccache \
     cmake \
     debhelper \
     devscripts \
     git \
     gtk-doc-tools \
     libboost-filesystem-dev \
-    libboost-regex-dev \
     libboost-system-dev \
     libbrotli-dev \
     libbz2-dev \
@@ -60,6 +60,9 @@ RUN \
     liblz4-dev \
     libre2-dev \
     libsnappy-dev \
+    libradospp-dev \
+    rados-objclass-dev \
+    python3-rados \
     libssl-dev \
     libthrift-dev \
     libutf8proc-dev \
@@ -74,8 +77,8 @@ RUN \
     tzdata \
     zlib1g-dev && \
   apt install -y -V -t buster-backports ${quiet} \
-    clang-8 \
-    llvm-8-dev && \
+    clang-11 \
+    llvm-11-dev && \
   if apt list | grep '^nvidia-cuda-toolkit/'; then \
     apt install -y -V ${quiet} nvidia-cuda-toolkit; \
   fi && \

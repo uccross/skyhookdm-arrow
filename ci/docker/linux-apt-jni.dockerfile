@@ -51,6 +51,9 @@ RUN apt-get update -y -q && \
         liblz4-dev \
         libre2-dev \
         libsnappy-dev \
+        libradospp-dev \
+        rados-objclass-dev \
+        python3-rados \
         libssl-dev \
         llvm-${llvm}-dev \
         make \
@@ -68,13 +71,14 @@ RUN wget -nv -O - https://github.com/Kitware/CMake/releases/download/v${cmake}/c
 ENV PATH=/opt/cmake-${cmake}-Linux-x86_64/bin:$PATH
 
 ENV ARROW_BUILD_TESTS=OFF \
+    ARROW_DATASET=ON \
     ARROW_FLIGHT=OFF \
     ARROW_GANDIVA_JAVA=ON \
     ARROW_GANDIVA=ON \
     ARROW_HOME=/usr/local \
     ARROW_JNI=ON \
     ARROW_ORC=ON \
-    ARROW_PARQUET=OFF \
+    ARROW_PARQUET=ON \
     ARROW_PLASMA_JAVA_CLIENT=ON \
     ARROW_PLASMA=ON \
     ARROW_USE_CCACHE=ON \

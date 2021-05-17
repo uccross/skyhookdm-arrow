@@ -33,10 +33,10 @@ fn create_random_index(size: usize, null_density: f32) -> UInt32Array {
     let mut builder = UInt32Builder::new(size);
     for _ in 0..size {
         if rng.gen::<f32>() < null_density {
+            builder.append_null().unwrap()
+        } else {
             let value = rng.gen_range::<u32, _, _>(0u32, size as u32);
             builder.append_value(value).unwrap();
-        } else {
-            builder.append_null().unwrap()
         }
     }
     builder.finish()
@@ -88,36 +88,36 @@ fn add_benchmark(c: &mut Criterion) {
         b.iter(|| bench_take(&values, &indices))
     });
 
-    let values = create_string_array(512, 0.0);
+    let values = create_string_array::<i32>(512, 0.0);
     let indices = create_random_index(512, 0.0);
     c.bench_function("take str 512", |b| b.iter(|| bench_take(&values, &indices)));
 
-    let values = create_string_array(1024, 0.0);
+    let values = create_string_array::<i32>(1024, 0.0);
     let indices = create_random_index(1024, 0.0);
     c.bench_function("take str 1024", |b| {
         b.iter(|| bench_take(&values, &indices))
     });
 
-    let values = create_string_array(512, 0.0);
+    let values = create_string_array::<i32>(512, 0.0);
     let indices = create_random_index(512, 0.5);
     c.bench_function("take str null indices 512", |b| {
         b.iter(|| bench_take(&values, &indices))
     });
 
-    let values = create_string_array(1024, 0.0);
+    let values = create_string_array::<i32>(1024, 0.0);
     let indices = create_random_index(1024, 0.5);
     c.bench_function("take str null indices 1024", |b| {
         b.iter(|| bench_take(&values, &indices))
     });
 
-    let values = create_string_array(1024, 0.5);
+    let values = create_string_array::<i32>(1024, 0.5);
 
     let indices = create_random_index(1024, 0.0);
     c.bench_function("take str null values 1024", |b| {
         b.iter(|| bench_take(&values, &indices))
     });
 
-    let values = create_string_array(1024, 0.5);
+    let values = create_string_array::<i32>(1024, 0.5);
     let indices = create_random_index(1024, 0.5);
     c.bench_function("take str null values null indices 1024", |b| {
         b.iter(|| bench_take(&values, &indices))

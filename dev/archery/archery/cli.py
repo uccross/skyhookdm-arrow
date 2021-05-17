@@ -25,10 +25,10 @@ import os
 import pathlib
 import sys
 
+from .benchmark.codec import JsonEncoder
 from .benchmark.compare import RunnerComparator, DEFAULT_THRESHOLD
 from .benchmark.runner import BenchmarkRunner, CppBenchmarkRunner
 from .lang.cpp import CppCMakeDefinition, CppConfiguration
-from .utils.codec import JsonEncoder
 from .utils.lint import linter, python_numpydoc, LintValidationException
 from .utils.logger import logger, ctx as log_ctx
 from .utils.source import ArrowSources, InvalidArrowSource
@@ -196,6 +196,8 @@ def _apply_options(cmd, options):
               "it will toggle required options")
 @click.option("--with-s3", default=None, type=BOOL,
               help="Build Arrow with S3 support.")
+@click.option("--with-rados", default=None, type=BOOL,
+              help="Build Arrow with Rados support.")
 # Compressions
 @click.option("--with-brotli", default=None, type=BOOL,
               help="Build Arrow with brotli compression.")
@@ -767,6 +769,12 @@ def docker_compose(obj, src, dry_run):
               envvar='ARCHERY_USE_DOCKER_CLI',
               help="Use docker CLI directly for building instead of calling "
                    "docker-compose. This may help to reuse cached layers.")
+@click.option('--using-docker-buildx', default=False, is_flag=True,
+              envvar='ARCHERY_USE_DOCKER_BUILDX',
+              help="Use buildx with docker CLI directly for building instead "
+                   "of calling docker-compose or the plain docker build "
+                   "command. This option makes the build cache reusable "
+                   "across hosts.")
 @click.option('--use-cache/--no-cache', default=True,
               help="Whether to use cache when building the image and its "
                    "ancestor images")
@@ -776,7 +784,7 @@ def docker_compose(obj, src, dry_run):
                    "image and its ancestors use --no-cache option.")
 @click.pass_obj
 def docker_compose_build(obj, image, *, force_pull, using_docker_cli,
-                         use_cache, use_leaf_cache):
+                         using_docker_buildx, use_cache, use_leaf_cache):
     """
     Execute docker-compose builds.
     """
@@ -784,13 +792,15 @@ def docker_compose_build(obj, image, *, force_pull, using_docker_cli,
 
     compose = obj['compose']
 
+    using_docker_cli |= using_docker_buildx
     try:
         if force_pull:
             compose.pull(image, pull_leaf=use_leaf_cache,
                          using_docker=using_docker_cli)
         compose.build(image, use_cache=use_cache,
                       use_leaf_cache=use_leaf_cache,
-                      using_docker=using_docker_cli)
+                      using_docker=using_docker_cli,
+                      using_buildx=using_docker_buildx)
     except UndefinedImage as e:
         raise click.ClickException(
             "There is no service/image defined in docker-compose.yml with "
@@ -817,6 +827,12 @@ def docker_compose_build(obj, image, *, force_pull, using_docker_cli,
               envvar='ARCHERY_USE_DOCKER_CLI',
               help="Use docker CLI directly for building instead of calling "
                    "docker-compose. This may help to reuse cached layers.")
+@click.option('--using-docker-buildx', default=False, is_flag=True,
+              envvar='ARCHERY_USE_DOCKER_BUILDX',
+              help="Use buildx with docker CLI directly for building instead "
+                   "of calling docker-compose or the plain docker build "
+                   "command. This option makes the build cache reusable "
+                   "across hosts.")
 @click.option('--use-cache/--no-cache', default=True,
               help="Whether to use cache when building the image and its "
                    "ancestor images")
@@ -828,7 +844,8 @@ def docker_compose_build(obj, image, *, force_pull, using_docker_cli,
               help="Set volume within the container")
 @click.pass_obj
 def docker_compose_run(obj, image, command, *, env, user, force_pull,
-                       force_build, build_only, using_docker_cli, use_cache,
+                       force_build, build_only, using_docker_cli,
+                       using_docker_buildx, use_cache,
                        use_leaf_cache, volume):
     """Execute docker-compose builds.
 
@@ -863,6 +880,7 @@ def docker_compose_run(obj, image, command, *, env, user, force_pull,
     from .docker import UndefinedImage
 
     compose = obj['compose']
+    using_docker_cli |= using_docker_buildx
 
     env = dict(kv.split('=', 1) for kv in env)
     try:
@@ -872,7 +890,8 @@ def docker_compose_run(obj, image, command, *, env, user, force_pull,
         if force_build:
             compose.build(image, use_cache=use_cache,
                           use_leaf_cache=use_leaf_cache,
-                          using_docker=using_docker_cli)
+                          using_docker=using_docker_cli,
+                          using_buildx=using_docker_buildx)
         if build_only:
             return
         compose.run(
@@ -1050,6 +1069,24 @@ def release_cherry_pick(obj, version, dry_run, recreate):
     )
     for commit in release.commits_to_pick():
         click.echo('git cherry-pick {}'.format(commit.hexsha))
+
+
+try:
+    from .crossbow.cli import crossbow  # noqa
+except ImportError as exc:
+    missing_package = exc.name
+
+    @archery.command(
+        'crossbow',
+        context_settings={"ignore_unknown_options": True}
+    )
+    def crossbow():
+        raise click.ClickException(
+            "Couldn't import crossbow because of missing dependency: {}"
+            .format(missing_package)
+        )
+else:
+    archery.add_command(crossbow)
 
 
 if __name__ == "__main__":

@@ -30,10 +30,8 @@ on:
         0 */12 * * *
 
 env:
-  DOCKER_BUILDKIT: 0
-  DOCKER_VOLUME_PREFIX: ".docker/"
-  COMPOSE_DOCKER_CLI_BUILD: 1
   ARROW_ENABLE_TIMING_TESTS: OFF
+  DOCKER_VOLUME_PREFIX: ".docker/"
   ARCHERY_DOCKER_USER: ${{ secrets.DOCKERHUB_USER }}
   ARCHERY_DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -48,8 +46,8 @@ jobs:
         name:
           - amd64-debian-10-cpp
           - amd64-fedora-33-cpp
-          - amd64-ubuntu-16.04-cpp
           - amd64-ubuntu-18.04-cpp
+          - amd64-ubuntu-20.04-cpp
         include:
           - name: amd64-debian-10-cpp
             image: debian-cpp
@@ -59,14 +57,14 @@ jobs:
             image: fedora-cpp
             title: AMD64 Fedora 33 C++
             fedora: 33
-          - name: amd64-ubuntu-16.04-cpp
-            image: ubuntu-cpp
-            title: AMD64 Ubuntu 16.04 C++
-            ubuntu: 16.04
           - name: amd64-ubuntu-18.04-cpp
             image: ubuntu-cpp
             title: AMD64 Ubuntu 18.04 C++
             ubuntu: 18.04
+          - name: amd64-ubuntu-20.04-cpp
+            image: ubuntu-cpp
+            title: AMD64 Ubuntu 20.04 C++
+            ubuntu: 20.04
     env:
       # the defaults here should correspond to the values in .env
       ARCH: 'amd64'
@@ -83,7 +81,7 @@ jobs:
       - name: Free Up Disk Space
         run: ci/scripts/util_cleanup.sh
       - name: Cache Docker Volumes
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: .docker
           key: ${{ matrix.name }}-${{ hashFiles('cpp/**') }}

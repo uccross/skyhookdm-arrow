@@ -17,6 +17,7 @@
 
 //! Defines `ArrowError` for representing failures in various Arrow operations.
 use std::fmt::{Debug, Display, Formatter};
+use std::io::Write;
 
 use csv as csv_crate;
 use std::error::Error;
@@ -27,6 +28,7 @@ pub enum ArrowError {
     /// Returned when functionality is not yet available.
     NotYetImplemented(String),
     ExternalError(Box<dyn Error + Send + Sync>),
+    CastError(String),
     MemoryError(String),
     ParseError(String),
     SchemaError(String),
@@ -89,6 +91,12 @@ impl From<serde_json::Error> for ArrowError {
     }
 }
 
+impl<W: Write> From<::std::io::IntoInnerError<W>> for ArrowError {
+    fn from(error: std::io::IntoInnerError<W>) -> Self {
+        ArrowError::IoError(error.to_string())
+    }
+}
+
 impl Display for ArrowError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -96,6 +104,7 @@ impl Display for ArrowError {
                 write!(f, "Not yet implemented: {}", &source)
             }
             ArrowError::ExternalError(source) => write!(f, "External error: {}", &source),
+            ArrowError::CastError(desc) => write!(f, "Cast error: {}", desc),
             ArrowError::MemoryError(desc) => write!(f, "Memory error: {}", desc),
             ArrowError::ParseError(desc) => write!(f, "Parser error: {}", desc),
             ArrowError::SchemaError(desc) => write!(f, "Schema error: {}", desc),

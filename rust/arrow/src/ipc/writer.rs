@@ -25,7 +25,7 @@ use std::io::{BufWriter, Write};
 
 use flatbuffers::FlatBufferBuilder;
 
-use crate::array::{ArrayDataRef, ArrayRef};
+use crate::array::{ArrayData, ArrayRef};
 use crate::buffer::{Buffer, MutableBuffer};
 use crate::datatypes::*;
 use crate::error::{ArrowError, Result};
@@ -233,7 +233,7 @@ impl IpcDataGenerator {
     fn dictionary_batch_to_bytes(
         &self,
         dict_id: i64,
-        array_data: &ArrayDataRef,
+        array_data: &ArrayData,
         write_options: &IpcWriteOptions,
     ) -> EncodedData {
         let mut fbb = FlatBufferBuilder::new();
@@ -434,6 +434,12 @@ impl<W: Write> FileWriter<W> {
 
     /// Write footer and closing tag, then mark the writer as done
     pub fn finish(&mut self) -> Result<()> {
+        if self.finished {
+            return Err(ArrowError::IoError(
+                "Cannot write footer to file writer as it is closed".to_string(),
+            ));
+        }
+
         // write EOS
         write_continuation(&mut self.writer, &self.write_options, 0)?;
 
@@ -460,15 +466,6 @@ impl<W: Write> FileWriter<W> {
         self.finished = true;
 
         Ok(())
-    }
-}
-
-/// Finish the file if it is not 'finished' when it goes out of scope
-impl<W: Write> Drop for FileWriter<W> {
-    fn drop(&mut self) {
-        if !self.finished {
-            self.finish().unwrap();
-        }
     }
 }
 
@@ -537,20 +534,64 @@ impl<W: Write> StreamWriter<W> {
 
     /// Write continuation bytes, and mark the stream as done
     pub fn finish(&mut self) -> Result<()> {
+        if self.finished {
+            return Err(ArrowError::IoError(
+                "Cannot write footer to stream writer as it is closed".to_string(),
+            ));
+        }
+
         write_continuation(&mut self.writer, &self.write_options, 0)?;
 
         self.finished = true;
 
         Ok(())
     }
-}
 
-/// Finish the stream if it is not 'finished' when it goes out of scope
-impl<W: Write> Drop for StreamWriter<W> {
-    fn drop(&mut self) {
+    /// Unwraps the BufWriter housed in StreamWriter.writer, returning the underlying
+    /// writer
+    ///
+    /// The buffer is flushed and the StreamWriter is finished before returning the
+    /// writer.
+    ///
+    /// # Errors
+    ///
+    /// An ['Err'] may be returned if an error occurs while finishing the StreamWriter
+    /// or while flushing the buffer.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use arrow::datatypes::Schema;
+    /// # use arrow::ipc::writer::StreamWriter;
+    /// # use arrow::error::ArrowError;
+    /// # fn main() -> Result<(), ArrowError> {
+    /// // The result we expect from an empty schema
+    /// let expected = vec![
+    ///     255, 255, 255, 255,  64,   0,   0,   0,
+    ///      16,   0,   0,   0,   0,   0,  10,   0,
+    ///      14,   0,  12,   0,  11,   0,   4,   0,
+    ///      10,   0,   0,   0,  20,   0,   0,   0,
+    ///       0,   0,   0,   1,   4,   0,  10,   0,
+    ///      12,   0,   0,   0,   8,   0,   4,   0,
+    ///      10,   0,   0,   0,   8,   0,   0,   0,
+    ///       8,   0,   0,   0,   0,   0,   0,   0,
+    ///       0,   0,   0,   0,   0,   0,   0,   0,
+    ///     255, 255, 255, 255,   0,   0,   0,   0
+    /// ];
+    ///
+    /// let schema = Schema::new(vec![]);
+    /// let buffer: Vec<u8> = Vec::new();
+    /// let stream_writer = StreamWriter::try_new(buffer, &schema)?;
+    ///
+    /// assert_eq!(stream_writer.into_inner()?, expected);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn into_inner(mut self) -> Result<W> {
         if !self.finished {
-            self.finish().unwrap();
+            self.finish()?;
         }
+        self.writer.into_inner().map_err(ArrowError::from)
     }
 }
 
@@ -662,7 +703,7 @@ fn write_continuation<W: Write>(
 
 /// Write array data to a vector of bytes
 fn write_array_data(
-    array_data: &ArrayDataRef,
+    array_data: &ArrayData,
     mut buffers: &mut Vec<ipc::Buffer>,
     mut arrow_data: &mut Vec<u8>,
     mut nodes: &mut Vec<ipc::FieldNode>,
@@ -776,7 +817,7 @@ mod tests {
             let mut writer = FileWriter::try_new(file, &schema).unwrap();
 
             writer.write(&batch).unwrap();
-            // this is inside a block to test the implicit finishing of the file on `Drop`
+            writer.finish().unwrap();
         }
 
         {
@@ -826,7 +867,7 @@ mod tests {
                 FileWriter::try_new_with_options(file, &schema, options).unwrap();
 
             writer.write(&batch).unwrap();
-            // this is inside a block to test the implicit finishing of the file on `Drop`
+            writer.finish().unwrap();
         }
 
         {
@@ -990,7 +1031,6 @@ mod tests {
             "generated_dictionary",
             // "generated_duplicate_fieldnames",
             "generated_interval",
-            "generated_large_batch",
             "generated_nested",
             // "generated_nested_large_offsets",
             "generated_null_trivial",
@@ -1054,7 +1094,6 @@ mod tests {
             "generated_dictionary",
             // "generated_duplicate_fieldnames",
             "generated_interval",
-            "generated_large_batch",
             "generated_nested",
             // "generated_nested_large_offsets",
             "generated_null_trivial",

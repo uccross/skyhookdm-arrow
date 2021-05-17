@@ -38,8 +38,10 @@ pub(crate) enum GroupByScalar {
     Int64(i64),
     Utf8(Box<String>),
     Boolean(bool),
+    TimeMillisecond(i64),
     TimeMicrosecond(i64),
     TimeNanosecond(i64),
+    Date32(i32),
 }
 
 impl TryFrom<&ScalarValue> for GroupByScalar {
@@ -62,6 +64,15 @@ impl TryFrom<&ScalarValue> for GroupByScalar {
             ScalarValue::UInt16(Some(v)) => GroupByScalar::UInt16(*v),
             ScalarValue::UInt32(Some(v)) => GroupByScalar::UInt32(*v),
             ScalarValue::UInt64(Some(v)) => GroupByScalar::UInt64(*v),
+            ScalarValue::TimestampMillisecond(Some(v)) => {
+                GroupByScalar::TimeMillisecond(*v)
+            }
+            ScalarValue::TimestampMicrosecond(Some(v)) => {
+                GroupByScalar::TimeMicrosecond(*v)
+            }
+            ScalarValue::TimestampNanosecond(Some(v)) => {
+                GroupByScalar::TimeNanosecond(*v)
+            }
             ScalarValue::Utf8(Some(v)) => GroupByScalar::Utf8(Box::new(v.clone())),
             ScalarValue::Float32(None)
             | ScalarValue::Float64(None)
@@ -105,8 +116,16 @@ impl From<&GroupByScalar> for ScalarValue {
             GroupByScalar::UInt32(v) => ScalarValue::UInt32(Some(*v)),
             GroupByScalar::UInt64(v) => ScalarValue::UInt64(Some(*v)),
             GroupByScalar::Utf8(v) => ScalarValue::Utf8(Some(v.to_string())),
-            GroupByScalar::TimeMicrosecond(v) => ScalarValue::TimeMicrosecond(Some(*v)),
-            GroupByScalar::TimeNanosecond(v) => ScalarValue::TimeNanosecond(Some(*v)),
+            GroupByScalar::TimeMillisecond(v) => {
+                ScalarValue::TimestampMillisecond(Some(*v))
+            }
+            GroupByScalar::TimeMicrosecond(v) => {
+                ScalarValue::TimestampMicrosecond(Some(*v))
+            }
+            GroupByScalar::TimeNanosecond(v) => {
+                ScalarValue::TimestampNanosecond(Some(*v))
+            }
+            GroupByScalar::Date32(v) => ScalarValue::Date32(Some(*v)),
         }
     }
 }
@@ -115,7 +134,7 @@ impl From<&GroupByScalar> for ScalarValue {
 mod tests {
     use super::*;
 
-    use crate::error::{DataFusionError, Result};
+    use crate::error::DataFusionError;
 
     macro_rules! scalar_eq_test {
         ($TYPE:expr, $VALUE:expr) => {{
@@ -130,12 +149,10 @@ mod tests {
     }
 
     #[test]
-    fn test_scalar_ne_non_std() -> Result<()> {
+    fn test_scalar_ne_non_std() {
         // Test only Scalars with non native Eq, Hash
         scalar_eq_test!(ScalarValue::Float32, Some(1.0));
         scalar_eq_test!(ScalarValue::Float64, Some(1.0));
-
-        Ok(())
     }
 
     macro_rules! scalar_ne_test {
@@ -151,16 +168,14 @@ mod tests {
     }
 
     #[test]
-    fn test_scalar_eq_non_std() -> Result<()> {
+    fn test_scalar_eq_non_std() {
         // Test only Scalars with non native Eq, Hash
         scalar_ne_test!(ScalarValue::Float32, Some(1.0), Some(2.0));
         scalar_ne_test!(ScalarValue::Float64, Some(1.0), Some(2.0));
-
-        Ok(())
     }
 
     #[test]
-    fn from_scalar_holding_none() -> Result<()> {
+    fn from_scalar_holding_none() {
         let scalar_value = ScalarValue::Int8(None);
         let result = GroupByScalar::try_from(&scalar_value);
 
@@ -171,12 +186,10 @@ mod tests {
             ),
             _ => panic!("Unexpected result"),
         }
-
-        Ok(())
     }
 
     #[test]
-    fn from_scalar_unsupported() -> Result<()> {
+    fn from_scalar_unsupported() {
         // Use any ScalarValue type not supported by GroupByScalar.
         let scalar_value = ScalarValue::LargeUtf8(Some("1.1".to_string()));
         let result = GroupByScalar::try_from(&scalar_value);
@@ -190,8 +203,6 @@ mod tests {
             ),
             _ => panic!("Unexpected result"),
         }
-
-        Ok(())
     }
 
     #[test]

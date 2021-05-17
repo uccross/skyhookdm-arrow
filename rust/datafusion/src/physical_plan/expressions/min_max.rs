@@ -17,6 +17,7 @@
 
 //! Defines physical expressions that can evaluated at runtime during query execution
 
+use std::any::Any;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -24,12 +25,13 @@ use crate::error::{DataFusionError, Result};
 use crate::physical_plan::{Accumulator, AggregateExpr, PhysicalExpr};
 use crate::scalar::ScalarValue;
 use arrow::compute;
-use arrow::datatypes::DataType;
+use arrow::datatypes::{DataType, TimeUnit};
 use arrow::{
     array::{
         ArrayRef, Float32Array, Float64Array, Int16Array, Int32Array, Int64Array,
-        Int8Array, LargeStringArray, StringArray, UInt16Array, UInt32Array, UInt64Array,
-        UInt8Array,
+        Int8Array, LargeStringArray, StringArray, TimestampMicrosecondArray,
+        TimestampMillisecondArray, TimestampNanosecondArray, TimestampSecondArray,
+        UInt16Array, UInt32Array, UInt64Array, UInt8Array,
     },
     datatypes::Field,
 };
@@ -58,6 +60,11 @@ impl Max {
 }
 
 impl AggregateExpr for Max {
+    /// Return a reference to Any that can be used for downcasting
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
     fn field(&self) -> Result<Field> {
         Ok(Field::new(
             &self.name,
@@ -122,6 +129,27 @@ macro_rules! min_max_batch {
             DataType::UInt32 => typed_min_max_batch!($VALUES, UInt32Array, UInt32, $OP),
             DataType::UInt16 => typed_min_max_batch!($VALUES, UInt16Array, UInt16, $OP),
             DataType::UInt8 => typed_min_max_batch!($VALUES, UInt8Array, UInt8, $OP),
+            DataType::Timestamp(TimeUnit::Second, _) => {
+                typed_min_max_batch!($VALUES, TimestampSecondArray, TimestampSecond, $OP)
+            }
+            DataType::Timestamp(TimeUnit::Millisecond, _) => typed_min_max_batch!(
+                $VALUES,
+                TimestampMillisecondArray,
+                TimestampMillisecond,
+                $OP
+            ),
+            DataType::Timestamp(TimeUnit::Microsecond, _) => typed_min_max_batch!(
+                $VALUES,
+                TimestampMicrosecondArray,
+                TimestampMicrosecond,
+                $OP
+            ),
+            DataType::Timestamp(TimeUnit::Nanosecond, _) => typed_min_max_batch!(
+                $VALUES,
+                TimestampNanosecondArray,
+                TimestampNanosecond,
+                $OP
+            ),
             other => {
                 // This should have been handled before
                 return Err(DataFusionError::Internal(format!(
@@ -223,6 +251,27 @@ macro_rules! min_max {
             (ScalarValue::LargeUtf8(lhs), ScalarValue::LargeUtf8(rhs)) => {
                 typed_min_max_string!(lhs, rhs, LargeUtf8, $OP)
             }
+            (ScalarValue::TimestampSecond(lhs), ScalarValue::TimestampSecond(rhs)) => {
+                typed_min_max!(lhs, rhs, TimestampSecond, $OP)
+            }
+            (
+                ScalarValue::TimestampMillisecond(lhs),
+                ScalarValue::TimestampMillisecond(rhs),
+            ) => {
+                typed_min_max!(lhs, rhs, TimestampMillisecond, $OP)
+            }
+            (
+                ScalarValue::TimestampMicrosecond(lhs),
+                ScalarValue::TimestampMicrosecond(rhs),
+            ) => {
+                typed_min_max!(lhs, rhs, TimestampMicrosecond, $OP)
+            }
+            (
+                ScalarValue::TimestampNanosecond(lhs),
+                ScalarValue::TimestampNanosecond(rhs),
+            ) => {
+                typed_min_max!(lhs, rhs, TimestampNanosecond, $OP)
+            }
             e => {
                 return Err(DataFusionError::Internal(format!(
                     "MIN/MAX is not expected to receive a scalar {:?}",
@@ -258,24 +307,24 @@ impl MaxAccumulator {
 }
 
 impl Accumulator for MaxAccumulator {
-    fn update_batch(&mut self, values: &Vec<ArrayRef>) -> Result<()> {
+    fn update_batch(&mut self, values: &[ArrayRef]) -> Result<()> {
         let values = &values[0];
         let delta = &max_batch(values)?;
         self.max = max(&self.max, delta)?;
         Ok(())
     }
 
-    fn update(&mut self, values: &Vec<ScalarValue>) -> Result<()> {
+    fn update(&mut self, values: &[ScalarValue]) -> Result<()> {
         let value = &values[0];
         self.max = max(&self.max, value)?;
         Ok(())
     }
 
-    fn merge(&mut self, states: &Vec<ScalarValue>) -> Result<()> {
+    fn merge(&mut self, states: &[ScalarValue]) -> Result<()> {
         self.update(states)
     }
 
-    fn merge_batch(&mut self, states: &Vec<ArrayRef>) -> Result<()> {
+    fn merge_batch(&mut self, states: &[ArrayRef]) -> Result<()> {
         self.update_batch(states)
     }
 
@@ -310,6 +359,11 @@ impl Min {
 }
 
 impl AggregateExpr for Min {
+    /// Return a reference to Any that can be used for downcasting
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
     fn field(&self) -> Result<Field> {
         Ok(Field::new(
             &self.name,
@@ -354,24 +408,24 @@ impl Accumulator for MinAccumulator {
         Ok(vec![self.min.clone()])
     }
 
-    fn update_batch(&mut self, values: &Vec<ArrayRef>) -> Result<()> {
+    fn update_batch(&mut self, values: &[ArrayRef]) -> Result<()> {
         let values = &values[0];
         let delta = &min_batch(values)?;
         self.min = min(&self.min, delta)?;
         Ok(())
     }
 
-    fn update(&mut self, values: &Vec<ScalarValue>) -> Result<()> {
+    fn update(&mut self, values: &[ScalarValue]) -> Result<()> {
         let value = &values[0];
         self.min = min(&self.min, value)?;
         Ok(())
     }
 
-    fn merge(&mut self, states: &Vec<ScalarValue>) -> Result<()> {
+    fn merge(&mut self, states: &[ScalarValue]) -> Result<()> {
         self.update(states)
     }
 
-    fn merge_batch(&mut self, states: &Vec<ArrayRef>) -> Result<()> {
+    fn merge_batch(&mut self, states: &[ArrayRef]) -> Result<()> {
         self.update_batch(states)
     }
 

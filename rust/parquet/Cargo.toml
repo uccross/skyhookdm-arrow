@@ -17,7 +17,7 @@
 
 [package]
 name = "parquet"
-version = "4.0.0-SNAPSHOT"
+version = "4.0.0"
 license = "Apache-2.0"
 description = "Apache Parquet implementation in Rust"
 homepage = "https://github.com/apache/arrow"
@@ -38,22 +38,23 @@ snap = { version = "1.0", optional = true }
 brotli = { version = "3.3", optional = true }
 flate2 = { version = "1.0", optional = true }
 lz4 = { version = "1.23", optional = true }
-zstd = { version = "0.6", optional = true }
+zstd = { version = "0.7", optional = true }
 chrono = "0.4"
 num-bigint = "0.3"
-arrow = { path = "../arrow", version = "4.0.0-SNAPSHOT", optional = true }
+arrow = { path = "../arrow", version = "4.0.0", optional = true }
 base64 = { version = "0.12", optional = true }
 clap = { version = "2.33.3", optional = true }
 serde_json = { version = "1.0", features = ["preserve_order"], optional = true }
 
 [dev-dependencies]
+criterion = "0.3"
 rand = "0.8"
 snap = "1.0"
 brotli = "3.3"
 flate2 = "1.0"
 lz4 = "1.23"
-zstd = "0.6"
-arrow = { path = "../arrow", version = "4.0.0-SNAPSHOT" }
+zstd = "0.7"
+arrow = { path = "../arrow", version = "4.0.0" }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 
 [features]
@@ -71,3 +72,7 @@ required-features = ["cli"]
 [[ bin ]]
 name = "parquet-rowcount"
 required-features = ["cli"]
+
+[[bench]]
+name = "arrow_writer"
+harness = false

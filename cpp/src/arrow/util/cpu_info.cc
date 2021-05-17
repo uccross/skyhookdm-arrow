@@ -31,11 +31,12 @@
 #endif
 
 #ifdef _WIN32
+#include <immintrin.h>
 #include <intrin.h>
 #include <array>
 #include <bitset>
-#include "arrow/util/windows_compatibility.h"
 
+#include "arrow/util/windows_compatibility.h"
 #endif
 
 #include <algorithm>
@@ -50,13 +51,19 @@
 #include "arrow/result.h"
 #include "arrow/util/io_util.h"
 #include "arrow/util/logging.h"
+#include "arrow/util/optional.h"
 #include "arrow/util/string.h"
+
+namespace arrow {
+namespace internal {
+
+namespace {
 
 using std::max;
 
-static constexpr int64_t kDefaultL1CacheSize = 32 * 1024;    // Level 1: 32k
-static constexpr int64_t kDefaultL2CacheSize = 256 * 1024;   // Level 2: 256k
-static constexpr int64_t kDefaultL3CacheSize = 3072 * 1024;  // Level 3: 3M
+constexpr int64_t kDefaultL1CacheSize = 32 * 1024;    // Level 1: 32k
+constexpr int64_t kDefaultL2CacheSize = 256 * 1024;   // Level 2: 256k
+constexpr int64_t kDefaultL3CacheSize = 3072 * 1024;  // Level 3: 3M
 
 #if defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 5
 void __cpuidex(int CPUInfo[4], int function_id, int subfunction_id) {
@@ -64,6 +71,29 @@ void __cpuidex(int CPUInfo[4], int function_id, int subfunction_id) {
                        : "=a"(CPUInfo[0]), "=b"(CPUInfo[1]), "=c"(CPUInfo[2]),
                          "=d"(CPUInfo[3])
                        : "a"(function_id), "c"(subfunction_id));
+}
+
+int64_t _xgetbv(int xcr) {
+  int out = 0;
+  __asm__ __volatile__("xgetbv" : "=a"(out) : "c"(xcr) : "%edx");
+  return out;
+}
+#endif
+
+#ifdef __APPLE__
+util::optional<int64_t> IntegerSysCtlByName(const char* name) {
+  size_t len = sizeof(int64_t);
+  int64_t data = 0;
+  if (sysctlbyname(name, &data, &len, nullptr, 0) == 0) {
+    return data;
+  }
+  // ENOENT is the official errno value for non-existing sysctl's,
+  // but EINVAL and ENOTSUP have been seen in the wild.
+  if (errno != ENOENT && errno != EINVAL && errno != ENOTSUP) {
+    auto st = IOErrorFromErrno(errno, "sysctlbyname failed for '", name, "'");
+    ARROW_LOG(WARNING) << st.ToString();
+  }
+  return util::nullopt;
 }
 #endif
 
@@ -75,11 +105,11 @@ void __cpuidex(int CPUInfo[4], int function_id, int subfunction_id) {
 //   index1: L1 Icache
 //   index2: L2 cache
 //   index3: L3 cache
-static const char* kL1CacheSizeFile = "/sys/devices/system/cpu/cpu0/cache/index0/size";
-static const char* kL2CacheSizeFile = "/sys/devices/system/cpu/cpu0/cache/index2/size";
-static const char* kL3CacheSizeFile = "/sys/devices/system/cpu/cpu0/cache/index3/size";
+const char* kL1CacheSizeFile = "/sys/devices/system/cpu/cpu0/cache/index0/size";
+const char* kL2CacheSizeFile = "/sys/devices/system/cpu/cpu0/cache/index2/size";
+const char* kL3CacheSizeFile = "/sys/devices/system/cpu/cpu0/cache/index3/size";
 
-static int64_t GetArm64CacheSize(const char* filename, int64_t default_size = -1) {
+int64_t GetArm64CacheSize(const char* filename, int64_t default_size = -1) {
   char* content = nullptr;
   char* last_char = nullptr;
   size_t file_len = 0;
@@ -118,10 +148,8 @@ static int64_t GetArm64CacheSize(const char* filename, int64_t default_size = -1
 }
 #endif
 
-namespace arrow {
-namespace internal {
-
-static struct {
+#if !defined(_WIN32) && !defined(__APPLE__)
+struct {
   std::string name;
   int64_t flag;
 } flag_mappings[] = {
@@ -138,10 +166,7 @@ static struct {
     {"asimd", CpuInfo::ASIMD},
 #endif
 };
-static const int64_t num_flags = sizeof(flag_mappings) / sizeof(flag_mappings[0]);
-
-#ifndef _WIN32
-namespace {
+const int64_t num_flags = sizeof(flag_mappings) / sizeof(flag_mappings[0]);
 
 // Helper function to parse for hardware flags.
 // values contains a list of space-separated flags.  check to see if the flags we
@@ -156,8 +181,6 @@ int64_t ParseCPUFlags(const std::string& values) {
   }
   return flags;
 }
-
-}  // namespace
 #endif
 
 #ifdef _WIN32
@@ -251,6 +274,13 @@ bool RetrieveCPUInfo(int64_t* hardware_flags, std::string* model_name,
     }
   }
 
+  bool zmm_enabled = false;
+  if (features_ECX[27]) {  // OSXSAVE
+    // Query if the OS supports saving ZMM registers when switching contexts
+    int64_t xcr0 = _xgetbv(0);
+    zmm_enabled = (xcr0 & 0xE0) == 0xE0;
+  }
+
   if (features_ECX[9]) *hardware_flags |= CpuInfo::SSSE3;
   if (features_ECX[19]) *hardware_flags |= CpuInfo::SSE4_1;
   if (features_ECX[20]) *hardware_flags |= CpuInfo::SSE4_2;
@@ -266,16 +296,21 @@ bool RetrieveCPUInfo(int64_t* hardware_flags, std::string* model_name,
     if (features_EBX[3]) *hardware_flags |= CpuInfo::BMI1;
     if (features_EBX[5]) *hardware_flags |= CpuInfo::AVX2;
     if (features_EBX[8]) *hardware_flags |= CpuInfo::BMI2;
-    if (features_EBX[16]) *hardware_flags |= CpuInfo::AVX512F;
-    if (features_EBX[17]) *hardware_flags |= CpuInfo::AVX512DQ;
-    if (features_EBX[28]) *hardware_flags |= CpuInfo::AVX512CD;
-    if (features_EBX[30]) *hardware_flags |= CpuInfo::AVX512BW;
-    if (features_EBX[31]) *hardware_flags |= CpuInfo::AVX512VL;
+    // ARROW-11427: only use AVX512 if enabled by the OS
+    if (zmm_enabled) {
+      if (features_EBX[16]) *hardware_flags |= CpuInfo::AVX512F;
+      if (features_EBX[17]) *hardware_flags |= CpuInfo::AVX512DQ;
+      if (features_EBX[28]) *hardware_flags |= CpuInfo::AVX512CD;
+      if (features_EBX[30]) *hardware_flags |= CpuInfo::AVX512BW;
+      if (features_EBX[31]) *hardware_flags |= CpuInfo::AVX512VL;
+    }
   }
 
   return true;
 }
 #endif
+
+}  // namespace
 
 CpuInfo::CpuInfo()
     : hardware_flags_(0),
@@ -313,6 +348,36 @@ void CpuInfo::Init() {
   if (QueryPerformanceFrequency(&performance_frequency)) {
     max_mhz = static_cast<float>(performance_frequency.QuadPart);
   }
+#elif defined(__APPLE__)
+  // On macOS, get CPU information from system information base
+  struct SysCtlCpuFeature {
+    const char* name;
+    int64_t flag;
+  };
+  std::vector<SysCtlCpuFeature> features = {
+#if defined(__aarch64__)
+    // ARM64 (note that this is exposed under Rosetta as well)
+    {"hw.optional.neon", ASIMD},
+#else
+    // x86
+    {"hw.optional.sse4_2", SSSE3 | SSE4_1 | SSE4_2 | POPCNT},
+    {"hw.optional.avx1_0", AVX},
+    {"hw.optional.avx2_0", AVX2},
+    {"hw.optional.bmi1", BMI1},
+    {"hw.optional.bmi2", BMI2},
+    {"hw.optional.avx512f", AVX512F},
+    {"hw.optional.avx512cd", AVX512CD},
+    {"hw.optional.avx512dq", AVX512DQ},
+    {"hw.optional.avx512bw", AVX512BW},
+    {"hw.optional.avx512vl", AVX512VL},
+#endif
+  };
+  for (const auto& feature : features) {
+    auto v = IntegerSysCtlByName(feature.name);
+    if (v.value_or(0)) {
+      hardware_flags_ |= feature.flag;
+    }
+  }
 #else
   // Read from /proc/cpuinfo
   std::ifstream cpuinfo("/proc/cpuinfo", std::ios::in);
@@ -348,15 +413,20 @@ void CpuInfo::Init() {
 #endif
 
 #ifdef __APPLE__
-  // On Mac OS X use sysctl() to get the cache sizes
-  size_t len = sizeof(int64_t);
-  int64_t data[1];
-  sysctlbyname("hw.l1dcachesize", data, &len, NULL, 0);
-  cache_sizes_[0] = data[0];
-  sysctlbyname("hw.l2cachesize", data, &len, NULL, 0);
-  cache_sizes_[1] = data[0];
-  sysctlbyname("hw.l3cachesize", data, &len, NULL, 0);
-  cache_sizes_[2] = data[0];
+  // On macOS, get cache size from system information base
+  SetDefaultCacheSize();
+  auto c = IntegerSysCtlByName("hw.l1dcachesize");
+  if (c.has_value()) {
+    cache_sizes_[0] = *c;
+  }
+  c = IntegerSysCtlByName("hw.l2cachesize");
+  if (c.has_value()) {
+    cache_sizes_[1] = *c;
+  }
+  c = IntegerSysCtlByName("hw.l3cachesize");
+  if (c.has_value()) {
+    cache_sizes_[2] = *c;
+  }
 #elif _WIN32
   if (!RetrieveCacheSize(cache_sizes_)) {
     SetDefaultCacheSize();

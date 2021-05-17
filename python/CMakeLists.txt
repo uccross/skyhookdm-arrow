@@ -52,7 +52,11 @@ set(Python3_FIND_FRAMEWORK "LAST")
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
 
 set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
+if(DEFINED ENV{MACOSX_DEPLOYMENT_TARGET})
+  set(CMAKE_OSX_DEPLOYMENT_TARGET $ENV{MACOSX_DEPLOYMENT_TARGET})
+else()
+  set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
+endif()
 
 # Generate a Clang compile_commands.json "compilation database" file for use
 # with various development tools, such as Vim's YouCompleteMe plugin.
@@ -398,6 +402,12 @@ if(PYARROW_BUILD_HDFS)
   set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _hdfs)
 endif()
 
+if(PYARROW_BUILD_RADOS)
+  set(RADOS_LINK_LIBS arrow_dataset_shared)
+  set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _rados)
+  set(ARROW_RADOS ON)
+endif()
+
 if(PYARROW_BUILD_CUDA)
   # Arrow CUDA
   find_package(ArrowCUDA REQUIRED)
@@ -612,4 +622,8 @@ endif()
 
 if(PYARROW_BUILD_PLASMA)
   target_link_libraries(_plasma PRIVATE ${PLASMA_LINK_LIBS})
+endif()
+
+if(PYARROW_BUILD_RADOS)
+  target_link_libraries(_rados PRIVATE ${RADOS_LINK_LIBS})
 endif()

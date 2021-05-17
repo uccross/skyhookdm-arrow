@@ -181,6 +181,7 @@ set(ARROW_SRCS
     util/bitmap_builders.cc
     util/bitmap_ops.cc
     util/bpacking.cc
+    util/cancel.cc
     util/compression.cc
     util/cpu_info.cc
     util/decimal.cc
@@ -189,7 +190,6 @@ set(ARROW_SRCS
     util/future.cc
     util/int_util.cc
     util/io_util.cc
-    util/iterator.cc
     util/logging.cc
     util/key_value_metadata.cc
     util/memory.cc
@@ -227,6 +227,9 @@ if(ARROW_HAVE_RUNTIME_AVX512)
                               ON)
   set_source_files_properties(util/bpacking_avx512.cc PROPERTIES COMPILE_FLAGS
                               ${ARROW_AVX512_FLAG})
+endif()
+if(ARROW_HAVE_NEON)
+  list(APPEND ARROW_SRCS util/bpacking_neon.cc)
 endif()
 
 if(APPLE)
@@ -350,6 +353,9 @@ if(ARROW_CSV)
               csv/options.cc
               csv/parser.cc
               csv/reader.cc)
+  if(ARROW_COMPUTE)
+    list(APPEND ARROW_SRCS csv/writer.cc)
+  endif()
 
   list(APPEND ARROW_TESTING_SRCS csv/test_common.cc)
 endif()
@@ -367,8 +373,10 @@ if(ARROW_COMPUTE)
               compute/kernels/aggregate_basic.cc
               compute/kernels/aggregate_mode.cc
               compute/kernels/aggregate_quantile.cc
+              compute/kernels/aggregate_tdigest.cc
               compute/kernels/aggregate_var_std.cc
               compute/kernels/codegen_internal.cc
+              compute/kernels/hash_aggregate.cc
               compute/kernels/scalar_arithmetic.cc
               compute/kernels/scalar_boolean.cc
               compute/kernels/scalar_cast_boolean.cc
@@ -414,7 +422,6 @@ if(ARROW_FILESYSTEM)
               filesystem/filesystem.cc
               filesystem/localfs.cc
               filesystem/mockfs.cc
-              filesystem/path_forest.cc
               filesystem/path_util.cc
               filesystem/util_internal.cc)
 
@@ -455,6 +462,8 @@ if(ARROW_JSON)
               json/chunked_builder.cc
               json/chunker.cc
               json/converter.cc
+              json/object_parser.cc
+              json/object_writer.cc
               json/parser.cc
               json/reader.cc)
 endif()
@@ -688,6 +697,10 @@ endif()
 
 if(ARROW_ORC)
   add_subdirectory(adapters/orc)
+endif()
+
+if(ARROW_CLS)
+  add_subdirectory(adapters/arrow-rados-cls)
 endif()
 
 if(ARROW_PYTHON)

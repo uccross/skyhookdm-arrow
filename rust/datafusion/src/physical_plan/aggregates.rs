@@ -34,7 +34,7 @@ use super::{
 use crate::error::{DataFusionError, Result};
 use crate::physical_plan::distinct_expressions;
 use crate::physical_plan::expressions;
-use arrow::datatypes::{DataType, Schema};
+use arrow::datatypes::{DataType, Schema, TimeUnit};
 use expressions::{avg_return_type, sum_return_type};
 use std::{fmt, str::FromStr, sync::Arc};
 
@@ -72,12 +72,12 @@ impl fmt::Display for AggregateFunction {
 impl FromStr for AggregateFunction {
     type Err = DataFusionError;
     fn from_str(name: &str) -> Result<AggregateFunction> {
-        Ok(match &*name.to_uppercase() {
-            "MIN" => AggregateFunction::Min,
-            "MAX" => AggregateFunction::Max,
-            "COUNT" => AggregateFunction::Count,
-            "AVG" => AggregateFunction::Avg,
-            "SUM" => AggregateFunction::Sum,
+        Ok(match name {
+            "min" => AggregateFunction::Min,
+            "max" => AggregateFunction::Max,
+            "count" => AggregateFunction::Count,
+            "avg" => AggregateFunction::Avg,
+            "sum" => AggregateFunction::Sum,
             _ => {
                 return Err(DataFusionError::Plan(format!(
                     "There is no built-in function named {}",
@@ -89,10 +89,7 @@ impl FromStr for AggregateFunction {
 }
 
 /// Returns the datatype of the scalar function
-pub fn return_type(
-    fun: &AggregateFunction,
-    arg_types: &Vec<DataType>,
-) -> Result<DataType> {
+pub fn return_type(fun: &AggregateFunction, arg_types: &[DataType]) -> Result<DataType> {
     // Note that this function *must* return the same type that the respective physical expression returns
     // or the execution panics.
 
@@ -112,7 +109,7 @@ pub fn return_type(
 pub fn create_aggregate_expr(
     fun: &AggregateFunction,
     distinct: bool,
-    args: &Vec<Arc<dyn PhysicalExpr>>,
+    args: &[Arc<dyn PhysicalExpr>],
     input_schema: &Schema,
     name: String,
 ) -> Result<Arc<dyn AggregateExpr>> {
@@ -133,7 +130,7 @@ pub fn create_aggregate_expr(
         (AggregateFunction::Count, true) => {
             Arc::new(distinct_expressions::DistinctCount::new(
                 arg_types,
-                args.clone(),
+                args.to_vec(),
                 name,
                 return_type,
             ))
@@ -163,6 +160,8 @@ pub fn create_aggregate_expr(
     })
 }
 
+static STRINGS: &[DataType] = &[DataType::Utf8, DataType::LargeUtf8];
+
 static NUMERICS: &[DataType] = &[
     DataType::Int8,
     DataType::Int16,
@@ -176,14 +175,25 @@ static NUMERICS: &[DataType] = &[
     DataType::Float64,
 ];
 
+static TIMESTAMPS: &[DataType] = &[
+    DataType::Timestamp(TimeUnit::Second, None),
+    DataType::Timestamp(TimeUnit::Millisecond, None),
+    DataType::Timestamp(TimeUnit::Microsecond, None),
+    DataType::Timestamp(TimeUnit::Nanosecond, None),
+];
+
 /// the signatures supported by the function `fun`.
 fn signature(fun: &AggregateFunction) -> Signature {
     // note: the physical expression must accept the type returned by this function or the execution panics.
     match fun {
         AggregateFunction::Count => Signature::Any(1),
         AggregateFunction::Min | AggregateFunction::Max => {
-            let mut valid = vec![DataType::Utf8, DataType::LargeUtf8];
-            valid.extend_from_slice(NUMERICS);
+            let valid = STRINGS
+                .iter()
+                .chain(NUMERICS.iter())
+                .chain(TIMESTAMPS.iter())
+                .cloned()
+                .collect::<Vec<_>>();
             Signature::Uniform(1, valid)
         }
         AggregateFunction::Avg | AggregateFunction::Sum => {
@@ -199,52 +209,50 @@ mod tests {
 
     #[test]
     fn test_min_max() -> Result<()> {
-        let observed = return_type(&AggregateFunction::Min, &vec![DataType::Utf8])?;
+        let observed = return_type(&AggregateFunction::Min, &[DataType::Utf8])?;
         assert_eq!(DataType::Utf8, observed);
 
-        let observed = return_type(&AggregateFunction::Max, &vec![DataType::Int32])?;
+        let observed = return_type(&AggregateFunction::Max, &[DataType::Int32])?;
         assert_eq!(DataType::Int32, observed);
         Ok(())
     }
 
     #[test]
-    fn test_sum_no_utf8() -> Result<()> {
-        let observed = return_type(&AggregateFunction::Sum, &vec![DataType::Utf8]);
+    fn test_sum_no_utf8() {
+        let observed = return_type(&AggregateFunction::Sum, &[DataType::Utf8]);
         assert!(observed.is_err());
-        Ok(())
     }
 
     #[test]
     fn test_sum_upcasts() -> Result<()> {
-        let observed = return_type(&AggregateFunction::Sum, &vec![DataType::UInt32])?;
+        let observed = return_type(&AggregateFunction::Sum, &[DataType::UInt32])?;
         assert_eq!(DataType::UInt64, observed);
         Ok(())
     }
 
     #[test]
     fn test_count_return_type() -> Result<()> {
-        let observed = return_type(&AggregateFunction::Count, &vec![DataType::Utf8])?;
+        let observed = return_type(&AggregateFunction::Count, &[DataType::Utf8])?;
         assert_eq!(DataType::UInt64, observed);
 
-        let observed = return_type(&AggregateFunction::Count, &vec![DataType::Int8])?;
+        let observed = return_type(&AggregateFunction::Count, &[DataType::Int8])?;
         assert_eq!(DataType::UInt64, observed);
         Ok(())
     }
 
     #[test]
     fn test_avg_return_type() -> Result<()> {
-        let observed = return_type(&AggregateFunction::Avg, &vec![DataType::Float32])?;
+        let observed = return_type(&AggregateFunction::Avg, &[DataType::Float32])?;
         assert_eq!(DataType::Float64, observed);
 
-        let observed = return_type(&AggregateFunction::Avg, &vec![DataType::Float64])?;
+        let observed = return_type(&AggregateFunction::Avg, &[DataType::Float64])?;
         assert_eq!(DataType::Float64, observed);
         Ok(())
     }
 
     #[test]
-    fn test_avg_no_utf8() -> Result<()> {
-        let observed = return_type(&AggregateFunction::Avg, &vec![DataType::Utf8]);
+    fn test_avg_no_utf8() {
+        let observed = return_type(&AggregateFunction::Avg, &[DataType::Utf8]);
         assert!(observed.is_err());
-        Ok(())
     }
 }

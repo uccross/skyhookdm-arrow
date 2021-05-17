@@ -152,6 +152,7 @@ def array(object obj, type=None, mask=None, size=None, from_pandas=None,
     -------
     array : pyarrow.Array or pyarrow.ChunkedArray
         A ChunkedArray instead of an Array is returned if:
+
         - the object data overflowed binary storage.
         - the object's ``__arrow_array__`` protocol method returned a chunked
           array.
@@ -722,6 +723,10 @@ cdef class _PandasConvertible(_Weakrefable):
             memory while converting the Arrow object to pandas. If you use the
             object after calling to_pandas with this option it will crash your
             program.
+
+            Note that you may not see always memory usage improvements. For
+            example, if multiple columns share an underlying allocation,
+            memory can't be freed until all columns are converted.
         types_mapper : function, default None
             A function mapping a pyarrow DataType to a pandas ExtensionDtype.
             This can be used to override the default pandas type for conversion
@@ -842,11 +847,12 @@ cdef class Array(_PandasConvertible):
         """
         return _pc().call_function('unique', [self])
 
-    def dictionary_encode(self):
+    def dictionary_encode(self, null_encoding='mask'):
         """
         Compute dictionary-encoded representation of array.
         """
-        return _pc().call_function('dictionary_encode', [self])
+        options = _pc().DictionaryEncodeOptions(null_encoding)
+        return _pc().call_function('dictionary_encode', [self], options)
 
     def value_counts(self):
         """
@@ -1015,9 +1021,11 @@ cdef class Array(_PandasConvertible):
         try:
             return self.equals(other)
         except TypeError:
+            # This also handles comparing with None
+            # as Array.equals(None) raises a TypeError.
             return NotImplemented
 
-    def equals(Array self, Array other):
+    def equals(Array self, Array other not None):
         return self.ap.Equals(deref(other.ap))
 
     def __len__(self):

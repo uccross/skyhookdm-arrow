@@ -38,10 +38,8 @@ on:
       - 'format/Flight.proto'
 
 env:
-  DOCKER_BUILDKIT: 0
-  DOCKER_VOLUME_PREFIX: ".docker/"
-  COMPOSE_DOCKER_CLI_BUILD: 1
   ARROW_ENABLE_TIMING_TESTS: OFF
+  DOCKER_VOLUME_PREFIX: ".docker/"
   ARCHERY_DOCKER_USER: ${{ secrets.DOCKERHUB_USER }}
   ARCHERY_DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -57,11 +55,21 @@ jobs:
         image:
           - conda-cpp
           - ubuntu-cpp-sanitizer
+          - ubuntu-cpp-cls
+          - ubuntu-python-cls
         include:
           - image: conda-cpp
             title: AMD64 Conda C++
           - image: ubuntu-cpp-sanitizer
-            title: AMD64 Ubuntu 18.04 C++ ASAN UBSAN
+            title: AMD64 Ubuntu 20.04 C++ ASAN UBSAN
+          - image: ubuntu-cpp-cls
+            ubuntu: 20.04
+            title: AMD64 Ubuntu 20.04 C++ (Rados Parquet Format)
+          - image: ubuntu-python-cls
+            ubuntu: 20.04
+            title: AMD64 Ubuntu 20.04 Python (Rados Parquet Format)
+    env:
+      UBUNTU: ${{ matrix.ubuntu || 18.04 }}
     steps:
       - name: Checkout Arrow
         uses: actions/checkout@v2
@@ -72,7 +80,7 @@ jobs:
       - name: Free Up Disk Space
         run: ci/scripts/util_cleanup.sh
       - name: Cache Docker Volumes
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: .docker
           key: ${{ matrix.image }}-${{ hashFiles('cpp/**') }}
@@ -367,7 +375,7 @@ jobs:
         run: |
           ci/scripts/msys2_setup.sh cpp
       - name: Cache ccache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ccache
           key: cpp-ccache-mingw${{ matrix.mingw-n-bits }}-${{ hashFiles('cpp/**') }}

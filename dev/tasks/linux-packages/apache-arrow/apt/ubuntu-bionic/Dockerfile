@@ -34,6 +34,7 @@ RUN \
   apt update ${quiet} && \
   apt install -y -V ${quiet} \
     build-essential \
+    ccache \
     clang-10 \
     cmake \
     devscripts \
@@ -41,7 +42,6 @@ RUN \
     git \
     gtk-doc-tools \
     libboost-filesystem-dev \
-    libboost-regex-dev \
     libboost-system-dev \
     libbrotli-dev \
     libbz2-dev \
@@ -53,6 +53,9 @@ RUN \
     liblz4-dev \
     libre2-dev \
     libsnappy-dev \
+    libradospp-dev \
+    rados-objclass-dev \
+    python3-rados \
     libssl-dev \
     libutf8proc-dev \
     libzstd-dev \

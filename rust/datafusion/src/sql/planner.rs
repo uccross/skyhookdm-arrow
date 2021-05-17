@@ -17,9 +17,11 @@
 
 //! SQL Query Planner (produces logical plan from SQL AST)
 
+use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::catalog::TableReference;
 use crate::datasource::TableProvider;
 use crate::logical_plan::Expr::Alias;
 use crate::logical_plan::{
@@ -38,30 +40,32 @@ use crate::{
 };
 
 use arrow::datatypes::*;
+use hashbrown::HashMap;
 
 use crate::prelude::JoinType;
 use sqlparser::ast::{
-    BinaryOperator, DataType as SQLDataType, Expr as SQLExpr, FunctionArg, Join,
-    JoinConstraint, JoinOperator, Query, Select, SelectItem, SetExpr, TableFactor,
-    TableWithJoins, UnaryOperator, Value,
+    BinaryOperator, DataType as SQLDataType, DateTimeField, Expr as SQLExpr, FunctionArg,
+    Ident, Join, JoinConstraint, JoinOperator, ObjectName, Query, Select, SelectItem,
+    SetExpr, SetOperator, ShowStatementFilter, TableFactor, TableWithJoins,
+    UnaryOperator, Value,
 };
 use sqlparser::ast::{ColumnDef as SQLColumnDef, ColumnOption};
 use sqlparser::ast::{OrderByExpr, Statement};
 use sqlparser::parser::ParserError::ParserError;
 
-use super::utils::{
-    can_columns_satisfy_exprs, expand_wildcard, expr_as_column_expr,
-    find_aggregate_exprs, find_column_exprs, rebase_expr,
+use super::{
+    parser::DFParser,
+    utils::{
+        can_columns_satisfy_exprs, expand_wildcard, expr_as_column_expr, extract_aliases,
+        find_aggregate_exprs, find_column_exprs, rebase_expr, resolve_aliases_to_exprs,
+    },
 };
 
 /// The ContextProvider trait allows the query planner to obtain meta-data about tables and
 /// functions referenced in SQL statements
 pub trait ContextProvider {
     /// Getter for a datasource
-    fn get_table_provider(
-        &self,
-        name: &str,
-    ) -> Option<Arc<dyn TableProvider + Send + Sync>>;
+    fn get_table_provider(&self, name: TableReference) -> Option<Arc<dyn TableProvider>>;
     /// Getter for a UDF description
     fn get_function_meta(&self, name: &str) -> Option<Arc<ScalarUDF>>;
     /// Getter for a UDAF description
@@ -96,6 +100,13 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                 analyze: _,
             } => self.explain_statement_to_plan(*verbose, &statement),
             Statement::Query(query) => self.query_to_plan(&query),
+            Statement::ShowVariable { variable } => self.show_variable_to_plan(&variable),
+            Statement::ShowColumns {
+                extended,
+                full,
+                table_name,
+                filter,
+            } => self.show_columns_to_plan(*extended, *full, table_name, filter.as_ref()),
             _ => Err(DataFusionError::NotImplemented(
                 "Only SELECT statements are implemented".to_string(),
             )),
@@ -104,17 +115,88 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
 
     /// Generate a logic plan from an SQL query
     pub fn query_to_plan(&self, query: &Query) -> Result<LogicalPlan> {
-        let plan = match &query.body {
-            SetExpr::Select(s) => self.select_to_plan(s.as_ref()),
-            _ => Err(DataFusionError::NotImplemented(format!(
-                "Query {} not implemented yet",
-                query.body
-            ))),
-        }?;
+        self.query_to_plan_with_alias(query, None, &mut HashMap::new())
+    }
+
+    /// Generate a logic plan from an SQL query with optional alias
+    pub fn query_to_plan_with_alias(
+        &self,
+        query: &Query,
+        alias: Option<String>,
+        ctes: &mut HashMap<String, LogicalPlan>,
+    ) -> Result<LogicalPlan> {
+        let set_expr = &query.body;
+        if let Some(with) = &query.with {
+            // Process CTEs from top to bottom
+            // do not allow self-references
+            for cte in &with.cte_tables {
+                // create logical plan & pass backreferencing CTEs
+                let logical_plan = self.query_to_plan_with_alias(
+                    &cte.query,
+                    Some(cte.alias.name.value.clone()),
+                    &mut ctes.clone(),
+                )?;
+                ctes.insert(cte.alias.name.value.clone(), logical_plan);
+            }
+        }
+        let plan = self.set_expr_to_plan(set_expr, alias, ctes)?;
 
         let plan = self.order_by(&plan, &query.order_by)?;
 
         self.limit(&plan, &query.limit)
+    }
+
+    fn set_expr_to_plan(
+        &self,
+        set_expr: &SetExpr,
+        alias: Option<String>,
+        ctes: &mut HashMap<String, LogicalPlan>,
+    ) -> Result<LogicalPlan> {
+        match set_expr {
+            SetExpr::Select(s) => self.select_to_plan(s.as_ref(), ctes),
+            SetExpr::SetOperation {
+                op,
+                left,
+                right,
+                all,
+            } => match (op, all) {
+                (SetOperator::Union, true) => {
+                    let left_plan = self.set_expr_to_plan(left.as_ref(), None, ctes)?;
+                    let right_plan = self.set_expr_to_plan(right.as_ref(), None, ctes)?;
+                    let inputs = vec![left_plan, right_plan]
+                        .into_iter()
+                        .flat_map(|p| match p {
+                            LogicalPlan::Union { inputs, .. } => inputs,
+                            x => vec![x],
+                        })
+                        .collect::<Vec<_>>();
+                    if inputs.is_empty() {
+                        return Err(DataFusionError::Plan(format!(
+                            "Empty UNION: {}",
+                            set_expr
+                        )));
+                    }
+                    if !inputs.iter().all(|s| s.schema() == inputs[0].schema()) {
+                        return Err(DataFusionError::Plan(
+                            "UNION ALL schemas are expected to be the same".to_string(),
+                        ));
+                    }
+                    Ok(LogicalPlan::Union {
+                        schema: inputs[0].schema().clone(),
+                        inputs,
+                        alias,
+                    })
+                }
+                _ => Err(DataFusionError::NotImplemented(format!(
+                    "Only UNION ALL is supported, found {}",
+                    op
+                ))),
+            },
+            _ => Err(DataFusionError::NotImplemented(format!(
+                "Query {} not implemented yet",
+                set_expr
+            ))),
+        }
     }
 
     /// Generate a logical plan from a CREATE EXTERNAL TABLE statement
@@ -186,7 +268,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
         })
     }
 
-    fn build_schema(&self, columns: &Vec<SQLColumnDef>) -> Result<Schema> {
+    fn build_schema(&self, columns: &[SQLColumnDef]) -> Result<Schema> {
         let mut fields = Vec::new();
 
         for column in columns {
@@ -216,7 +298,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             SQLDataType::Boolean => Ok(DataType::Boolean),
             SQLDataType::Date => Ok(DataType::Date32),
             SQLDataType::Time => Ok(DataType::Time64(TimeUnit::Millisecond)),
-            SQLDataType::Timestamp => Ok(DataType::Date64),
+            SQLDataType::Timestamp => Ok(DataType::Timestamp(TimeUnit::Nanosecond, None)),
             _ => Err(DataFusionError::NotImplemented(format!(
                 "The SQL data type {:?} is not implemented",
                 sql_type
@@ -224,24 +306,32 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
         }
     }
 
-    fn plan_from_tables(&self, from: &Vec<TableWithJoins>) -> Result<Vec<LogicalPlan>> {
+    fn plan_from_tables(
+        &self,
+        from: &[TableWithJoins],
+        ctes: &mut HashMap<String, LogicalPlan>,
+    ) -> Result<Vec<LogicalPlan>> {
         match from.len() {
             0 => Ok(vec![LogicalPlanBuilder::empty(true).build()?]),
             _ => from
                 .iter()
-                .map(|t| self.plan_table_with_joins(t))
+                .map(|t| self.plan_table_with_joins(t, ctes))
                 .collect::<Result<Vec<_>>>(),
         }
     }
 
-    fn plan_table_with_joins(&self, t: &TableWithJoins) -> Result<LogicalPlan> {
-        let left = self.create_relation(&t.relation)?;
+    fn plan_table_with_joins(
+        &self,
+        t: &TableWithJoins,
+        ctes: &mut HashMap<String, LogicalPlan>,
+    ) -> Result<LogicalPlan> {
+        let left = self.create_relation(&t.relation, ctes)?;
         match t.joins.len() {
             0 => Ok(left),
             n => {
-                let mut left = self.parse_relation_join(&left, &t.joins[0])?;
+                let mut left = self.parse_relation_join(&left, &t.joins[0], ctes)?;
                 for i in 1..n {
-                    left = self.parse_relation_join(&left, &t.joins[i])?;
+                    left = self.parse_relation_join(&left, &t.joins[i], ctes)?;
                 }
                 Ok(left)
             }
@@ -252,8 +342,9 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
         &self,
         left: &LogicalPlan,
         join: &Join,
+        ctes: &mut HashMap<String, LogicalPlan>,
     ) -> Result<LogicalPlan> {
-        let right = self.create_relation(&join.relation)?;
+        let right = self.create_relation(&join.relation, ctes)?;
         match &join.join_operator {
             JoinOperator::LeftOuter(constraint) => {
                 self.parse_join(left, &right, constraint, JoinType::Left)
@@ -310,26 +401,44 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                     "NATURAL JOIN is not supported (https://issues.apache.org/jira/browse/ARROW-10727)".to_string(),
                 ))
             }
+            JoinConstraint::None => Err(DataFusionError::NotImplemented(
+                "NONE contraint is not supported".to_string(),
+            )),
         }
     }
 
-    fn create_relation(&self, relation: &TableFactor) -> Result<LogicalPlan> {
+    fn create_relation(
+        &self,
+        relation: &TableFactor,
+        ctes: &mut HashMap<String, LogicalPlan>,
+    ) -> Result<LogicalPlan> {
         match relation {
             TableFactor::Table { name, .. } => {
                 let table_name = name.to_string();
-                match self.schema_provider.get_table_provider(&table_name) {
-                    Some(provider) => {
+                let cte = ctes.get(&table_name);
+                match (
+                    cte,
+                    self.schema_provider.get_table_provider(name.try_into()?),
+                ) {
+                    (Some(cte_plan), _) => Ok(cte_plan.clone()),
+                    (_, Some(provider)) => {
                         LogicalPlanBuilder::scan(&table_name, provider, None)?.build()
                     }
-                    None => Err(DataFusionError::Plan(format!(
-                        "no provider found for table {}",
+                    (_, None) => Err(DataFusionError::Plan(format!(
+                        "Table or CTE with name '{}' not found",
                         name
                     ))),
                 }
             }
-            TableFactor::Derived { subquery, .. } => self.query_to_plan(subquery),
+            TableFactor::Derived {
+                subquery, alias, ..
+            } => self.query_to_plan_with_alias(
+                subquery,
+                alias.as_ref().map(|a| a.name.value.to_string()),
+                ctes,
+            ),
             TableFactor::NestedJoin(table_with_joins) => {
-                self.plan_table_with_joins(table_with_joins)
+                self.plan_table_with_joins(table_with_joins, ctes)
             }
             // @todo Support TableFactory::TableFunction?
             _ => Err(DataFusionError::NotImplemented(format!(
@@ -340,14 +449,12 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
     }
 
     /// Generate a logic plan from an SQL select
-    fn select_to_plan(&self, select: &Select) -> Result<LogicalPlan> {
-        if select.having.is_some() {
-            return Err(DataFusionError::NotImplemented(
-                "HAVING is not implemented yet".to_string(),
-            ));
-        }
-
-        let plans = self.plan_from_tables(&select.from)?;
+    fn select_to_plan(
+        &self,
+        select: &Select,
+        ctes: &mut HashMap<String, LogicalPlan>,
+    ) -> Result<LogicalPlan> {
+        let plans = self.plan_from_tables(&select.from, ctes)?;
 
         let plan = match &select.selection {
             Some(predicate_expr) => {
@@ -421,17 +528,90 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
         // The SELECT expressions, with wildcards expanded.
         let select_exprs = self.prepare_select_exprs(&plan, &select.projection)?;
 
-        // All of the aggregate expressions (deduplicated).
-        let aggr_exprs = find_aggregate_exprs(&select_exprs);
+        // Optionally the HAVING expression.
+        let having_expr_opt = select
+            .having
+            .as_ref()
+            .map::<Result<Expr>, _>(|having_expr| {
+                let having_expr = self.sql_expr_to_logical_expr(having_expr)?;
 
-        let (plan, select_exprs_post_aggr) =
+                // This step "dereferences" any aliases in the HAVING clause.
+                //
+                // This is how we support queries with HAVING expressions that
+                // refer to aliased columns.
+                //
+                // For example:
+                //
+                //   SELECT c1 AS m FROM t HAVING m > 10;
+                //   SELECT c1, MAX(c2) AS m FROM t GROUP BY c1 HAVING m > 10;
+                //
+                // are rewritten as, respectively:
+                //
+                //   SELECT c1 AS m FROM t HAVING c1 > 10;
+                //   SELECT c1, MAX(c2) AS m FROM t GROUP BY c1 HAVING MAX(c2) > 10;
+                //
+                let having_expr = resolve_aliases_to_exprs(
+                    &having_expr,
+                    &extract_aliases(&select_exprs),
+                )?;
+
+                Ok(having_expr)
+            })
+            .transpose()?;
+
+        // The outer expressions we will search through for
+        // aggregates. Aggregates may be sourced from the SELECT...
+        let mut aggr_expr_haystack = select_exprs.clone();
+
+        // ... or from the HAVING.
+        if let Some(having_expr) = &having_expr_opt {
+            aggr_expr_haystack.push(having_expr.clone());
+        }
+
+        // All of the aggregate expressions (deduplicated).
+        let aggr_exprs = find_aggregate_exprs(&aggr_expr_haystack);
+
+        let (plan, select_exprs_post_aggr, having_expr_post_aggr_opt) =
             if !select.group_by.is_empty() || !aggr_exprs.is_empty() {
-                self.aggregate(&plan, &select_exprs, &select.group_by, &aggr_exprs)?
+                self.aggregate(
+                    &plan,
+                    &select_exprs,
+                    &having_expr_opt,
+                    &select.group_by,
+                    aggr_exprs,
+                )?
             } else {
-                (plan, select_exprs)
+                if let Some(having_expr) = &having_expr_opt {
+                    let available_columns = select_exprs
+                        .iter()
+                        .map(|expr| expr_as_column_expr(expr, &plan))
+                        .collect::<Result<Vec<Expr>>>()?;
+
+                    // Ensure the HAVING expression is using only columns
+                    // provided by the SELECT.
+                    if !can_columns_satisfy_exprs(
+                        &available_columns,
+                        &[having_expr.clone()],
+                    )? {
+                        return Err(DataFusionError::Plan(
+                            "Having references column(s) not provided by the select"
+                                .to_owned(),
+                        ));
+                    }
+                }
+
+                (plan, select_exprs, having_expr_opt)
             };
 
-        self.project(&plan, &select_exprs_post_aggr, false)
+        let plan = if let Some(having_expr_post_aggr) = having_expr_post_aggr_opt {
+            LogicalPlanBuilder::from(&plan)
+                .filter(having_expr_post_aggr)?
+                .build()?
+        } else {
+            plan
+        };
+
+        self.project(&plan, select_exprs_post_aggr, false)
     }
 
     /// Returns the `Expr`'s corresponding to a SQL query's SELECT expressions.
@@ -440,7 +620,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
     fn prepare_select_exprs(
         &self,
         plan: &LogicalPlan,
-        projection: &Vec<SelectItem>,
+        projection: &[SelectItem],
     ) -> Result<Vec<Expr>> {
         let input_schema = plan.schema();
 
@@ -462,7 +642,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
     fn project(
         &self,
         input: &LogicalPlan,
-        expr: &[Expr],
+        expr: Vec<Expr>,
         force: bool,
     ) -> Result<LogicalPlan> {
         self.validate_schema_satisfies_exprs(&input.schema(), &expr)?;
@@ -485,9 +665,10 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
         &self,
         input: &LogicalPlan,
         select_exprs: &[Expr],
+        having_expr_opt: &Option<Expr>,
         group_by: &[SQLExpr],
-        aggr_exprs: &[Expr],
-    ) -> Result<(LogicalPlan, Vec<Expr>)> {
+        aggr_exprs: Vec<Expr>,
+    ) -> Result<(LogicalPlan, Vec<Expr>, Option<Expr>)> {
         let group_by_exprs = group_by
             .iter()
             .map(|e| self.sql_to_rex(e, &input.schema()))
@@ -500,7 +681,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             .collect::<Vec<Expr>>();
 
         let plan = LogicalPlanBuilder::from(&input)
-            .aggregate(&group_by_exprs, aggr_exprs)?
+            .aggregate(group_by_exprs, aggr_exprs)?
             .build()?;
 
         // After aggregation, these are all of the columns that will be
@@ -523,7 +704,27 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             ));
         }
 
-        Ok((plan, select_exprs_post_aggr))
+        // Rewrite the HAVING expression to use the columns produced by the
+        // aggregation.
+        let having_expr_post_aggr_opt = if let Some(having_expr) = having_expr_opt {
+            let having_expr_post_aggr =
+                rebase_expr(having_expr, &aggr_projection_exprs, input)?;
+
+            if !can_columns_satisfy_exprs(
+                &column_exprs_post_aggr,
+                &[having_expr_post_aggr.clone()],
+            )? {
+                return Err(DataFusionError::Plan(
+                    "Having references non-aggregate values".to_owned(),
+                ));
+            }
+
+            Some(having_expr_post_aggr)
+        } else {
+            None
+        };
+
+        Ok((plan, select_exprs_post_aggr, having_expr_post_aggr_opt))
     }
 
     /// Wrap a plan in a limit
@@ -558,7 +759,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             .iter()
             .map(|e| {
                 Ok(Expr::Sort {
-                    expr: Box::new(self.sql_to_rex(&e.expr, &input_schema).unwrap()),
+                    expr: Box::new(self.sql_to_rex(&e.expr, &input_schema)?),
                     // by default asc
                     asc: e.asc.unwrap_or(true),
                     // by default nulls first to be consistent with spark
@@ -567,9 +768,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             })
             .collect();
 
-        LogicalPlanBuilder::from(&plan)
-            .sort(&order_by_rex?)?
-            .build()
+        LogicalPlanBuilder::from(&plan).sort(order_by_rex?)?.build()
     }
 
     /// Validate the schema provides all of the columns referenced in the expressions.
@@ -626,7 +825,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
 
     fn sql_expr_to_logical_expr(&self, sql: &SQLExpr) -> Result<Expr> {
         match sql {
-            SQLExpr::Value(Value::Number(n)) => match n.parse::<i64>() {
+            SQLExpr::Value(Value::Number(n, _)) => match n.parse::<i64>() {
                 Ok(n) => Ok(lit(n)),
                 Err(_) => Ok(lit(n.parse::<f64>().unwrap())),
             },
@@ -635,6 +834,27 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             SQLExpr::Value(Value::Boolean(n)) => Ok(lit(*n)),
 
             SQLExpr::Value(Value::Null) => Ok(Expr::Literal(ScalarValue::Utf8(None))),
+            SQLExpr::Extract { field, expr } => Ok(Expr::ScalarFunction {
+                fun: functions::BuiltinScalarFunction::DatePart,
+                args: vec![
+                    Expr::Literal(ScalarValue::Utf8(Some(format!("{}", field)))),
+                    self.sql_expr_to_logical_expr(expr)?,
+                ],
+            }),
+
+            SQLExpr::Value(Value::Interval {
+                value,
+                leading_field,
+                leading_precision,
+                last_field,
+                fractional_seconds_precision,
+            }) => self.sql_interval_to_literal(
+                value,
+                leading_field,
+                leading_precision,
+                last_field,
+                fractional_seconds_precision,
+            ),
 
             SQLExpr::Identifier(ref id) => {
                 if &id.value[0..1] == "@" {
@@ -706,6 +926,14 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                 data_type: convert_data_type(data_type)?,
             }),
 
+            SQLExpr::TryCast {
+                ref expr,
+                ref data_type,
+            } => Ok(Expr::TryCast {
+                expr: Box::new(self.sql_expr_to_logical_expr(&expr)?),
+                data_type: convert_data_type(data_type)?,
+            }),
+
             SQLExpr::TypedString {
                 ref data_type,
                 ref value,
@@ -731,7 +959,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                     match expr.as_ref() {
                         // optimization: if it's a number literal, we applly the negative operator
                         // here directly to calculate the new literal.
-                        SQLExpr::Value(Value::Number(n)) => match n.parse::<i64>() {
+                        SQLExpr::Value(Value::Number(n,_)) => match n.parse::<i64>() {
                             Ok(n) => Ok(lit(-n)),
                             Err(_) => Ok(lit(-n
                                 .parse::<f64>()
@@ -815,7 +1043,19 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
             }
 
             SQLExpr::Function(function) => {
-                let name: String = function.name.to_string();
+                let name = if function.name.0.len() > 1 {
+                    // DF doesn't handle compound identifiers
+                    // (e.g. "foo.bar") for function names yet
+                    function.name.to_string()
+                } else {
+                    // if there is a quote style, then don't normalize
+                    // the name, otherwise normalize to lowercase
+                    let ident = &function.name.0[0];
+                    match ident.quote_style {
+                        Some(_) => ident.value.clone(),
+                        None => ident.value.to_ascii_lowercase(),
+                    }
+                };
 
                 // first, scalar built-in
                 if let Ok(fun) = functions::BuiltinScalarFunction::from_str(&name) {
@@ -836,6 +1076,7 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                             .iter()
                             .map(|a| match a {
                                 FunctionArg::Unnamed(SQLExpr::Value(Value::Number(
+                                    _,
                                     _,
                                 ))) => Ok(lit(1_u8)),
                                 FunctionArg::Unnamed(SQLExpr::Wildcard) => Ok(lit(1_u8)),
@@ -893,6 +1134,263 @@ impl<'a, S: ContextProvider> SqlToRel<'a, S> {
                 sql
             ))),
         }
+    }
+
+    fn sql_interval_to_literal(
+        &self,
+        value: &str,
+        leading_field: &Option<DateTimeField>,
+        leading_precision: &Option<u64>,
+        last_field: &Option<DateTimeField>,
+        fractional_seconds_precision: &Option<u64>,
+    ) -> Result<Expr> {
+        if leading_field.is_some() {
+            return Err(DataFusionError::NotImplemented(format!(
+                "Unsupported Interval Expression with leading_field {:?}",
+                leading_field
+            )));
+        }
+
+        if leading_precision.is_some() {
+            return Err(DataFusionError::NotImplemented(format!(
+                "Unsupported Interval Expression with leading_precision {:?}",
+                leading_precision
+            )));
+        }
+
+        if last_field.is_some() {
+            return Err(DataFusionError::NotImplemented(format!(
+                "Unsupported Interval Expression with last_field {:?}",
+                last_field
+            )));
+        }
+
+        if fractional_seconds_precision.is_some() {
+            return Err(DataFusionError::NotImplemented(format!(
+                "Unsupported Interval Expression with fractional_seconds_precision {:?}",
+                fractional_seconds_precision
+            )));
+        }
+
+        const SECONDS_PER_HOUR: f32 = 3_600_f32;
+        const MILLIS_PER_SECOND: f32 = 1_000_f32;
+
+        // We are storing parts as integers, it's why we need to align parts fractional
+        // INTERVAL '0.5 MONTH' = 15 days, INTERVAL '1.5 MONTH' = 1 month 15 days
+        // INTERVAL '0.5 DAY' = 12 hours, INTERVAL '1.5 DAY' = 1 day 12 hours
+        let align_interval_parts = |month_part: f32,
+                                    mut day_part: f32,
+                                    mut milles_part: f32|
+         -> (i32, i32, f32) {
+            // Convert fractional month to days, It's not supported by Arrow types, but anyway
+            day_part += (month_part - (month_part as i32) as f32) * 30_f32;
+
+            // Convert fractional days to hours
+            milles_part += (day_part - ((day_part as i32) as f32))
+                * 24_f32
+                * SECONDS_PER_HOUR
+                * MILLIS_PER_SECOND;
+
+            (month_part as i32, day_part as i32, milles_part)
+        };
+
+        let calculate_from_part = |interval_period_str: &str,
+                                   interval_type: &str|
+         -> Result<(i32, i32, f32)> {
+            // @todo It's better to use Decimal in order to protect rounding errors
+            // Wait https://github.com/apache/arrow/pull/9232
+            let interval_period = match f32::from_str(interval_period_str) {
+                Ok(n) => n,
+                Err(_) => {
+                    return Err(DataFusionError::SQL(ParserError(format!(
+                        "Unsupported Interval Expression with value {:?}",
+                        value
+                    ))))
+                }
+            };
+
+            if interval_period > (i32::MAX as f32) {
+                return Err(DataFusionError::NotImplemented(format!(
+                    "Interval field value out of range: {:?}",
+                    value
+                )));
+            }
+
+            match interval_type.to_lowercase().as_str() {
+                "year" => Ok(align_interval_parts(interval_period * 12_f32, 0.0, 0.0)),
+                "month" => Ok(align_interval_parts(interval_period, 0.0, 0.0)),
+                "day" | "days" => Ok(align_interval_parts(0.0, interval_period, 0.0)),
+                "hour" | "hours" => {
+                    Ok((0, 0, interval_period * SECONDS_PER_HOUR * MILLIS_PER_SECOND))
+                }
+                "minutes" | "minute" => {
+                    Ok((0, 0, interval_period * 60_f32 * MILLIS_PER_SECOND))
+                }
+                "seconds" | "second" => Ok((0, 0, interval_period * MILLIS_PER_SECOND)),
+                "milliseconds" | "millisecond" => Ok((0, 0, interval_period)),
+                _ => Err(DataFusionError::NotImplemented(format!(
+                    "Invalid input syntax for type interval: {:?}",
+                    value
+                ))),
+            }
+        };
+
+        let mut result_month: i64 = 0;
+        let mut result_days: i64 = 0;
+        let mut result_millis: i64 = 0;
+
+        let mut parts = value.split_whitespace();
+
+        loop {
+            let interval_period_str = parts.next();
+            if interval_period_str.is_none() {
+                break;
+            }
+
+            let (diff_month, diff_days, diff_millis) = calculate_from_part(
+                interval_period_str.unwrap(),
+                parts.next().unwrap_or("second"),
+            )?;
+
+            result_month += diff_month as i64;
+
+            if result_month > (i32::MAX as i64) {
+                return Err(DataFusionError::NotImplemented(format!(
+                    "Interval field value out of range: {:?}",
+                    value
+                )));
+            }
+
+            result_days += diff_days as i64;
+
+            if result_days > (i32::MAX as i64) {
+                return Err(DataFusionError::NotImplemented(format!(
+                    "Interval field value out of range: {:?}",
+                    value
+                )));
+            }
+
+            result_millis += diff_millis as i64;
+
+            if result_millis > (i32::MAX as i64) {
+                return Err(DataFusionError::NotImplemented(format!(
+                    "Interval field value out of range: {:?}",
+                    value
+                )));
+            }
+        }
+
+        // Interval is tricky thing
+        // 1 day is not 24 hours because timezones, 1 year != 365/364! 30 days != 1 month
+        // The true way to store and calculate intervals is to store it as it defined
+        // Due the fact that Arrow supports only two types YearMonth (month) and DayTime (day, time)
+        // It's not possible to store complex intervals
+        // It's possible to do select (NOW() + INTERVAL '1 year') + INTERVAL '1 day'; as workaround
+        if result_month != 0 && (result_days != 0 || result_millis != 0) {
+            return Err(DataFusionError::NotImplemented(format!(
+                "DF does not support intervals that have both a Year/Month part as well as Days/Hours/Mins/Seconds: {:?}. Hint: try breaking the interval into two parts, one with Year/Month and the other with Days/Hours/Mins/Seconds - e.g. (NOW() + INTERVAL '1 year') + INTERVAL '1 day'",
+                value
+            )));
+        }
+
+        if result_month != 0 {
+            return Ok(Expr::Literal(ScalarValue::IntervalYearMonth(Some(
+                result_month as i32,
+            ))));
+        }
+
+        let result: i64 = (result_days << 32) | result_millis;
+        Ok(Expr::Literal(ScalarValue::IntervalDayTime(Some(result))))
+    }
+
+    fn show_variable_to_plan(&self, variable: &[Ident]) -> Result<LogicalPlan> {
+        // Special case SHOW TABLES
+        let variable = ObjectName(variable.to_vec()).to_string();
+        if variable.as_str().eq_ignore_ascii_case("tables") {
+            if self.has_table("information_schema", "tables") {
+                let rewrite =
+                    DFParser::parse_sql("SELECT * FROM information_schema.tables;")?;
+                self.statement_to_plan(&rewrite[0])
+            } else {
+                Err(DataFusionError::Plan(
+                    "SHOW TABLES is not supported unless information_schema is enabled"
+                        .to_string(),
+                ))
+            }
+        } else {
+            Err(DataFusionError::NotImplemented(format!(
+                "SHOW {} not implemented. Supported syntax: SHOW <TABLES>",
+                variable
+            )))
+        }
+    }
+
+    fn show_columns_to_plan(
+        &self,
+        extended: bool,
+        full: bool,
+        table_name: &ObjectName,
+        filter: Option<&ShowStatementFilter>,
+    ) -> Result<LogicalPlan> {
+        if filter.is_some() {
+            return Err(DataFusionError::Plan(
+                "SHOW COLUMNS with WHERE or LIKE is not supported".to_string(),
+            ));
+        }
+
+        if !self.has_table("information_schema", "columns") {
+            return Err(DataFusionError::Plan(
+                "SHOW COLUMNS is not supported unless information_schema is enabled"
+                    .to_string(),
+            ));
+        }
+
+        if self
+            .schema_provider
+            .get_table_provider(table_name.try_into()?)
+            .is_none()
+        {
+            return Err(DataFusionError::Plan(format!(
+                "Unknown relation for SHOW COLUMNS: {}",
+                table_name
+            )));
+        }
+
+        // Figure out the where clause
+        let columns = vec!["table_name", "table_schema", "table_catalog"].into_iter();
+        let where_clause = table_name
+            .0
+            .iter()
+            .rev()
+            .zip(columns)
+            .map(|(ident, column_name)| {
+                format!(r#"{} = '{}'"#, column_name, ident.to_string())
+            })
+            .collect::<Vec<_>>()
+            .join(" AND ");
+
+        // treat both FULL and EXTENDED as the same
+        let select_list = if full || extended {
+            "*"
+        } else {
+            "table_catalog, table_schema, table_name, column_name, data_type, is_nullable"
+        };
+
+        let query = format!(
+            "SELECT {} FROM information_schema.columns WHERE {}",
+            select_list, where_clause
+        );
+
+        let rewrite = DFParser::parse_sql(&query)?;
+        self.statement_to_plan(&rewrite[0])
+    }
+
+    /// Return true if there is a table provider available for "schema.table"
+    fn has_table(&self, schema: &str, table: &str) -> bool {
+        let tables_reference = TableReference::Partial { schema, table };
+        self.schema_provider
+            .get_table_provider(tables_reference)
+            .is_some()
     }
 }
 
@@ -1136,7 +1634,8 @@ mod tests {
 
     #[test]
     fn test_timestamp_filter() {
-        let sql = "SELECT state FROM person WHERE birth_date < CAST (158412331400600000 as timestamp)";
+        let sql =
+            "SELECT state FROM person WHERE birth_date < CAST (158412331400600000 as timestamp)";
 
         let expected = "Projection: #state\
             \n  Filter: #birth_date Lt CAST(Int64(158412331400600000) AS Timestamp(Nanosecond, None))\
@@ -1230,6 +1729,286 @@ mod tests {
                         \n    Filter: #age Gt Int64(20)\
                         \n      TableScan: person projection=None";
 
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_with_having() {
+        let sql = "SELECT id, age
+                   FROM person
+                   HAVING age > 100 AND age < 200";
+        let expected = "Projection: #id, #age\
+                        \n  Filter: #age Gt Int64(100) And #age Lt Int64(200)\
+                        \n    TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_with_having_referencing_column_not_in_select() {
+        let sql = "SELECT id, age
+                   FROM person
+                   HAVING first_name = 'M'";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "Plan(\"Having references column(s) not provided by the select\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
+    fn select_with_having_referencing_column_nested_in_select_expression() {
+        let sql = "SELECT id, age + 1
+                   FROM person
+                   HAVING age > 100";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "Plan(\"Having references column(s) not provided by the select\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
+    fn select_with_having_with_aggregate_not_in_select() {
+        let sql = "SELECT first_name
+                   FROM person
+                   HAVING MAX(age) > 100";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "Plan(\"Projection references non-aggregate values\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
+    fn select_aggregate_with_having_that_reuses_aggregate() {
+        let sql = "SELECT MAX(age)
+                   FROM person
+                   HAVING MAX(age) < 30";
+        let expected = "Filter: #MAX(age) Lt Int64(30)\
+                        \n  Aggregate: groupBy=[[]], aggr=[[MAX(#age)]]\
+                        \n    TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_having_with_aggregate_not_in_select() {
+        let sql = "SELECT MAX(age)
+                   FROM person
+                   HAVING MAX(first_name) > 'M'";
+        let expected = "Projection: #MAX(age)\
+                        \n  Filter: #MAX(first_name) Gt Utf8(\"M\")\
+                        \n    Aggregate: groupBy=[[]], aggr=[[MAX(#age), MAX(#first_name)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_having_referencing_column_not_in_select() {
+        let sql = "SELECT COUNT(*)
+                   FROM person
+                   HAVING first_name = 'M'";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "Plan(\"Having references non-aggregate values\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
+    fn select_aggregate_aliased_with_having_referencing_aggregate_by_its_alias() {
+        let sql = "SELECT MAX(age) as max_age
+                   FROM person
+                   HAVING max_age < 30";
+        let expected = "Projection: #MAX(age) AS max_age\
+                        \n  Filter: #MAX(age) Lt Int64(30)\
+                        \n    Aggregate: groupBy=[[]], aggr=[[MAX(#age)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_aliased_with_having_that_reuses_aggregate_but_not_by_its_alias() {
+        let sql = "SELECT MAX(age) as max_age
+                   FROM person
+                   HAVING MAX(age) < 30";
+        let expected = "Projection: #MAX(age) AS max_age\
+                        \n  Filter: #MAX(age) Lt Int64(30)\
+                        \n    Aggregate: groupBy=[[]], aggr=[[MAX(#age)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having() {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING first_name = 'M'";
+        let expected = "Filter: #first_name Eq Utf8(\"M\")\
+                        \n  Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n    TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_and_where() {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   WHERE id > 5
+                   GROUP BY first_name
+                   HAVING MAX(age) < 100";
+        let expected = "Filter: #MAX(age) Lt Int64(100)\
+                        \n  Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n    Filter: #id Gt Int64(5)\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_and_where_filtering_on_aggregate_column(
+    ) {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   WHERE id > 5 AND age > 18
+                   GROUP BY first_name
+                   HAVING MAX(age) < 100";
+        let expected = "Filter: #MAX(age) Lt Int64(100)\
+                        \n  Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n    Filter: #id Gt Int64(5) And #age Gt Int64(18)\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_using_column_by_alias() {
+        let sql = "SELECT first_name AS fn, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 2 AND fn = 'M'";
+        let expected = "Projection: #first_name AS fn, #MAX(age)\
+                        \n  Filter: #MAX(age) Gt Int64(2) And #first_name Eq Utf8(\"M\")\
+                        \n    Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_using_columns_with_and_without_their_aliases(
+    ) {
+        let sql = "SELECT first_name AS fn, MAX(age) AS max_age
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 2 AND max_age < 5 AND first_name = 'M' AND fn = 'N'";
+        let expected = "Projection: #first_name AS fn, #MAX(age) AS max_age\
+                        \n  Filter: #MAX(age) Gt Int64(2) And #MAX(age) Lt Int64(5) And #first_name Eq Utf8(\"M\") And #first_name Eq Utf8(\"N\")\
+                        \n    Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_that_reuses_aggregate() {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 100";
+        let expected = "Filter: #MAX(age) Gt Int64(100)\
+                        \n  Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n    TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_referencing_column_not_in_group_by() {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 10 AND last_name = 'M'";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "Plan(\"Having references non-aggregate values\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_that_reuses_aggregate_multiple_times() {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 100 AND MAX(age) < 200";
+        let expected = "Filter: #MAX(age) Gt Int64(100) And #MAX(age) Lt Int64(200)\
+                        \n  Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n    TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_using_aggreagate_not_in_select() {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 100 AND MIN(id) < 50";
+        let expected = "Projection: #first_name, #MAX(age)\
+                        \n  Filter: #MAX(age) Gt Int64(100) And #MIN(id) Lt Int64(50)\
+                        \n    Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age), MIN(#id)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_aliased_with_group_by_with_having_referencing_aggregate_by_its_alias(
+    ) {
+        let sql = "SELECT first_name, MAX(age) AS max_age
+                   FROM person
+                   GROUP BY first_name
+                   HAVING max_age > 100";
+        let expected = "Projection: #first_name, #MAX(age) AS max_age\
+                        \n  Filter: #MAX(age) Gt Int64(100)\
+                        \n    Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_compound_aliased_with_group_by_with_having_referencing_compound_aggregate_by_its_alias(
+    ) {
+        let sql = "SELECT first_name, MAX(age) + 1 AS max_age_plus_one
+                   FROM person
+                   GROUP BY first_name
+                   HAVING max_age_plus_one > 100";
+        let expected =
+            "Projection: #first_name, #MAX(age) Plus Int64(1) AS max_age_plus_one\
+                        \n  Filter: #MAX(age) Plus Int64(1) Gt Int64(100)\
+                        \n    Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age)]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_using_derived_column_aggreagate_not_in_select(
+    ) {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 100 AND MIN(id - 2) < 50";
+        let expected = "Projection: #first_name, #MAX(age)\
+                        \n  Filter: #MAX(age) Gt Int64(100) And #MIN(id Minus Int64(2)) Lt Int64(50)\
+                        \n    Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age), MIN(#id Minus Int64(2))]]\
+                        \n      TableScan: person projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn select_aggregate_with_group_by_with_having_using_count_star_not_in_select() {
+        let sql = "SELECT first_name, MAX(age)
+                   FROM person
+                   GROUP BY first_name
+                   HAVING MAX(age) > 100 AND COUNT(*) < 50";
+        let expected = "Projection: #first_name, #MAX(age)\
+                        \n  Filter: #MAX(age) Gt Int64(100) And #COUNT(UInt8(1)) Lt Int64(50)\
+                        \n    Aggregate: groupBy=[[#first_name]], aggr=[[MAX(#age), COUNT(UInt8(1))]]\
+                        \n      TableScan: person projection=None";
         quick_test(sql, expected);
     }
 
@@ -1401,6 +2180,26 @@ mod tests {
     }
 
     #[test]
+    fn select_interval_out_of_range() {
+        let sql = "SELECT INTERVAL '100000000000000000 day'";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "NotImplemented(\"Interval field value out of range: \\\"100000000000000000 day\\\"\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
+    fn select_unsupported_complex_interval() {
+        let sql = "SELECT INTERVAL '1 year 1 day'";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "NotImplemented(\"DF does not support intervals that have both a Year/Month part as well as Days/Hours/Mins/Seconds: \\\"1 year 1 day\\\". Hint: try breaking the interval into two parts, one with Year/Month and the other with Days/Hours/Mins/Seconds - e.g. (NOW() + INTERVAL \\\'1 year\\\') + INTERVAL \\\'1 day\\\'\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
     fn select_simple_aggregate_with_groupby_and_column_is_in_aggregate_and_groupby() {
         quick_test(
             "SELECT MAX(first_name) FROM person GROUP BY first_name",
@@ -1483,7 +2282,8 @@ mod tests {
     fn select_simple_aggregate_with_groupby_non_column_expression_nested_and_not_resolvable(
     ) {
         // The query should fail, because age + 9 is not in the group by.
-        let sql = "SELECT ((age + 1) / 2) * (age + 9), MIN(first_name) FROM person GROUP BY age + 1";
+        let sql =
+            "SELECT ((age + 1) / 2) * (age + 9), MIN(first_name) FROM person GROUP BY age + 1";
         let err = logical_plan(sql).expect_err("query should have failed");
         assert_eq!(
             "Plan(\"Projection references non-aggregate values\")",
@@ -1767,6 +2567,66 @@ mod tests {
     }
 
     #[test]
+    fn boolean_literal_in_condition_expression() {
+        let sql = "SELECT order_id \
+        FROM orders \
+        WHERE delivered = false OR delivered = true";
+        let expected = "Projection: #order_id\
+            \n  Filter: #delivered Eq Boolean(false) Or #delivered Eq Boolean(true)\
+            \n    TableScan: orders projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn union() {
+        let sql = "SELECT order_id from orders UNION ALL SELECT order_id FROM orders";
+        let expected = "Union\
+            \n  Projection: #order_id\
+            \n    TableScan: orders projection=None\
+            \n  Projection: #order_id\
+            \n    TableScan: orders projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn union_4_combined_in_one() {
+        let sql = "SELECT order_id from orders
+                    UNION ALL SELECT order_id FROM orders
+                    UNION ALL SELECT order_id FROM orders
+                    UNION ALL SELECT order_id FROM orders";
+        let expected = "Union\
+            \n  Projection: #order_id\
+            \n    TableScan: orders projection=None\
+            \n  Projection: #order_id\
+            \n    TableScan: orders projection=None\
+            \n  Projection: #order_id\
+            \n    TableScan: orders projection=None\
+            \n  Projection: #order_id\
+            \n    TableScan: orders projection=None";
+        quick_test(sql, expected);
+    }
+
+    #[test]
+    fn union_schemas_should_be_same() {
+        let sql = "SELECT order_id from orders UNION ALL SELECT customer_id FROM orders";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "Plan(\"UNION ALL schemas are expected to be the same\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
+    fn only_union_all_supported() {
+        let sql = "SELECT order_id from orders EXCEPT SELECT order_id FROM orders";
+        let err = logical_plan(sql).expect_err("query should have failed");
+        assert_eq!(
+            "NotImplemented(\"Only UNION ALL is supported, found EXCEPT\")",
+            format!("{:?}", err)
+        );
+    }
+
+    #[test]
     fn select_typedstring() {
         let sql = "SELECT date '2020-12-10' AS date FROM person";
         let expected = "Projection: CAST(Utf8(\"2020-12-10\") AS Date32) AS date\
@@ -1792,9 +2652,9 @@ mod tests {
     impl ContextProvider for MockContextProvider {
         fn get_table_provider(
             &self,
-            name: &str,
-        ) -> Option<Arc<dyn TableProvider + Send + Sync>> {
-            let schema = match name {
+            name: TableReference,
+        ) -> Option<Arc<dyn TableProvider>> {
+            let schema = match name.table() {
                 "person" => Some(Schema::new(vec![
                     Field::new("id", DataType::UInt32, false),
                     Field::new("first_name", DataType::Utf8, false),
@@ -1814,6 +2674,7 @@ mod tests {
                     Field::new("o_item_id", DataType::Utf8, false),
                     Field::new("qty", DataType::Int32, false),
                     Field::new("price", DataType::Float64, false),
+                    Field::new("delivered", DataType::Boolean, false),
                 ])),
                 "lineitem" => Some(Schema::new(vec![
                     Field::new("l_item_id", DataType::UInt32, false),
@@ -1836,7 +2697,7 @@ mod tests {
                 ])),
                 _ => None,
             };
-            schema.map(|s| -> Arc<dyn TableProvider + Send + Sync> {
+            schema.map(|s| -> Arc<dyn TableProvider> {
                 Arc::new(EmptyTable::new(Arc::new(s)))
             })
         }

@@ -20,19 +20,21 @@
 set -exu
 
 if [ $# -lt 2 ]; then
-  echo "Usage: $0 X.Y.Z IS_RC"
-  echo "       $0 X.Y.Z IS_RC BINTRAY_REPOSITORY"
-  echo " e.g.: $0 0.13.0 yes           # Verify 0.13.0 RC"
-  echo " e.g.: $0 0.13.0 no            # Verify 0.13.0"
-  echo " e.g.: $0 0.13.0 yes kou/arrow # Verify 0.13.0 RC at https://bintray.com/kou/arrow"
+  echo "Usage: $0 VERSION rc"
+  echo "       $0 VERSION rc BINTRAY_REPOSITORY"
+  echo "       $0 VERSION release"
+  echo "       $0 VERSION local"
+  echo " e.g.: $0 0.13.0 rc           # Verify 0.13.0 RC"
+  echo " e.g.: $0 0.13.0 release      # Verify 0.13.0"
+  echo " e.g.: $0 0.13.0 rc kszucs/arrow # Verify 0.13.0 RC at https://bintray.com/kszucs/arrow"
+  echo " e.g.: $0 0.13.0-dev20210203 local # Verify 0.13.0-dev20210203 on local"
   exit 1
 fi
 
 VERSION="$1"
-IS_RC="$2"
-BINTRAY_REPOSITORY="${3:-apache/arrow}"
+TYPE="$2"
 
-deb_version="${VERSION}-1"
+local_prefix="/arrow/dev/tasks/linux-packages"
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -43,60 +45,96 @@ apt install -y -V \
 
 code_name="$(lsb_release --codename --short)"
 distribution="$(lsb_release --id --short | tr 'A-Z' 'a-z')"
-bintray_base_url="https://dl.bintray.com/${BINTRAY_REPOSITORY}/${distribution}"
-if [ "${IS_RC}" = "yes" ]; then
-  bintray_base_url="${bintray_base_url}-rc"
+artifactory_base_url="https://apache.jfrog.io/artifactory/arrow/${distribution}"
+if [ "${TYPE}" = "rc" ]; then
+  artifactory_base_url+="-rc"
 fi
 
 have_flight=yes
 have_plasma=yes
 workaround_missing_packages=()
 case "${distribution}-${code_name}" in
-  debian-buster)
+  debian-*)
     sed \
       -i"" \
       -e "s/ main$/ main contrib non-free/g" \
       /etc/apt/sources.list
-    ;;
-  ubuntu-xenial)
-    have_flight=no
-    workaround_missing_packages+=(libprotobuf-dev)
-    ;;
-  ubuntu-groovy)
-    workaround_missing_packages+=(libgrpc++-dev protobuf-compiler-grpc)
     ;;
 esac
 if [ "$(arch)" = "aarch64" ]; then
   have_plasma=no
 fi
 
-keyring_archive_base_name="apache-arrow-archive-keyring-latest-${code_name}.deb"
-curl \
-  --output "${keyring_archive_base_name}" \
-  "${bintray_base_url}/${keyring_archive_base_name}"
-apt install -y -V "./${keyring_archive_base_name}"
-if [ "${BINTRAY_REPOSITORY}" = "apache/arrow" ]; then
-  if [ "${IS_RC}" = "yes" ]; then
-    sed \
-      -i"" \
-      -e "s,^URIs: \\(.*\\)/,URIs: \\1-rc/,g" \
-      /etc/apt/sources.list.d/apache-arrow.sources
-  fi
+if [ "${TYPE}" = "local" ]; then
+  case "${VERSION}" in
+    *-dev*)
+      package_version="$(echo "${VERSION}" | sed -e 's/-dev\(.*\)$/~dev\1/g')"
+      ;;
+    *-rc*)
+      package_version="$(echo "${VERSION}" | sed -e 's/-rc.*$//g')"
+      ;;
+    *)
+      package_version="${VERSION}"
+      ;;
+  esac
+  package_version+="-1"
+  apt_source_path="${local_prefix}/apt/repositories"
+  apt_source_path+="/${distribution}/pool/${code_name}/main"
+  apt_source_path+="/a/apache-arrow-apt-source"
+  apt_source_path+="/apache-arrow-apt-source_${package_version}_all.deb"
+  apt install -y -V "${apt_source_path}"
 else
+  package_version="${VERSION}-1"
+  apt_source_base_name="apache-arrow-apt-source-latest-${code_name}.deb"
+  if [ $# -eq 3 ]; then
+    curl \
+      --output "${apt_source_base_name}" \
+      "https://dl.bintray.com/$3/${distribution}-rc/${apt_source_base_name}"
+  else
+    curl \
+      --output "${apt_source_base_name}" \
+      "${artifactory_base_url}/${apt_source_base_name}"
+  fi
+  apt install -y -V "./${apt_source_base_name}"
+fi
+
+if [ "${TYPE}" = "local" ]; then
   sed \
     -i"" \
-    -e "s,^URIs: .*,URIs: ${bintray_base_url}/,g" \
+    -e "s,^URIs: .*$,URIs: file://${local_prefix}/apt/repositories/${distribution},g" \
     /etc/apt/sources.list.d/apache-arrow.sources
+  keys="${local_prefix}/KEYS"
+  if [ -f "${keys}" ]; then
+    gpg \
+      --no-default-keyring \
+      --keyring /usr/share/keyrings/apache-arrow-apt-source.gpg \
+      --import "${keys}"
+  fi
+else
+  if [ "${TYPE}" = "rc" ]; then
+    if [ $# -eq 3 ]; then
+      sed \
+        -i"" \
+        -e "s,^URIs: .*/,URIs: https://dl.bintray.com/$3/${distribution}-rc/,g" \
+        /etc/apt/sources.list.d/apache-arrow.sources
+    else
+      sed \
+        -i"" \
+        -e "s,^URIs: \\(.*\\)/,URIs: \\1-rc/,g" \
+        /etc/apt/sources.list.d/apache-arrow.sources
+    fi
+  fi
 fi
 
 apt update
 
-apt install -y -V libarrow-glib-dev=${deb_version}
-apt install -y -V \
-  cmake \
-  g++ \
-  git \
-  ${workaround_missing_packages[@]}
+apt install -y -V libarrow-glib-dev=${package_version}
+required_packages=()
+required_packages+=(cmake)
+required_packages+=(g++)
+required_packages+=(git)
+required_packages+=(${workaround_missing_packages[@]})
+apt install -y -V ${required_packages[@]}
 mkdir -p build
 cp -a /arrow/cpp/examples/minimal_build build
 pushd build/minimal_build
@@ -105,23 +143,23 @@ make -j$(nproc)
 ./arrow_example
 popd
 
-apt install -y -V libarrow-glib-dev=${deb_version}
-apt install -y -V libarrow-glib-doc=${deb_version}
+apt install -y -V libarrow-glib-dev=${package_version}
+apt install -y -V libarrow-glib-doc=${package_version}
 
 if [ "${have_flight}" = "yes" ]; then
-  apt install -y -V libarrow-flight-dev=${deb_version}
+  apt install -y -V libarrow-flight-dev=${package_version}
 fi
 
-apt install -y -V libarrow-python-dev=${deb_version}
+apt install -y -V libarrow-python-dev=${package_version}
 
 if [ "${have_plasma}" = "yes" ]; then
-  apt install -y -V libplasma-glib-dev=${deb_version}
-  apt install -y -V libplasma-glib-doc=${deb_version}
-  apt install -y -V plasma-store-server=${deb_version}
+  apt install -y -V libplasma-glib-dev=${package_version}
+  apt install -y -V libplasma-glib-doc=${package_version}
+  apt install -y -V plasma-store-server=${package_version}
 fi
 
-apt install -y -V libgandiva-glib-dev=${deb_version}
-apt install -y -V libgandiva-glib-doc=${deb_version}
+apt install -y -V libgandiva-glib-dev=${package_version}
+apt install -y -V libgandiva-glib-doc=${package_version}
 
-apt install -y -V libparquet-glib-dev=${deb_version}
-apt install -y -V libparquet-glib-doc=${deb_version}
+apt install -y -V libparquet-glib-dev=${package_version}
+apt install -y -V libparquet-glib-doc=${package_version}

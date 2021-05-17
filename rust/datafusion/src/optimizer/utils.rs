@@ -26,7 +26,7 @@ use crate::logical_plan::{
     Expr, LogicalPlan, Operator, Partitioning, PlanType, Recursion, StringifiedPlan,
     ToDFSchema,
 };
-use crate::prelude::{col, lit};
+use crate::prelude::lit;
 use crate::scalar::ScalarValue;
 use crate::{
     error::{DataFusionError, Result},
@@ -73,6 +73,7 @@ impl ExpressionVisitor for ColumnNameVisitor<'_> {
             Expr::Between { .. } => {}
             Expr::Case { .. } => {}
             Expr::Cast { .. } => {}
+            Expr::TryCast { .. } => {}
             Expr::Sort { .. } => {}
             Expr::ScalarFunction { .. } => {}
             Expr::ScalarUDF { .. } => {}
@@ -98,14 +99,14 @@ pub fn optimize_explain(
     optimizer: &impl OptimizerRule,
     verbose: bool,
     plan: &LogicalPlan,
-    stringified_plans: &Vec<StringifiedPlan>,
+    stringified_plans: &[StringifiedPlan],
     schema: &Schema,
 ) -> Result<LogicalPlan> {
     // These are the fields of LogicalPlan::Explain It might be nice
     // to transform that enum Variant into its own struct and avoid
     // passing the fields individually
     let plan = Arc::new(optimizer.optimize(plan)?);
-    let mut stringified_plans = stringified_plans.clone();
+    let mut stringified_plans = stringified_plans.to_vec();
     let optimizer_name = optimizer.name().into();
     stringified_plans.push(StringifiedPlan::new(
         PlanType::OptimizedLogicalPlan { optimizer_name },
@@ -144,8 +145,9 @@ pub fn optimize_children(
         );
     }
 
-    let new_exprs = expressions(&plan);
-    let new_inputs = inputs(&plan)
+    let new_exprs = plan.expressions();
+    let new_inputs = plan
+        .inputs()
         .into_iter()
         .map(|plan| optimizer.optimize(plan))
         .collect::<Result<Vec<_>>>()?;
@@ -153,69 +155,15 @@ pub fn optimize_children(
     from_plan(plan, &new_exprs, &new_inputs)
 }
 
-/// returns all expressions (non-recursively) in the current logical plan node.
-pub fn expressions(plan: &LogicalPlan) -> Vec<Expr> {
-    match plan {
-        LogicalPlan::Projection { expr, .. } => expr.clone(),
-        LogicalPlan::Filter { predicate, .. } => vec![predicate.clone()],
-        LogicalPlan::Repartition {
-            partitioning_scheme,
-            ..
-        } => match partitioning_scheme {
-            Partitioning::Hash(expr, _) => expr.clone(),
-            _ => vec![],
-        },
-        LogicalPlan::Aggregate {
-            group_expr,
-            aggr_expr,
-            ..
-        } => {
-            let mut result = group_expr.clone();
-            result.extend(aggr_expr.clone());
-            result
-        }
-        LogicalPlan::Join { on, .. } => {
-            on.iter().flat_map(|(l, r)| vec![col(l), col(r)]).collect()
-        }
-        LogicalPlan::Sort { expr, .. } => expr.clone(),
-        LogicalPlan::Extension { node } => node.expressions(),
-        // plans without expressions
-        LogicalPlan::TableScan { .. }
-        | LogicalPlan::EmptyRelation { .. }
-        | LogicalPlan::Limit { .. }
-        | LogicalPlan::CreateExternalTable { .. }
-        | LogicalPlan::Explain { .. } => vec![],
-    }
-}
-
-/// returns all inputs in the logical plan
-pub fn inputs(plan: &LogicalPlan) -> Vec<&LogicalPlan> {
-    match plan {
-        LogicalPlan::Projection { input, .. } => vec![input],
-        LogicalPlan::Filter { input, .. } => vec![input],
-        LogicalPlan::Repartition { input, .. } => vec![input],
-        LogicalPlan::Aggregate { input, .. } => vec![input],
-        LogicalPlan::Sort { input, .. } => vec![input],
-        LogicalPlan::Join { left, right, .. } => vec![left, right],
-        LogicalPlan::Limit { input, .. } => vec![input],
-        LogicalPlan::Extension { node } => node.inputs(),
-        // plans without inputs
-        LogicalPlan::TableScan { .. }
-        | LogicalPlan::EmptyRelation { .. }
-        | LogicalPlan::CreateExternalTable { .. }
-        | LogicalPlan::Explain { .. } => vec![],
-    }
-}
-
 /// Returns a new logical plan based on the original one with inputs and expressions replaced
 pub fn from_plan(
     plan: &LogicalPlan,
-    expr: &Vec<Expr>,
-    inputs: &Vec<LogicalPlan>,
+    expr: &[Expr],
+    inputs: &[LogicalPlan],
 ) -> Result<LogicalPlan> {
     match plan {
         LogicalPlan::Projection { schema, .. } => Ok(LogicalPlan::Projection {
-            expr: expr.clone(),
+            expr: expr.to_vec(),
             input: Arc::new(inputs[0].clone()),
             schema: schema.clone(),
         }),
@@ -245,7 +193,7 @@ pub fn from_plan(
             schema: schema.clone(),
         }),
         LogicalPlan::Sort { .. } => Ok(LogicalPlan::Sort {
-            expr: expr.clone(),
+            expr: expr.to_vec(),
             input: Arc::new(inputs[0].clone()),
         }),
         LogicalPlan::Join {
@@ -266,6 +214,11 @@ pub fn from_plan(
         }),
         LogicalPlan::Extension { node } => Ok(LogicalPlan::Extension {
             node: node.from_template(expr, inputs),
+        }),
+        LogicalPlan::Union { schema, alias, .. } => Ok(LogicalPlan::Union {
+            inputs: inputs.to_vec(),
+            schema: schema.clone(),
+            alias: alias.clone(),
         }),
         LogicalPlan::EmptyRelation { .. }
         | LogicalPlan::TableScan { .. }
@@ -309,6 +262,7 @@ pub fn expr_sub_expressions(expr: &Expr) -> Result<Vec<Expr>> {
             Ok(expr_list)
         }
         Expr::Cast { expr, .. } => Ok(vec![expr.as_ref().to_owned()]),
+        Expr::TryCast { expr, .. } => Ok(vec![expr.as_ref().to_owned()]),
         Expr::Column(_) => Ok(vec![]),
         Expr::Alias(expr, ..) => Ok(vec![expr.as_ref().to_owned()]),
         Expr::Literal(_) => Ok(vec![]),
@@ -339,7 +293,7 @@ pub fn expr_sub_expressions(expr: &Expr) -> Result<Vec<Expr>> {
 /// returns a new expression where the expressions in `expr` are replaced by the ones in
 /// `expressions`.
 /// This is used in conjunction with ``expr_expressions`` to re-write expressions.
-pub fn rewrite_expression(expr: &Expr, expressions: &Vec<Expr>) -> Result<Expr> {
+pub fn rewrite_expression(expr: &Expr, expressions: &[Expr]) -> Result<Expr> {
     match expr {
         Expr::BinaryExpr { op, .. } => Ok(Expr::BinaryExpr {
             left: Box::new(expressions[0].clone()),
@@ -350,20 +304,20 @@ pub fn rewrite_expression(expr: &Expr, expressions: &Vec<Expr>) -> Result<Expr> 
         Expr::IsNotNull(_) => Ok(Expr::IsNotNull(Box::new(expressions[0].clone()))),
         Expr::ScalarFunction { fun, .. } => Ok(Expr::ScalarFunction {
             fun: fun.clone(),
-            args: expressions.clone(),
+            args: expressions.to_vec(),
         }),
         Expr::ScalarUDF { fun, .. } => Ok(Expr::ScalarUDF {
             fun: fun.clone(),
-            args: expressions.clone(),
+            args: expressions.to_vec(),
         }),
         Expr::AggregateFunction { fun, distinct, .. } => Ok(Expr::AggregateFunction {
             fun: fun.clone(),
-            args: expressions.clone(),
+            args: expressions.to_vec(),
             distinct: *distinct,
         }),
         Expr::AggregateUDF { fun, .. } => Ok(Expr::AggregateUDF {
             fun: fun.clone(),
-            args: expressions.clone(),
+            args: expressions.to_vec(),
         }),
         Expr::Case { .. } => {
             let mut base_expr: Option<Box<Expr>> = None;
@@ -402,6 +356,10 @@ pub fn rewrite_expression(expr: &Expr, expressions: &Vec<Expr>) -> Result<Expr> 
             })
         }
         Expr::Cast { data_type, .. } => Ok(Expr::Cast {
+            expr: Box::new(expressions[0].clone()),
+            data_type: data_type.clone(),
+        }),
+        Expr::TryCast { data_type, .. } => Ok(Expr::TryCast {
             expr: Box::new(expressions[0].clone()),
             data_type: data_type.clone(),
         }),
@@ -500,7 +458,7 @@ mod tests {
             &optimizer,
             true,
             &empty_plan,
-            &vec![StringifiedPlan::new(PlanType::LogicalPlan, "...")],
+            &[StringifiedPlan::new(PlanType::LogicalPlan, "...")],
             schema.as_ref(),
         )?;
 

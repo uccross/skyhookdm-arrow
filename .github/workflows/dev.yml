@@ -23,8 +23,6 @@ on:
   pull_request:
 
 env:
-  DOCKER_BUILDKIT: 0
-  COMPOSE_DOCKER_CLI_BUILD: 1
   ARCHERY_DOCKER_USER: ${{ secrets.DOCKERHUB_USER }}
   ARCHERY_DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -81,7 +79,7 @@ jobs:
         with:
           python-version: '3.6'
       - name: Install Ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: '2.6'
       - name: Install Dependencies

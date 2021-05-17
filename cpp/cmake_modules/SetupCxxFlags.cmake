@@ -410,6 +410,10 @@ endif(BUILD_WARNING_FLAGS)
 
 # Only enable additional instruction sets if they are supported
 if(ARROW_CPU_FLAG STREQUAL "x86")
+  if(MINGW)
+    # Enable _xgetbv() intrinsic to query OS support for ZMM register saves
+    set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} -mxsave")
+  endif()
   if(ARROW_SIMD_LEVEL STREQUAL "AVX512")
     if(NOT CXX_SUPPORTS_AVX512)
       message(FATAL_ERROR "AVX512 required but compiler doesn't support it.")
@@ -447,7 +451,10 @@ if(ARROW_CPU_FLAG STREQUAL "armv8")
   endif()
   set(CXX_COMMON_FLAGS "${CXX_COMMON_FLAGS} ${ARROW_ARMV8_ARCH_FLAG}")
 
-  add_definitions(-DARROW_HAVE_NEON)
+  if(NOT ARROW_SIMD_LEVEL STREQUAL "NONE")
+    set(ARROW_HAVE_NEON ON)
+    add_definitions(-DARROW_HAVE_NEON)
+  endif()
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
      AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.4")
