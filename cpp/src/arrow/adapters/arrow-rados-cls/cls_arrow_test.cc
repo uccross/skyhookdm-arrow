@@ -51,6 +51,10 @@ std::shared_ptr<arrow::dataset::ParquetFileFormat> GetParquetFormat() {
   return std::make_shared<arrow::dataset::ParquetFileFormat>();
 }
 
+std::shared_ptr<arrow::dataset::ParquetFileFormat> GetParquetFormat() {
+  return std::make_shared<arrow::dataset::ParquetFileFormat>();
+}
+
 std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromDirectory(
     std::shared_ptr<arrow::fs::FileSystem> fs,
     std::shared_ptr<arrow::dataset::FileFormat> format, std::string dir) {
