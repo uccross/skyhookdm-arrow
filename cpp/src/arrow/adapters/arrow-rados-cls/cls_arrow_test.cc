@@ -14,8 +14,6 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-#define _FILE_OFFSET_BITS 64
-
 #include <iostream>
 #include <random>
 
@@ -23,8 +21,8 @@
 #include <rados/librados.hpp>
 
 #include "arrow/api.h"
+#include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset.h"
-#include "arrow/dataset/expression.h"
 #include "arrow/dataset/file_base.h"
 #include "arrow/dataset/file_rados_parquet.h"
 #include "arrow/dataset/rados_utils.h"
@@ -86,7 +84,7 @@ std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromPath(
 
 std::shared_ptr<arrow::dataset::Scanner> GetScannerFromDataset(
     std::shared_ptr<arrow::dataset::Dataset> dataset, std::vector<std::string> columns,
-    arrow::dataset::Expression filter, bool use_threads) {
+    arrow::compute::Expression filter, bool use_threads) {
   auto scanner_builder = dataset->NewScan().ValueOrDie();
 
   if (!columns.empty()) {
@@ -107,7 +105,7 @@ TEST(TestClsSDK, SimpleQuery) {
 
   std::vector<std::string> columns = {"fare_amount", "total_amount"};
   auto scanner =
-      GetScannerFromDataset(dataset, columns, arrow::dataset::literal(true), false);
+      GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), false);
 
   auto table = scanner->ToTable().ValueOrDie();
   std::cout << "Table size: " << table->num_rows() << "\n";
@@ -122,8 +120,8 @@ TEST(TestClsSDK, QueryOnPartitionKey) {
   auto dataset = GetDatasetFromPath(fs, format, path);
 
   std::vector<std::string> columns = {"fare_amount", "VendorID", "payment_type"};
-  auto filter = arrow::dataset::greater(arrow::dataset::field_ref("payment_type"),
-                                        arrow::dataset::literal(2));
+  auto filter = arrow::compute::greater(arrow::compute::field_ref("payment_type"),
+                                        arrow::compute::literal(2));
 
   auto scanner = GetScannerFromDataset(dataset, columns, filter, false);
 
@@ -139,11 +137,11 @@ TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
   auto dataset = GetDatasetFromPath(fs, format, path);
 
   std::vector<std::string> columns = {"total_amount", "VendorID", "payment_type"};
-  auto filter = arrow::dataset::and_(
-      arrow::dataset::greater(arrow::dataset::field_ref("payment_type"),
-                              arrow::dataset::literal(2)),
-      arrow::dataset::greater(arrow::dataset::field_ref("VendorID"),
-                              arrow::dataset::literal(1)));
+  auto filter = arrow::compute::and_(
+      arrow::compute::greater(arrow::compute::field_ref("payment_type"),
+                              arrow::compute::literal(2)),
+      arrow::compute::greater(arrow::compute::field_ref("VendorID"),
+                              arrow::compute::literal(1)));
 
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
 
