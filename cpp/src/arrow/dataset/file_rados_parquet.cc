@@ -98,12 +98,12 @@ Result<std::shared_ptr<Schema>> RadosParquetFileFormat::Inspect(
 
 Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
       const std::shared_ptr<ScanOptions>& options,
-      const std::shared_ptr<FileFragment>& file) const override;
+      const std::shared_ptr<FileFragment>& file) const {
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
-      std::move(options_), std::move(file), file->source(), std::move(doa_))};
+      std::move(options_), std::move(file), file->ToString(), std::move(doa_))};
   return MakeVectorIterator(v);
 }
 
