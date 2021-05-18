@@ -18,15 +18,15 @@
 #include <rados/objclass.h>
 #include <memory>
 
-// #include "arrow/api.h"
-// #include "arrow/dataset/dataset.h"
-// #include "arrow/dataset/file_parquet.h"
-// #include "arrow/dataset/rados_utils.h"
-// #include "arrow/io/api.h"
-// #include "arrow/ipc/api.h"
-// #include "parquet/api/reader.h"
-// #include "parquet/arrow/reader.h"
-// #include "parquet/file_reader.h"
+#include "arrow/api.h"
+#include "arrow/dataset/dataset.h"
+#include "arrow/dataset/file_parquet.h"
+#include "arrow/dataset/rados_utils.h"
+#include "arrow/io/api.h"
+#include "arrow/ipc/api.h"
+#include "parquet/api/reader.h"
+#include "parquet/arrow/reader.h"
+#include "parquet/file_reader.h"
 
 CLS_VER(1, 0)
 CLS_NAME(arrow)
@@ -161,7 +161,6 @@ cls_method_handle_t h_scan_op;
 
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
-  CLS_LOG(0, "entered scan_op");
   int a;
   // // the components required to construct a ParquetFragment.
   // arrow::dataset::Expression filter;
@@ -170,7 +169,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   // std::shared_ptr<arrow::Schema> dataset_schema;
   // int64_t file_size;
 
-  // // deserialize the scan request
+  // // // deserialize the scan request
   // if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
   //          &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
   //          *in)
