@@ -18,15 +18,15 @@
 #include <rados/objclass.h>
 #include <memory>
 
-#include "arrow/api.h"
-#include "arrow/dataset/dataset.h"
-#include "arrow/dataset/file_parquet.h"
-#include "arrow/dataset/rados_utils.h"
-#include "arrow/io/api.h"
-#include "arrow/ipc/api.h"
-#include "parquet/api/reader.h"
-#include "parquet/arrow/reader.h"
-#include "parquet/file_reader.h"
+// #include "arrow/api.h"
+// #include "arrow/dataset/dataset.h"
+// #include "arrow/dataset/file_parquet.h"
+// #include "arrow/dataset/rados_utils.h"
+// #include "arrow/io/api.h"
+// #include "arrow/ipc/api.h"
+// #include "parquet/api/reader.h"
+// #include "parquet/arrow/reader.h"
+// #include "parquet/file_reader.h"
 
 CLS_VER(1, 0)
 CLS_NAME(arrow)
