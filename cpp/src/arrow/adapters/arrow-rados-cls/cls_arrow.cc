@@ -161,7 +161,7 @@ cls_method_handle_t h_scan_op;
 
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
-  // CLS_LOG(0, "entered scan_op");
+  CLS_LOG(0, "entered scan_op");
   int a;
   // // the components required to construct a ParquetFragment.
   // arrow::dataset::Expression filter;
