@@ -161,6 +161,8 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
+  CLS_LOG(0, "entered scan_op");
+
   // the components required to construct a ParquetFragment.
   arrow::dataset::Expression filter;
   arrow::dataset::Expression partition_expression;
@@ -175,6 +177,8 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
            .ok())
     return -1;
 
+  CLS_LOG(0, "deserialized scan request");
+
   // scan the parquet object
   std::shared_ptr<arrow::Table> table;
   arrow::Status s =
@@ -184,6 +188,8 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
     CLS_LOG(0, "error: %s", s.message().c_str());
     return -1;
   }
+
+  CLS_LOG(0, "performed scan");
 
   // serialize the resultant table to send back to the client
   ceph::bufferlist bl;
