@@ -161,41 +161,41 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
-  CLS_LOG(0, "entered scan_op");
+  // CLS_LOG(0, "entered scan_op");
 
-  // the components required to construct a ParquetFragment.
-  arrow::dataset::Expression filter;
-  arrow::dataset::Expression partition_expression;
-  std::shared_ptr<arrow::Schema> projection_schema;
-  std::shared_ptr<arrow::Schema> dataset_schema;
-  int64_t file_size;
+  // // the components required to construct a ParquetFragment.
+  // arrow::dataset::Expression filter;
+  // arrow::dataset::Expression partition_expression;
+  // std::shared_ptr<arrow::Schema> projection_schema;
+  // std::shared_ptr<arrow::Schema> dataset_schema;
+  // int64_t file_size;
 
-  // deserialize the scan request
-  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
-           &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
-           *in)
-           .ok())
-    return -1;
+  // // deserialize the scan request
+  // if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
+  //          &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
+  //          *in)
+  //          .ok())
+  //   return -1;
 
-  CLS_LOG(0, "deserialized scan request");
+  // CLS_LOG(0, "deserialized scan request");
 
-  // scan the parquet object
-  std::shared_ptr<arrow::Table> table;
-  arrow::Status s =
-      ScanParquetObject(hctx, filter, partition_expression, projection_schema,
-                        dataset_schema, table, file_size);
-  if (!s.ok()) {
-    CLS_LOG(0, "error: %s", s.message().c_str());
-    return -1;
-  }
+  // // scan the parquet object
+  // std::shared_ptr<arrow::Table> table;
+  // arrow::Status s =
+  //     ScanParquetObject(hctx, filter, partition_expression, projection_schema,
+  //                       dataset_schema, table, file_size);
+  // if (!s.ok()) {
+  //   CLS_LOG(0, "error: %s", s.message().c_str());
+  //   return -1;
+  // }
 
-  CLS_LOG(0, "performed scan");
+  // CLS_LOG(0, "performed scan");
 
-  // serialize the resultant table to send back to the client
-  ceph::bufferlist bl;
-  if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
+  // // serialize the resultant table to send back to the client
+  // ceph::bufferlist bl;
+  // if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
-  *out = bl;
+  // *out = bl;
   return 0;
 }
 
