@@ -170,34 +170,31 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Schema> dataset_schema;
   int64_t file_size;
 
+  // deserialize the scan request
+  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
+           &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
+           *in)
+           .ok())
+    return -1;
+
+  CLS_LOG(0, "deserialized scan request");
+
+  // scan the parquet object
+  std::shared_ptr<arrow::Table> table;
+  arrow::Status s =
+      ScanParquetObject(hctx, filter, partition_expression, projection_schema,
+                        dataset_schema, table, file_size);
+  if (!s.ok()) {
+    CLS_LOG(0, "error: %s", s.message().c_str());
+    return -1;
+  }
+
+  CLS_LOG(0, "performed scan");
+
+  // serialize the resultant table to send back to the client
   ceph::bufferlist bl;
+  if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
-  // // deserialize the scan request
-  // if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
-  //          &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
-  //          *in)
-  //          .ok())
-  //   return -1;
-
-  // CLS_LOG(0, "deserialized scan request");
-
-  // // scan the parquet object
-  // std::shared_ptr<arrow::Table> table;
-  // arrow::Status s =
-  //     ScanParquetObject(hctx, filter, partition_expression, projection_schema,
-  //                       dataset_schema, table, file_size);
-  // if (!s.ok()) {
-  //   CLS_LOG(0, "error: %s", s.message().c_str());
-  //   return -1;
-  // }
-
-  // CLS_LOG(0, "performed scan");
-
-  // // serialize the resultant table to send back to the client
-  // ceph::bufferlist bl;
-  // if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
-
-  // *out = bl;
   *out = bl;
   return 0;
 }
