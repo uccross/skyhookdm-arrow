@@ -170,6 +170,8 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Schema> dataset_schema;
   int64_t file_size;
 
+  ceph::bufferlist bl;
+
   // // deserialize the scan request
   // if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
   //          &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
@@ -196,6 +198,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   // if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
 
   // *out = bl;
+  *out = bl;
   return 0;
 }
 
