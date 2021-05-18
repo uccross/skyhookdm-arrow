@@ -163,7 +163,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
   CLS_LOG(0, "entered scan_op");
 
-  the components required to construct a ParquetFragment.
+  // the components required to construct a ParquetFragment.
   arrow::dataset::Expression filter;
   arrow::dataset::Expression partition_expression;
   std::shared_ptr<arrow::Schema> projection_schema;
