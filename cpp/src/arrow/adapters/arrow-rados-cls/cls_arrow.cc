@@ -119,45 +119,45 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   int64_t content_length_ = -1;
 };
 
-// static arrow::Status ScanParquetObject(cls_method_context_t hctx,
-//                                        arrow::dataset::Expression filter,
-//                                        arrow::dataset::Expression partition_expression,
-//                                        std::shared_ptr<arrow::Schema> projection_schema,
-//                                        std::shared_ptr<arrow::Schema> dataset_schema,
-//                                        std::shared_ptr<arrow::Table>& t,
-//                                        int64_t file_size) {
-//   auto file = std::make_shared<RandomAccessObject>(hctx, file_size);
+static arrow::Status ScanParquetObject(cls_method_context_t hctx,
+                                       arrow::dataset::Expression filter,
+                                       arrow::dataset::Expression partition_expression,
+                                       std::shared_ptr<arrow::Schema> projection_schema,
+                                       std::shared_ptr<arrow::Schema> dataset_schema,
+                                       std::shared_ptr<arrow::Table>& t,
+                                       int64_t file_size) {
+  auto file = std::make_shared<RandomAccessObject>(hctx, file_size);
 
-//   arrow::dataset::FileSource source(file);
+  arrow::dataset::FileSource source(file);
 
-//   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
+  auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
 
-//   auto fragment_scan_options = std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
-//   fragment_scan_options->enable_parallel_column_conversion = true;
+  auto fragment_scan_options = std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
+  fragment_scan_options->enable_parallel_column_conversion = true;
 
-//   ARROW_ASSIGN_OR_RAISE(auto fragment,
-//                         format->MakeFragment(source, partition_expression));
-//   std::shared_ptr<arrow::dataset::ScanOptions> options;
-//   auto builder =
-//       std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
+  ARROW_ASSIGN_OR_RAISE(auto fragment,
+                        format->MakeFragment(source, partition_expression));
+  std::shared_ptr<arrow::dataset::ScanOptions> options;
+  auto builder =
+      std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
 
-//   CLS_LOG(0, "filter: %s", filter.ToString().c_str());
-//   CLS_LOG(0, "projection schema: %s", projection_schema->ToString().c_str());
-//   CLS_LOG(0, "dataset schema: %s", dataset_schema->ToString().c_str());
+  CLS_LOG(0, "filter: %s", filter.ToString().c_str());
+  CLS_LOG(0, "projection schema: %s", projection_schema->ToString().c_str());
+  CLS_LOG(0, "dataset schema: %s", dataset_schema->ToString().c_str());
 
-//   ARROW_RETURN_NOT_OK(builder->Filter(filter));
-//   ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
-//   ARROW_RETURN_NOT_OK(builder->UseThreads(false));
-//   ARROW_RETURN_NOT_OK(builder->FragmentScanOptions(fragment_scan_options));
+  ARROW_RETURN_NOT_OK(builder->Filter(filter));
+  ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
+  ARROW_RETURN_NOT_OK(builder->UseThreads(false));
+  ARROW_RETURN_NOT_OK(builder->FragmentScanOptions(fragment_scan_options));
 
-//   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
-//   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
+  ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
+  ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
 
-//   t = table;
+  t = table;
 
-//   ARROW_RETURN_NOT_OK(file->Close());
-//   return arrow::Status::OK();
-// }
+  ARROW_RETURN_NOT_OK(file->Close());
+  return arrow::Status::OK();
+}
 
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
