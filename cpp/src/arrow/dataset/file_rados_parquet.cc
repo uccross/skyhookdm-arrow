@@ -43,6 +43,7 @@ class RadosParquetScanTask : public ScanTask {
         doa_(std::move(doa)) {}
 
   Result<RecordBatchIterator> Execute() override {
+    ARROW_LOG(INFO) << "entered Execute()\n";
     ceph::bufferlist* in = new ceph::bufferlist();
     ceph::bufferlist* out = new ceph::bufferlist();
 
@@ -53,14 +54,20 @@ class RadosParquetScanTask : public ScanTask {
       return Status::Invalid(s.message());
     }
 
+    ARROW_LOG(INFO) << "called doa_->Stat()\n";
+
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
         options_->filter, options_->partition_expression, options_->projected_schema,
         options_->dataset_schema, st.st_size, *in));
+    
+    ARROW_LOG(INFO) << "serialized scan options into bufferlist\n";
 
     s = doa_->Exec(st.st_ino, "scan_op", *in, *out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
     }
+    
+    ARROW_LOG(INFO) << "called scan_op\n";
 
     RecordBatchVector batches;
     auto buffer = std::make_shared<Buffer>((uint8_t*)out->c_str(), out->length());
