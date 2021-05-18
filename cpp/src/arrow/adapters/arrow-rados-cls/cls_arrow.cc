@@ -141,6 +141,10 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   auto builder =
       std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
 
+  CLS_LOG(0, "filter: %s", filter.ToString().c_str());
+  CLS_LOG(0, "projection schema: %s", projection_schema->ToString().c_str());
+  CLS_LOG(0, "dataset schema: %s", dataset_schema->ToString().c_str());
+
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
   ARROW_RETURN_NOT_OK(builder->UseThreads(false));
