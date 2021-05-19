@@ -280,6 +280,9 @@ cdef class Dataset(_Weakrefable):
     multiple files. This sharding of data may indicate partitioning, which
     can accelerate queries that only touch some partitions (files).
     """
+    cdef:
+        shared_ptr[CDataset] wrapped
+        CDataset* dataset
 
     def __init__(self):
         _forbid_instantiation(self.__class__)
@@ -774,6 +777,10 @@ cdef class FileWriteOptions(_Weakrefable):
 
 
 cdef class FileFormat(_Weakrefable):
+
+    cdef:
+        shared_ptr[CFileFormat] wrapped
+        CFileFormat* format
 
     def __init__(self):
         _forbid_instantiation(self.__class__)
