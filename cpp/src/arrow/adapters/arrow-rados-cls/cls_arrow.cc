@@ -18,12 +18,15 @@
 #include <rados/objclass.h>
 #include <memory>
 
-#include "arrow/api.h"
-#include "arrow/dataset/dataset.h"
-#include "arrow/dataset/file_parquet.h"
-#include "arrow/dataset/rados_utils.h"
-#include "arrow/io/api.h"
-#include "arrow/ipc/api.h"
+#include <arrow/api.h>
+#include <arrow/dataset/dataset.h>
+#include <arrow/dataset/discovery.h>
+#include <arrow/dataset/expression.h>
+#include <arrow/dataset/file_base.h>
+#include <arrow/dataset/file_parquet.h>
+#include <arrow/dataset/scanner.h>
+#include <arrow/filesystem/filesystem.h>
+#include <arrow/filesystem/path_util.h>
 
 
 CLS_VER(1, 0)
@@ -31,131 +34,6 @@ CLS_NAME(arrow)
 
 cls_handle_t h_class;
 cls_method_handle_t h_scan_op;
-
-// class RandomAccessObject : public arrow::io::RandomAccessFile {
-//  public:
-//   explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
-//     hctx_ = hctx;
-//     content_length_ = file_size;
-//   }
-
-//   arrow::Status CheckClosed() const {
-//     if (closed_) {
-//       return arrow::Status::Invalid("Operation on closed stream");
-//     }
-//     return arrow::Status::OK();
-//   }
-
-//   arrow::Status CheckPosition(int64_t position, const char* action) const {
-//     if (position < 0) {
-//       return arrow::Status::Invalid("Cannot ", action, " from negative position");
-//     }
-//     if (position > content_length_) {
-//       return arrow::Status::IOError("Cannot ", action, " past end of file");
-//     }
-//     return arrow::Status::OK();
-//   }
-
-//   arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) { return 0; }
-
-//   arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) {
-//     RETURN_NOT_OK(CheckClosed());
-//     RETURN_NOT_OK(CheckPosition(position, "read"));
-
-//     // No need to allocate more than the remaining number of bytes
-//     nbytes = std::min(nbytes, content_length_ - position);
-
-//     if (nbytes > 0) {
-//       ceph::bufferlist* bl = new ceph::bufferlist();
-//       cls_cxx_read(hctx_, position, nbytes, bl);
-//       return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
-//     }
-//     return std::make_shared<arrow::Buffer>("");
-//   }
-
-//   arrow::Result<std::shared_ptr<arrow::Buffer>> Read(int64_t nbytes) {
-//     ARROW_ASSIGN_OR_RAISE(auto buffer, ReadAt(pos_, nbytes));
-//     pos_ += buffer->size();
-//     return std::move(buffer);
-//   }
-
-//   arrow::Result<int64_t> Read(int64_t nbytes, void* out) {
-//     ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(pos_, nbytes, out));
-//     pos_ += bytes_read;
-//     return bytes_read;
-//   }
-
-//   arrow::Result<int64_t> GetSize() {
-//     RETURN_NOT_OK(CheckClosed());
-//     return content_length_;
-//   }
-
-//   arrow::Status Seek(int64_t position) {
-//     RETURN_NOT_OK(CheckClosed());
-//     RETURN_NOT_OK(CheckPosition(position, "seek"));
-
-//     pos_ = position;
-//     return arrow::Status::OK();
-//   }
-
-//   arrow::Result<int64_t> Tell() const {
-//     RETURN_NOT_OK(CheckClosed());
-//     return pos_;
-//   }
-
-//   arrow::Status Close() {
-//     closed_ = true;
-//     return arrow::Status::OK();
-//   }
-
-//   bool closed() const { return closed_; }
-
-//  protected:
-//   cls_method_context_t hctx_;
-//   bool closed_ = false;
-//   int64_t pos_ = 0;
-//   int64_t content_length_ = -1;
-// };
-
-// static arrow::Status ScanParquetObject(cls_method_context_t hctx,
-//                                        arrow::dataset::Expression filter,
-//                                        arrow::dataset::Expression partition_expression,
-//                                        std::shared_ptr<arrow::Schema> projection_schema,
-//                                        std::shared_ptr<arrow::Schema> dataset_schema,
-//                                        std::shared_ptr<arrow::Table>& t,
-//                                        int64_t file_size) {
-//   auto file = std::make_shared<RandomAccessObject>(hctx, file_size);
-
-//   arrow::dataset::FileSource source(file);
-
-//   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
-
-//   auto fragment_scan_options = std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
-//   fragment_scan_options->enable_parallel_column_conversion = true;
-
-//   ARROW_ASSIGN_OR_RAISE(auto fragment,
-//                         format->MakeFragment(source, partition_expression));
-//   std::shared_ptr<arrow::dataset::ScanOptions> options;
-//   auto builder =
-//       std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
-
-//   CLS_LOG(0, "filter: %s", filter.ToString().c_str());
-//   CLS_LOG(0, "projection schema: %s", projection_schema->ToString().c_str());
-//   CLS_LOG(0, "dataset schema: %s", dataset_schema->ToString().c_str());
-
-//   ARROW_RETURN_NOT_OK(builder->Filter(filter));
-//   ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
-//   ARROW_RETURN_NOT_OK(builder->UseThreads(false));
-//   ARROW_RETURN_NOT_OK(builder->FragmentScanOptions(fragment_scan_options));
-
-//   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
-//   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
-
-//   t = table;
-
-//   ARROW_RETURN_NOT_OK(file->Close());
-//   return arrow::Status::OK();
-// }
 
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
