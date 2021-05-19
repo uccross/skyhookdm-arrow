@@ -115,9 +115,13 @@ git clone --branch rados-dataset-dev https://github.com/uccross/arrow
 ```bash
 cd arrow/
 
-cp cpp/src/arrow/adapters/arrow-rados-cls/scripts/build.sh .
-cp cpp/src/arrow/adapters/arrow-rados-cls/scripts/test.sh .
+# copy the scripts to the repository root
+cp -r cpp/src/arrow/adapters/arrow-rados-cls/scripts/* .
 
+# install the required packages
+./prepare.sh 
+
+# run build.sh and test.sh iteratively
 ./build.sh
 ./test.sh
 ```
