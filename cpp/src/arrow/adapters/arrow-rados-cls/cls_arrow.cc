@@ -163,7 +163,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   // arrow::dataset::Expression filter;
   // arrow::dataset::Expression partition_expression;
   // std::shared_ptr<arrow::Schema> projection_schema;
-  std::shared_ptr<arrow::Schema> dataset_schema;
+  std::shared_ptr<arrow::Schema> dataset_schemaq;
   int64_t file_size;
 
   // // // deserialize the scan request
