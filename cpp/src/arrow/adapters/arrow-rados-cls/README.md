@@ -77,7 +77,7 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 * `cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow.cc`: Contains the Rados objclass functions and APIs for interacting with objects in the OSDs. Also, it includes a `RandomAccessObject` API to give a random access file view of objects for allowing operations like reading byte ranges, seeks, tell, etc. 
 
-# Setting up the development environment using Archery
+# Setting up the development environment using docker
 
 **NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
 
