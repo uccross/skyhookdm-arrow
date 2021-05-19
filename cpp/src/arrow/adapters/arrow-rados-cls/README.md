@@ -77,13 +77,13 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 * `cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow.cc`: Contains the Rados objclass functions and APIs for interacting with objects in the OSDs. Also, it includes a `RandomAccessObject` API to give a random access file view of objects for allowing operations like reading byte ranges, seeks, tell, etc. 
 
-# Setting up the development environment
+# Setting up the development environment using Archery
 
 **NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
 
 1. Clone the repository.
 ```bash
-git clone --branch v0.1.1 https://github.com/uccross/arrow
+git clone --branch rados-dataset-dev https://github.com/uccross/arrow
 ```
 
 2. Install [Archery](https://arrow.apache.org/docs/developers/archery.html#), the daily development tool by Apache Arrow community.
@@ -102,4 +102,22 @@ archery docker run ubuntu-cpp-cls
 ```bash
 export UBUNTU=20.04
 archery docker run ubuntu-python-cls
+```
+
+# Setting up development environemnt on bare-metal
+
+1. Clone the repository.
+```bash
+git clone --branch rados-dataset-dev https://github.com/uccross/arrow
+```
+
+2. Run the [`build.sh`](./scripts/build.sh) and [`test.sh`](./scripts/test.sh) scripts from the repository root.
+```bash
+cd arrow/
+
+cp cpp/src/arrow/adapters/arrow-rados-cls/scripts/build.sh .
+cp cpp/src/arrow/adapters/arrow-rados-cls/scripts/test.sh .
+
+./build.sh
+./test.sh
 ```
