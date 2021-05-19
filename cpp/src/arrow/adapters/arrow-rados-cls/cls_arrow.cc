@@ -137,7 +137,7 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
   ARROW_ASSIGN_OR_RAISE(auto fragment,
                         format->MakeFragment(source, partition_expression));
-  std::shared_ptr<arrow::dataset::ScanOptions> options;
+  auto options = std::make_shared<arrow::dataset::ScanOptions>();
   auto builder =
       std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
 
