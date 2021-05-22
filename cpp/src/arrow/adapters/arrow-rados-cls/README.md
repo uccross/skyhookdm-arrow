@@ -111,7 +111,7 @@ archery docker run ubuntu-python-cls
 git clone --branch rados-dataset-dev https://github.com/uccross/arrow
 ```
 
-2. Run the [`build.sh`](./scripts/build.sh) and [`test.sh`](./scripts/test.sh) scripts from the repository root.
+2. Run the [`prepare.sh`](./scripts/prepare.sh), [`build.sh`](./scripts/build.sh) and [`test.sh`](./scripts/test.sh) scripts from the repository root.
 ```bash
 cd arrow/
 
