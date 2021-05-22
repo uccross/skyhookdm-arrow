@@ -125,37 +125,46 @@ TEST(TestClsSDK, SimpleQuery) {
 }
 
 TEST(TestClsSDK, QueryOnPartitionKey) {
-  auto format = GetRadosParquetFormat();
-
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
-  auto dataset = GetDatasetFromPath(fs, format, path);
-
   std::vector<std::string> columns = {"fare_amount", "VendorID", "payment_type"};
   auto filter = arrow::compute::greater(arrow::compute::field_ref("payment_type"),
                                         arrow::compute::literal(2));
 
+  auto format = GetParquetFormat();
+  auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, false);
+  auto table_parquet = scanner->ToTable().ValueOrDie();
 
-  auto table = scanner->ToTable().ValueOrDie();
-  ASSERT_EQ(table->num_rows(), 645);
+  format = GetRadosParquetFormat();
+  dataset = GetDatasetFromPath(fs, format, path);
+  scanner = GetScannerFromDataset(dataset, columns, filter, false);
+  auto table_rados_parquet = scanner->ToTable().ValueOrDie();
+
+  ASSERT_EQ(table_parquet->Equals(*table_rados_parquet), 1);
+  ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
 TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
-  auto format = GetRadosParquetFormat();
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
-  auto dataset = GetDatasetFromPath(fs, format, path);
-
   std::vector<std::string> columns = {"total_amount", "VendorID", "payment_type"};
   auto filter = arrow::compute::and_(
       arrow::compute::greater(arrow::compute::field_ref("payment_type"),
                               arrow::compute::literal(2)),
       arrow::compute::greater(arrow::compute::field_ref("VendorID"),
                               arrow::compute::literal(1)));
-
+  
+  auto format = GetParquetFormat();
+  auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
+  auto table_parquet = scanner->ToTable().ValueOrDie();
 
-  auto table = scanner->ToTable().ValueOrDie();
-  ASSERT_EQ(table->num_rows(), 49);
+  format = GetRadosParquetFormat();
+  dataset = GetDatasetFromPath(fs, format, path);
+  scanner = GetScannerFromDataset(dataset, columns, filter, false);
+  auto table_rados_parquet = scanner->ToTable().ValueOrDie();  
+
+  ASSERT_EQ(table_parquet->Equals(*table_rados_parquet), 1);
+  ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
