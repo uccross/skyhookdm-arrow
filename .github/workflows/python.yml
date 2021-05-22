@@ -50,7 +50,6 @@ jobs:
           - conda-python-3.8-nopandas
           - conda-python-3.6-pandas-0.23
           - conda-python-3.7-pandas-latest
-          - ubuntu-python-cls
         include:
           - name: conda-python-3.8-nopandas
             cache: conda-python-3.8
@@ -70,10 +69,6 @@ jobs:
             title: AMD64 Conda Python 3.7 Pandas latest
             python: 3.7
             pandas: latest
-          - name: ubuntu-python-cls
-            image: ubuntu-python-cls
-            title: AMD64 Ubuntu 20.04 Python (Rados Parquet Format)
-            python: 3.7
     env:
       PYTHON: ${{ matrix.python || 3.7 }}
       UBUNTU: ${{ matrix.ubuntu || 18.04 }}
