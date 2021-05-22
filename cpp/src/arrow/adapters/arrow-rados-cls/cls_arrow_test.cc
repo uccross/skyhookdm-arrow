@@ -120,7 +120,7 @@ TEST(TestClsSDK, SimpleQuery) {
       GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), false);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();
 
-  ASSERT_TRUE(table_parquet->Equals(table_rados_parquet));
+  ASSERT_EQ(table_parquet->Equals(table_rados_parquet), 1);
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
