@@ -31,9 +31,9 @@
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
 
-#include "gtest/gtest.h"
 #include "arrow/testing/gtest_util.h"
 #include "arrow/util/checked_cast.h"
+#include "gtest/gtest.h"
 
 #include "parquet/arrow/reader.h"
 #include "parquet/arrow/writer.h"
@@ -116,8 +116,7 @@ TEST(TestClsSDK, SimpleQuery) {
 
   format = GetRadosParquetFormat();
   dataset = GetDatasetFromPath(fs, format, path);
-  scanner =
-      GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), false);
+  scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), false);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();
 
   ASSERT_EQ(table_parquet->Equals(*table_rados_parquet), 1);
@@ -154,7 +153,7 @@ TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
                               arrow::compute::literal(2)),
       arrow::compute::greater(arrow::compute::field_ref("VendorID"),
                               arrow::compute::literal(1)));
-  
+
   auto format = GetParquetFormat();
   auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
@@ -163,7 +162,7 @@ TEST(TestClsSDK, QueryOnlyOnPartitionKey) {
   format = GetRadosParquetFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, false);
-  auto table_rados_parquet = scanner->ToTable().ValueOrDie();  
+  auto table_rados_parquet = scanner->ToTable().ValueOrDie();
 
   ASSERT_EQ(table_parquet->Equals(*table_rados_parquet), 1);
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
