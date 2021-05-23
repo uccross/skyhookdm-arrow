@@ -23,14 +23,16 @@
 
 2. Create and mount CephFS at some path, for example `/mnt/cephfs`.
 
-2. Build and install SkyhookDM and [PyArrow](https://pypi.org/project/pyarrow/) (with Rados Parquet extensions) using [this](https://github.com/JayjeetAtGithub/skyhook-perf-experiments/blob/master/deployment_scripts/skyhook.sh) script.
+**NOTE:**: You may also run [this](../scripts/deploy_ceph.sh) script for a 3 OSD Ceph cluster and a CephFS mount.
 
-3. Update your Ceph configuration file with this line.
+3. Build and install SkyhookDM and [PyArrow](https://pypi.org/project/pyarrow/) (with Rados Parquet extensions) using [this](../scripts/deploy_skyhook.sh) script.
+
+4. Update your Ceph configuration file with this line.
 ```
 osd class load list = *
 ```
 
-4. Restart the Ceph OSDs to load the changes.
+5. Restart the Ceph OSDs to reload the changes.
 
 # Interacting with SkyhookDM
 

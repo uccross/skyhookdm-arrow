@@ -42,7 +42,7 @@ docker-compose run --service-ports ubuntu-cls-demo
 * For installing SkyhookDM-Arrow with [Rook](https://rook.io) on Kubernetes, check out [this](https://github.com/uccross/skyhookdm-arrow-docker/blob/master/README.md#deploying-skyhookdm-arrow-on-a-rook-cluster) guide.
 
 * For installing SkyhookDM-Arrow on CloudLab, check out [this](https://github.com/uccross/skyhookdm-workflows/tree/master/cloudlab#deploy-ceph-skyhookdm-on-cloudlab) guide. To deploy SkyhookDM on bare-metal in general, check out [this](docs/deploy.md) guide.
- 
+
 # Salient Features
 
 * Enables pushing down filters, projections, compute operations to the Storage backend for minimal data transfer over the network.
@@ -77,51 +77,6 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 * `cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow.cc`: Contains the Rados objclass functions and APIs for interacting with objects in the OSDs. Also, it includes a `RandomAccessObject` API to give a random access file view of objects for allowing operations like reading byte ranges, seeks, tell, etc. 
 
-# Setting up the development environment using docker
+# Development
 
-**NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
-
-1. Clone the repository.
-```bash
-git clone --branch rados-dataset-dev https://github.com/uccross/arrow
-```
-
-2. Install [Archery](https://arrow.apache.org/docs/developers/archery.html#), the daily development tool by Apache Arrow community.
-```bash
-cd arrow/
-pip install -e dev/archery
-```
-
-2. Build and test the C++ client.
-```bash
-export UBUNTU=20.04
-archery docker run ubuntu-cpp-cls
-```
-
-3. Build and test the Python client.
-```bash
-export UBUNTU=20.04
-archery docker run ubuntu-python-cls
-```
-
-# Setting up development environemnt on bare-metal
-
-1. Clone the repository.
-```bash
-git clone --branch rados-dataset-dev https://github.com/uccross/arrow
-```
-
-2. Run the [`prepare.sh`](./scripts/prepare.sh), [`build.sh`](./scripts/build.sh) and [`test.sh`](./scripts/test.sh) scripts from the repository root.
-```bash
-cd arrow/
-
-# copy the scripts to the repository root
-cp -r cpp/src/arrow/adapters/arrow-rados-cls/scripts/* .
-
-# install the required packages
-./prepare.sh 
-
-# run build.sh and test.sh iteratively
-./build.sh
-./test.sh
-```
+Check [this](docs/contributing.md) out for instructions to setup a local development environment.
