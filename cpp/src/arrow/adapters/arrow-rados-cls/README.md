@@ -19,7 +19,7 @@
 # <img src="https://iris-hep.org/assets/logos/skyhookdmLogoJeff.png" width="64" valign="middle" alt="Skyhook"/> SkyhookDM-Arrow
 
 Apache Arrow provides a [`Dataset API`](https://arrow.apache.org/docs/cpp/api/dataset.html), which acts as an abstraction over a collection of files in different storage backend like S3 and HDFS. It supports different file formats like CSV and Parquet through the [`FileFormat`](https://arrow.apache.org/docs/cpp/api/dataset.html#_CPPv4N5arrow7dataset10FileFormatE) API. In SkyhookDM, since we require to pushdown
-compute operations into the Storage backend, we created a new file format on top of Parquet, namely a [`RadosParquetFileFormat`] which besides providing the benefits of Parquet, allows pushing down filter and projection operations into the storage backend to minimize data moved through the network.
+compute operations into the Storage backend, we created a new file format on top of Parquet, namely a `RadosParquetFileFormat` which besides providing the benefits of Parquet, allows pushing down filter and projection operations into the storage backend to minimize data moved through the network.
 
 # Getting Started
 
@@ -78,4 +78,4 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 # Development
 
-Check [this](docs/contributing.md) out for instructions to setup a local development environment.
+Check out these [instructions](docs/contributing.md) for setting up a local development environment.
