@@ -34,7 +34,7 @@ osd class load list = *
 ```bash
 ./deploy_data.sh myfile.parquet /mnt/cephfs/myfile.parquet 100 67108864
 ```
-Running this command would write 100 Parquet files in the format `myfile.parquet.N` in the `/mnt/cephfs` directory.
+Running this command would write 100 Parquet files in the format `myfile.parquet.N` in the `/mnt/cephfs` directory with an object size of 64MB.
 
 2. Write a client script and get started with querying datasets in SkyhookDM. An example script is given below.
 ```python
