@@ -30,7 +30,11 @@ osd class load list = *
 
 # Interacting with SkyhookDM
 
-1. Write some [Parquet](https://parquet.apache.org/) files in the CephFS mount.
+1. Write some [Parquet](https://parquet.apache.org/) files in the CephFS mount. We need to use the [`deploy_data.sh`](../scripts/deploy_data.sh) script to write Parquet files to CephFS for use in SkyhookDM. For example,
+```bash
+./deploy_data.sh myfile.parquet /mnt/cephfs/myfile.parquet 100 67108864
+```
+Running this command would write 100 Parquet files in the format `myfile.parquet.N` in the `/mnt/cephfs` directory.
 
 2. Write a client script and get started with querying datasets in SkyhookDM. An example script is given below.
 ```python
