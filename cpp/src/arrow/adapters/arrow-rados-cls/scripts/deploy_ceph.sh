@@ -68,4 +68,6 @@ ceph osd pool create device_health_metrics 16
 
 ceph fs new cephfs cephfs_metadata cephfs_data
 mkdir -p /mnt/cephfs
+
+sleep 5
 ceph-fuse /mnt/cephfs
