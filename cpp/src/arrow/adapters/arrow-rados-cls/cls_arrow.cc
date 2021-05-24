@@ -70,7 +70,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     nbytes = std::min(nbytes, content_length_ - position);
 
     if (nbytes > 0) {
-      ceph::bufferlist *bl = new ceph::bufferlist();
+      ceph::bufferlist* bl = new ceph::bufferlist();
       cls_cxx_read(hctx_, position, nbytes, bl);
       chunks_.push_back(bl);
       return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
@@ -110,7 +110,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
   arrow::Status Close() {
     closed_ = true;
-    for (auto chunk: chunks_) {
+    for (auto chunk : chunks_) {
       delete chunk;
     }
     return arrow::Status::OK();
