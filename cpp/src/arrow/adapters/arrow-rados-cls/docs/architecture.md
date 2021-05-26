@@ -19,13 +19,16 @@
 
 # Architecture
 
+SkyhookDM is the approach that allows extending both the client and storage layers of "programmable object storage systems" with plugins to be able to provide data management and processing tasks directly within the storage layer.
+The goal of SkyhookDM is to allow users to transparently grow and shrink their data storage and processing needs as demands change, offloading computation and other data management tasks to the storage layer in order to reduce client-side resources needed for data processing in terms of CPU, memory, I/O, and network traffic. Our implementation of SkyhookDM is currently within Ceph, but is not Ceph specific, rather the approach is applicable to any object storage system with extensibility features such as user-defined object classes.
+
 <p align="center">
 <img src="./images/architecture.png" width="90%">
 </p>
 
 * **Storage Layer:** SkyhookDM is built on top of the Ceph storage system. Ceph allows extending its object storage interface, RADOS, with C++ plugins (built using the Ceph Object Class SDK) which inturn allows embedding application specific methods inside the Ceph OSDs for direct access and manipulation of objects within the storage layer. We leverage this feature of Ceph and extend RADOS by implementing Object Class methods that utilize Arrow APIs to scan objects containing Parquet binary data inside the storage layer. Since the Arrow APIs expect a file-like object to work on, we implement a random access interface between the Arrow access and RADOS layers. This random access interface is analogous to the `ObjectInputFile` interface in the Arrow S3FS module and provides a similar file-like view over RADOS objects.
 
-* **Client Layer:** Apache Arrow provides a `Dataset` API which provides a dataset abstraction over a collection of files in different storage backend like S3 and HDFS and allows scanning them. The Dataset API supports scanning files of different formats via its `FileFormat` abstraction. We extend the `ParquetFileFormat` API to create a `RadosParquetFileFormat` API which when plugged into the `Dataset` API enables offloading Parquet dataset scans to the storage layer. In SkyhookDM, we store datasets in the Ceph filesystem, CephFS, to utilize the filesystem metadata support it provides via Ceph Metadata Servers (Ceph MDS) for doing dataset discovery. While scanning, we leverage the filesystem metadata, especially the striping strategy information, to translate filenames in CephFS to object IDs in RADOS and call Object Class methods on these objects, essentially bypassing the filesystem layer.
+* **Client Layer:** Apache Arrow provides a `Dataset` API which provides a dataset abstraction over a collection of files in different storage backend like S3 and HDFS and allows scanning them. The `Dataset` API supports scanning files of different formats via its `FileFormat` abstraction. We extend the `ParquetFileFormat` API to create a `RadosParquetFileFormat` API which when plugged into the `Dataset` API enables offloading Parquet dataset scans to the storage layer. In SkyhookDM, we store datasets in the Ceph filesystem, CephFS, to utilize the filesystem metadata support it provides via Ceph Metadata Servers (Ceph MDS) for doing dataset discovery. While scanning, we leverage the filesystem metadata, especially the striping strategy information, to translate filenames in CephFS to object IDs in RADOS and call Object Class methods on these objects, essentially bypassing the filesystem layer.
 
 # Lifetime of a Dataset Scan in SkyhookDM
 
