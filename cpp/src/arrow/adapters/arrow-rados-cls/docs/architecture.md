@@ -20,7 +20,7 @@
 # Architecture
 
 <p align="center">
-<img src="./architecture.png" width="85%">
+<img src="./architecture.png" width="90%">
 </p>
 
 * **Storage Layer:** SkyhookDM is built on top of the Ceph storage system. Ceph allows extending its object storage interface, RADOS, with C++ plugins (built using the Ceph Object Class SDK) which inturn allows embedding application specific methods inside the Ceph OSDs for direct access and manipulation of objects within the storage layer. We leverage this feature of Ceph and extend RADOS by implementing Object Class methods that utilize Arrow APIs to scan objects containing Parquet binary data inside the storage layer. Since the Arrow APIs expect a file-like object to work on, we implement a random access interface between the Arrow access and RADOS layers. This random access interface is analogous to the `ObjectInputFile` interface in the Arrow S3FS module and provides a similar file-like view over RADOS objects.
