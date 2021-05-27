@@ -62,9 +62,8 @@ for i in {1..4}; do
 done
 
 ceph-deploy mds create node1
-ceph osd pool create cephfs_data 16
-ceph osd pool create cephfs_metadata 16
-ceph osd pool create device_health_metrics 16
+ceph osd pool create cephfs_data 128
+ceph osd pool create cephfs_metadata 128
 
 ceph fs new cephfs cephfs_metadata cephfs_data
 mkdir -p /mnt/cephfs
