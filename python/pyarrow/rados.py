@@ -32,14 +32,16 @@ class SplittedParquetWriter(object):
         self.chunksize = chunksize
 
     def write_file(self, filename, table):
-        pq.write_table(table, filename, row_group_size=table.num_rows, compression=None)
+        pq.write_table(table, filename, 
+            row_group_size=table.num_rows, compression=None)
 
     def estimate_rows(self):
         self.table = pq.read_table(self.filename)
         disk_size = os.stat(self.filename).st_size
         inmemory_table_size = self.table.nbytes
         inmemory_row_size = inmemory_table_size/self.table.num_rows
-        required_inmemory_table_size = self.chunksize * (inmemory_table_size/disk_size)
+        required_inmemory_table_size = self.chunksize * \ 
+            (inmemory_table_size/disk_size)
         required_rows_per_file = required_inmemory_table_size/inmemory_row_size
         return self.table.num_rows, round(required_rows_per_file)
 
@@ -52,7 +54,9 @@ class SplittedParquetWriter(object):
             while i < total_rows:
                 executor.submit(
                     self.write_file, 
-                    os.path.join(self.destination, f"{uuid.uuid4().hex}.parquet"), self.table.slice(i, rows_per_file)
+                    os.path.join(self.destination, 
+                    f"{uuid.uuid4().hex}.parquet"), 
+                    self.table.slice(i, rows_per_file)
                 )
                 i += rows_per_file
         e_time = time.time()
