@@ -23,7 +23,7 @@ apt update
 apt install -y attr
 
 # usage:
-# ./data.sh [source] [destination] [count] [stripeunit]
+# ./deploy_data.sh [source] [destination] [count] [stripeunit]
 
 source=${1}
 destination=${2}
