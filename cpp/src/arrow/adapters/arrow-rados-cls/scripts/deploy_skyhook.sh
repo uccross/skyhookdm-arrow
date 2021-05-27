@@ -42,7 +42,7 @@ python3 setup.py build_ext --inplace --bundle-arrow-cpp bdist_wheel
 pip3 install --upgrade dist/*.whl
 
 cd /tmp/arrow/cpp/debug/debug
-for ((i=1; i<=3; i++)); do
+for ((i=1; i<=4; i++)); do
   scp libcls* node${i}:/usr/lib/rados-classes/
   scp libarrow* node${i}:/usr/lib/
   scp libparquet* node${i}:/usr/lib/
