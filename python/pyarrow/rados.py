@@ -16,10 +16,8 @@
 # under the License.
 
 import os
-import sys
 import uuid
 import time
-import pyarrow as pa
 import pyarrow.parquet as pq
 import multiprocessing as mp
 from concurrent.futures import ThreadPoolExecutor
