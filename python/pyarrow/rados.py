@@ -37,11 +37,11 @@ class SplittedParquetWriter(object):
         result_str += num_str[0]
         for i in range(len(num_str) - 1):
             result_str += "0"
-        return  int(result_str)
+        return int(result_str)
 
     def write_file(self, filename, table):
         pq.write_table(
-            table, filename, 
+            table, filename,
             row_group_size=table.num_rows, compression=None
         )
 
@@ -63,9 +63,9 @@ class SplittedParquetWriter(object):
         with ThreadPoolExecutor(max_workers=mp.cpu_count()) as executor:
             while i < total_rows:
                 executor.submit(
-                    self.write_file, 
+                    self.write_file,
                     os.path.join(
-                        self.destination, f"{uuid.uuid4().hex}.parquet"), 
+                        self.destination, f"{uuid.uuid4().hex}.parquet"),
                     self.table.slice(i, rows_per_file)
                 )
                 i += rows_per_file
