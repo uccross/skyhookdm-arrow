@@ -36,6 +36,8 @@ osd class load list = *
 ```
 Running this command would write 100 Parquet files in the format `myfile.parquet.N` in the `/mnt/cephfs` directory with an object size of 64MB.
 
+**NOTE**: If you have Parquet files of size > 128MB, please use the [`SplittedParquetWriter`](../../../../../../python/pyarrow/rados.py) to split your Parquet file into 128 MB or less sized files.
+
 2. Write a client script and get started with querying datasets in SkyhookDM. An example script is given below.
 ```python
 import pyarrow.dataset as ds
