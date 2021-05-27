@@ -26,14 +26,24 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 class SplittedParquetWriter(object):
-    def __init__(self, filename, destination, chunksize=120*1024*1024):
+    def __init__(self, filename, destination, chunksize=128*1024*1024):
         self.filename = filename
         self.destination = destination
         self.chunksize = chunksize
 
+    def round(self, num):
+        num_str = str(int(num))
+        result_str = ""
+        result_str += num_str[0]
+        for i in range(len(num_str) - 1):
+            result_str += "0"
+        return  int(result_str)
+
     def write_file(self, filename, table):
-        pq.write_table(table, filename, 
-            row_group_size=table.num_rows, compression=None)
+        pq.write_table(
+            table, filename, 
+            row_group_size=table.num_rows, compression=None
+        )
 
     def estimate_rows(self):
         self.table = pq.read_table(self.filename)
@@ -43,7 +53,7 @@ class SplittedParquetWriter(object):
         required_inmemory_table_size = self.chunksize * \ 
             (inmemory_table_size/disk_size)
         required_rows_per_file = required_inmemory_table_size/inmemory_row_size
-        return self.table.num_rows, round(required_rows_per_file)
+        return self.table.num_rows, self.round(required_rows_per_file)
 
     def write(self):
         os.makedirs(self.destination, exist_ok=True)
@@ -54,8 +64,8 @@ class SplittedParquetWriter(object):
             while i < total_rows:
                 executor.submit(
                     self.write_file, 
-                    os.path.join(self.destination, 
-                    f"{uuid.uuid4().hex}.parquet"), 
+                    os.path.join(
+                        self.destination, f"{uuid.uuid4().hex}.parquet"), 
                     self.table.slice(i, rows_per_file)
                 )
                 i += rows_per_file
