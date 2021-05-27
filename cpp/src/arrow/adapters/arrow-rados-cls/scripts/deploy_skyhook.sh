@@ -19,6 +19,10 @@
 
 set -eu
 
+SNODE=$1
+ENODE=$2
+BRANCH=$3
+
 apt update 
 apt install -y python3 python3-pip python3-venv python3-numpy cmake libradospp-dev rados-objclass-dev
 
@@ -47,7 +51,7 @@ rm -rf dist/*
 pip3 install --upgrade dist/*.whl
 
 cd /tmp/arrow/cpp/debug/debug
-for ((i=1; i<=4; i++)); do
+for ((i=$SNODE; i<=$ENODE; i++)); do
   scp libcls* node${i}:/usr/lib/rados-classes/
   scp libarrow* node${i}:/usr/lib/
   scp libparquet* node${i}:/usr/lib/
