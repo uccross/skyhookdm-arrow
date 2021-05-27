@@ -23,9 +23,9 @@
 
 2. Build and install SkyhookDM and [PyArrow](https://pypi.org/project/pyarrow/) (with Rados Parquet extensions) using [this](../scripts/deploy_skyhook.sh) script.
 
-3. Update your Ceph configuration file with the below line and restart the OSD daemons to load the updated configuration.
+3. Update your Ceph configuration file with the line below and restart the OSD daemons to load the arrow CLS libraries.
 ```
-osd class load list = *
+osd class load list = arrow
 ```
 
 # Interacting with SkyhookDM
@@ -37,6 +37,6 @@ osd class load list = *
 import pyarrow.dataset as ds
 
 format_ = ds.RadosParquetFileFormat("/path/to/cephconfig", "cephfs-data-pool-name")
-dataset_ = ds.dataset("file:///mnt/cephfs/dataset", format=format_)
+dataset_ = ds.dataset("file:///path/to/dataset", format=format_)
 print(dataset_.to_table())
 ```
