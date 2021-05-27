@@ -50,8 +50,8 @@ class SplittedParquetWriter(object):
         disk_size = os.stat(self.filename).st_size
         inmemory_table_size = self.table.nbytes
         inmemory_row_size = inmemory_table_size/self.table.num_rows
-        required_inmemory_table_size = self.chunksize * \ 
-            (inmemory_table_size/disk_size)
+        compression_ratio = inmemory_table_size/disk_size
+        required_inmemory_table_size = self.chunksize * compression_ratio
         required_rows_per_file = required_inmemory_table_size/inmemory_row_size
         return self.table.num_rows, self.round(required_rows_per_file)
 
