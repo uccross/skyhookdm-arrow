@@ -1,0 +1,8 @@
+syntax = "proto2";
+message ScanRequest {
+  required bytes dataset_schema = 1;
+  required bytes projection_schema = 2;
+  required bytes partition_expression = 3;
+  required bytes filter_expression = 4;
+  required int64 file_size = 5;
+}

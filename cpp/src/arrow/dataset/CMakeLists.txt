@@ -38,9 +38,18 @@ if(ARROW_RADOS)
   set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${LIBRADOS_LIBRARIES})
   set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${LIBRADOS_LIBRARIES})
 
+  set(PERF_PROTO_GENERATED_FILES "${CMAKE_CURRENT_BINARY_DIR}/scan_request.pb.cc"
+                                 "${CMAKE_CURRENT_BINARY_DIR}/scan_request.pb.h")
+
+  add_custom_command(OUTPUT ${PERF_PROTO_GENERATED_FILES}
+                     COMMAND ${ARROW_PROTOBUF_PROTOC} "-I${CMAKE_CURRENT_SOURCE_DIR}"
+                             "--cpp_out=${CMAKE_CURRENT_BINARY_DIR}" "scan_request.proto"
+                     DEPENDS ${PROTO_DEPENDS})
+
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} file_rados_parquet.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados_utils.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados.cc)
+  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} scan_request.pb.cc)
 endif()
 
 if(ARROW_CSV)

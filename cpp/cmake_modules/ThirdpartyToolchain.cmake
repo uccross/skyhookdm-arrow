@@ -295,6 +295,10 @@ if((NOT ARROW_COMPUTE) AND (NOT ARROW_GANDIVA) AND (NOT ARROW_WITH_GRPC))
   set(ARROW_WITH_RE2 OFF)
 endif()
 
+if (ARROW_RADOS)
+  set(ARROW_WITH_PROTOBUF ON)
+endif()
+
 # ----------------------------------------------------------------------
 # Versions and URLs for toolchain builds, which also can be used to configure
 # offline builds
