@@ -56,7 +56,8 @@ class ARROW_DS_EXPORT RadosCluster {
     std::string user_name;
     std::string cluster_name;
     std::string cls_name;
-  }
+  };
+  
   explicit RadosCluster(RadosConnectionCtx& ctx)
       : ctx(ctx),
         rados(new RadosWrapper()),
