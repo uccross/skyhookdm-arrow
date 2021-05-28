@@ -85,8 +85,8 @@ RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_pa
   arrow::dataset::RadosCluster::RadosConnectionCtx ctx;
   ctx.ceph_config_path = "/etc/ceph/ceph.conf";
   ctx.data_pool = "cephfs_data";
-  ctx.user_name = "abc";
-  ctx.cluster_name = "abc";
+  ctx.user_name = "client.admin";
+  ctx.cluster_name = "ceph";
   ctx.cls_name = "arrow";
   auto cluster = std::make_shared<RadosCluster>(ctx);
   cluster->Connect();
