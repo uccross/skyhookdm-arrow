@@ -131,8 +131,7 @@ TEST(TestClsSDK, SelectFewRows) {
                                         arrow::compute::literal(2));
   auto format = GetParquetFormat();
   auto dataset = GetDatasetFromPath(fs, format, path);
-  auto scanner =
-      GetScannerFromDataset(dataset, columns, filter, true);
+  auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
   auto table_parquet = scanner->ToTable().ValueOrDie();
 
   format = GetRadosParquetFormat();

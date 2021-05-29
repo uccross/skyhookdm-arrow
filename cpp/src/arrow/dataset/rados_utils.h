@@ -47,8 +47,7 @@ ARROW_DS_EXPORT Status CharToInt64(char* buffer, int64_t& num);
 
 /// \brief Serialize Expression(s) and Schema to a bufferlist.
 ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
-    std::shared_ptr<ScanOptions> options,
-    int64_t file_size, ceph::bufferlist& bl);
+    std::shared_ptr<ScanOptions> options, int64_t file_size, ceph::bufferlist& bl);
 
 /// \brief Deserialize Expression(s) and Schema from a bufferlist.
 ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(

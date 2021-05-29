@@ -51,7 +51,7 @@ class RadosParquetScanTask : public ScanTask {
 
     ceph::bufferlist in;
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, in));
-    
+
     ceph::bufferlist result;
     s = doa_->Exec(st.st_ino, "scan_op", in, result);
     if (!s.ok()) {

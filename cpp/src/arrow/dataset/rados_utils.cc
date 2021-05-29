@@ -52,7 +52,8 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
                                         int64_t file_size, ceph::bufferlist& bl) {
   // serialize the filter expression's and the schema's.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, compute::Serialize(options->filter));
-  ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer, compute::Serialize(options->partition_expression));
+  ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer,
+                        compute::Serialize(options->partition_expression));
   ARROW_ASSIGN_OR_RAISE(auto projection_schema_buffer,
                         ipc::SerializeSchema(*options->projected_schema));
   ARROW_ASSIGN_OR_RAISE(auto dataset_schema_buffer,
