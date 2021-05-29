@@ -164,7 +164,7 @@ TEST(TestClsSDK, SelectFewColumns) {
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
-TEST(TestClsSDK, SelectRowsAndColumnsOnParitionKey) {
+TEST(TestClsSDK, SelectRowsAndColumnsOnPartitionKey) {
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns = {"fare_amount", "VendorID", "payment_type"};
@@ -185,7 +185,7 @@ TEST(TestClsSDK, SelectRowsAndColumnsOnParitionKey) {
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
-TEST(TestClsSDK, SelectRowsAndColumnsOnlyOnParitionKey) {
+TEST(TestClsSDK, SelectRowsAndColumnsOnlyOnPartitionKey) {
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns = {"total_amount", "VendorID", "payment_type"};
