@@ -37,10 +37,20 @@ cls_method_handle_t h_scan_op;
 
 class RandomAccessObject : public arrow::io::RandomAccessFile {
  public:
-  explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
+  explicit RandomAccessObject(cls_method_context_t hctx) {
     hctx_ = hctx;
-    content_length_ = file_size;
     chunks_ = std::vector<ceph::bufferlist*>();
+  }
+
+  arrow::Status Init() {
+    uint64_t size;
+    int e = cls_cxx_stat(hctx_, &size, NULL);
+    if (e == 0) {
+      content_length_ = size;
+      return arrow::Status::OK();
+    } else {
+      return arrow::Status::ExecutionError("cls_cxx_stat returned non-zero exit code.");
+    }
   }
 
   arrow::Status CheckClosed() const {
@@ -131,9 +141,9 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        arrow::compute::Expression partition_expression,
                                        std::shared_ptr<arrow::Schema> projection_schema,
                                        std::shared_ptr<arrow::Schema> dataset_schema,
-                                       std::shared_ptr<arrow::Table>& t,
-                                       int64_t file_size) {
-  auto file = std::make_shared<RandomAccessObject>(hctx, file_size);
+                                       std::shared_ptr<arrow::Table>& t) {
+  auto file = std::make_shared<RandomAccessObject>(hctx);
+  ARROW_RETURN_NOT_OK(file->Init());
 
   arrow::dataset::FileSource source(file);
 
@@ -183,7 +193,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Table> table;
   arrow::Status s =
       ScanParquetObject(hctx, filter, partition_expression, projection_schema,
-                        dataset_schema, table, file_size);
+                        dataset_schema, table);
   if (!s.ok()) {
     CLS_LOG(0, "error: %s", s.message().c_str());
     return -1;
