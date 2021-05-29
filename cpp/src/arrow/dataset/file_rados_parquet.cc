@@ -112,7 +112,7 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
     scan_request = *cached_scan_request_;
   } else {
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, scan_request));
-    *cached_scan_request = scan_request;
+    *cached_scan_request_ = scan_request;
   }
 
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
