@@ -47,7 +47,8 @@ ARROW_DS_EXPORT Status WriteScanRequestToBufferList(
     int64_t file_size, ceph::bufferlist& bl);
 
 ARROW_DS_EXPORT Status ReadScanRequestFromBufferList(
-    std::shared_ptr<ScanOptions> options,
+    compute::Expression* filter, compute::Expression* part_expr,
+    std::shared_ptr<Schema>* projection_schema, std::shared_ptr<Schema>* dataset_schema,
     int64_t& file_size, ceph::bufferlist& bl);
 
 ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
