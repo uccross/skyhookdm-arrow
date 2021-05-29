@@ -279,7 +279,7 @@ if(ARROW_JSON)
   set(ARROW_WITH_RAPIDJSON ON)
 endif()
 
-if(ARROW_ORC OR ARROW_FLIGHT OR ARROW_GANDIVA)
+if(ARROW_ORC OR ARROW_FLIGHT OR ARROW_GANDIVA OR ARROW_DATASET)
   set(ARROW_WITH_PROTOBUF ON)
 endif()
 
@@ -293,10 +293,6 @@ if(NOT ARROW_COMPUTE)
 endif()
 if((NOT ARROW_COMPUTE) AND (NOT ARROW_GANDIVA) AND (NOT ARROW_WITH_GRPC))
   set(ARROW_WITH_RE2 OFF)
-endif()
-
-if (ARROW_RADOS)
-  set(ARROW_WITH_PROTOBUF ON)
 endif()
 
 # ----------------------------------------------------------------------
