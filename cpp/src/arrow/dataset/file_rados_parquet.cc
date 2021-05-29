@@ -35,28 +35,19 @@ namespace dataset {
 class RadosParquetScanTask : public ScanTask {
  public:
   RadosParquetScanTask(std::shared_ptr<ScanOptions> options,
-                       std::shared_ptr<Fragment> fragment, FileSource source,
-                       std::shared_ptr<DirectObjectAccess> doa)
+                       std::shared_ptr<Fragment> fragment,
+                       std::shared_ptr<DirectObjectAccess> doa,
+                       uint64_t inode,
+                       ceph::bufferlist request)
       : ScanTask(std::move(options), std::move(fragment)),
-        source_(std::move(source)),
-        doa_(std::move(doa)) {}
+        doa_(std::move(doa)),
+        inode_(std::move(inode)),
+        request_(std::move(request)) {}
 
   Result<RecordBatchIterator> Execute() override {
     ceph::bufferlist out;
 
-    Status s;
-    struct stat st {};
-    s = doa_->Stat(source_.path(), st);
-    if (!s.ok()) {
-      return Status::Invalid(s.message());
-    }
-
-    ceph::bufferlist in;
-    ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(
-        options_->filter, options_->partition_expression, options_->projected_schema,
-        options_->dataset_schema, st.st_size, in));
-
-    s = doa_->Exec(st.st_ino, "scan_op", in, out);
+    Status s = doa_->Exec(inode_, "scan_op", request_, out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
     }
@@ -74,8 +65,9 @@ class RadosParquetScanTask : public ScanTask {
   }
 
  protected:
-  FileSource source_;
   std::shared_ptr<DirectObjectAccess> doa_;
+  uint64_t inode_;
+  ceph::bufferlist request_;
 };
 
 RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_path,
@@ -108,8 +100,22 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
+
+  struct stat st {};
+  Status s = doa_->Stat(file->source().path(), st);
+  if (!s.ok()) {
+    return Status::Invalid(s.message());
+  }
+
+  ceph::bufferlist scan_request;
+  if (cached_scan_request_ != NULL) {
+    scan_request = *cached_scan_request_;
+  } else {
+    ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, scan_request));
+  }
+
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
-      std::move(options_), std::move(file), file->source(), std::move(doa_))};
+      std::move(options_), std::move(file), std::move(doa_), st.st_ino, scan_request)};
   return MakeVectorIterator(v);
 }
 
