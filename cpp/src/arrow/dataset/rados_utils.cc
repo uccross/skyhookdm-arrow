@@ -54,7 +54,7 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer, compute::Serialize(options->partition_expression));
   ARROW_ASSIGN_OR_RAISE(auto projection_schema_buffer,
-                        ipc::SerializeSchema(*options->projection_schema));
+                        ipc::SerializeSchema(*options->projected_schema));
   ARROW_ASSIGN_OR_RAISE(auto dataset_schema_buffer,
                         ipc::SerializeSchema(*options->dataset_schema));
 
