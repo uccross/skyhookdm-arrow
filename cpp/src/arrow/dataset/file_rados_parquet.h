@@ -90,6 +90,8 @@ class ARROW_DS_EXPORT RadosCluster {
 
 class ARROW_DS_EXPORT DirectObjectAccess {
  public:
+  ceph::bufferlist *request = NULL;
+
   explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
       : cluster_(std::move(cluster)) {}
 
