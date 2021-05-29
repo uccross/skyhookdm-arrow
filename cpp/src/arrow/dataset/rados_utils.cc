@@ -53,6 +53,7 @@ Status SerializeScanRequestToBufferlist(compute::Expression filter,
                                         std::shared_ptr<Schema> projection_schema,
                                         std::shared_ptr<Schema> dataset_schema,
                                         int64_t file_size, ceph::bufferlist& bl) {
+  ScanRequest request;
   // serialize the filter expression's and the schema's.
   ARROW_ASSIGN_OR_RAISE(auto filter_buffer, compute::Serialize(filter));
   ARROW_ASSIGN_OR_RAISE(auto part_expr_buffer, compute::Serialize(part_expr));
