@@ -26,12 +26,12 @@ set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${ARROW_PROTOBUF_LIBP
 set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${ARROW_PROTOBUF_LIBPROTOBUF})
 
 set(PROTO_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(PROTO_OUTPUT_FILES "${PROTO_OUTPUT_DIR}/scan_request.pb.cc")
-set(PROTO_OUTPUT_FILES ${PROTO_OUTPUT_FILES} "${PROTO_OUTPUT_DIR}/scan_request.pb.h")
+set(PROTO_OUTPUT_FILES "${PROTO_OUTPUT_DIR}/ScanRequest.pb.cc")
+set(PROTO_OUTPUT_FILES ${PROTO_OUTPUT_FILES} "${PROTO_OUTPUT_DIR}/ScanRequest.pb.h")
 
 set_source_files_properties(${PROTO_OUTPUT_FILES} PROPERTIES GENERATED TRUE)
 
-get_filename_component(ABS_SCAN_REQUEST_PROTO ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto/scan_request.proto
+get_filename_component(ABS_SCAN_REQUEST_PROTO ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto/ScanRequest.proto
                         ABSOLUTE)
 
 add_custom_command(OUTPUT ${PROTO_OUTPUT_FILES}
@@ -40,14 +40,14 @@ add_custom_command(OUTPUT ${PROTO_OUTPUT_FILES}
                           ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto
                           --cpp_out
                           ${PROTO_OUTPUT_DIR}
-                          ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto/scan_request.proto
+                          ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto/ScanRequest.proto
                   DEPENDS ${ABS_SCAN_REQUEST_PROTO} ${ARROW_PROTOBUF_LIBPROTOBUF}
-                  COMMENT "Running PROTO compiler on scan_request.proto"
+                  COMMENT "Running PROTO compiler on ScanRequest.proto"
                   VERBATIM)
 
 add_custom_target(dataset_proto ALL DEPENDS ${PROTO_OUTPUT_FILES})
-set(PROTO_SRCS "${PROTO_OUTPUT_DIR}/scan_request.pb.cc")
-set(PROTO_HDRS "${PROTO_OUTPUT_DIR}/scan_request.pb.h")
+set(PROTO_SRCS "${PROTO_OUTPUT_DIR}/ScanRequest.pb.cc")
+set(PROTO_HDRS "${PROTO_OUTPUT_DIR}/ScanRequest.pb.h")
 
 set(ARROW_DATASET_SRCS
     dataset.cc

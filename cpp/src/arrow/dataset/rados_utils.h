@@ -36,7 +36,7 @@
 #include "parquet/arrow/writer.h"
 #include "parquet/exception.h"
 
-#include "arrow/dataset/scan_request.pb.h"
+#include "arrow/dataset/ScanRequest.pb.h"
 
 
 namespace arrow {
