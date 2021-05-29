@@ -88,7 +88,6 @@ add_arrow_lib(arrow_dataset
               ArrowDataset
               PKG_CONFIG_NAME
               arrow-dataset
-              scan_request_proto
               OUTPUTS
               ARROW_DATASET_LIBRARIES
               SOURCES
@@ -98,8 +97,10 @@ add_arrow_lib(arrow_dataset
               PRIVATE_INCLUDES
               ${ARROW_DATASET_PRIVATE_INCLUDES}
               SHARED_LINK_LIBS
+              scan_request_proto
               ${ARROW_DATASET_LINK_SHARED}
               STATIC_LINK_LIBS
+              scan_request_proto
               ${ARROW_DATASET_LINK_STATIC})
 
 if(ARROW_TEST_LINKAGE STREQUAL "static")
