@@ -173,7 +173,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   int64_t file_size;
 
   // deserialize the scan request
-  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
+  if (!arrow::dataset::ReadScanRequestFromBufferList(
            &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
            *in)
            .ok())

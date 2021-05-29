@@ -49,14 +49,13 @@ ARROW_DS_EXPORT Status Int64ToChar(char* buffer, int64_t num);
 ARROW_DS_EXPORT Status CharToInt64(char* buffer, int64_t& num);
 
 /// \brief Serialize Expression(s) and Schema to a bufferlist.
-ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
+ARROW_DS_EXPORT Status WriteScanRequestToBufferList(
     std::shared_ptr<ScanOptions> options,
     int64_t file_size, ceph::bufferlist& bl);
 
 /// \brief Deserialize Expression(s) and Schema from a bufferlist.
-ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(
-    compute::Expression* filter, compute::Expression* part_expr,
-    std::shared_ptr<Schema>* projection_schema, std::shared_ptr<Schema>* dataset_schema,
+ARROW_DS_EXPORT Status ReadScanRequestFromBufferList(
+    std::shared_ptr<ScanOptions> options,
     int64_t& file_size, ceph::bufferlist& bl);
 
 /// \brief Serialize a Table to an Arrow IPC binary buffer.
