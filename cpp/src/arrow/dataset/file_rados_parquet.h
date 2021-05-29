@@ -152,7 +152,7 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
   std::shared_ptr<FileWriteOptions> DefaultWriteOptions() override { return NULLPTR; }
 
  protected:
-  ceph::bufferlist *cached_scan_request_ = NULL;
+  ceph::bufferlist *scan_request_ = NULL;
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
