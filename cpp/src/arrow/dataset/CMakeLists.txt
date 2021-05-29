@@ -38,18 +38,40 @@ if(ARROW_RADOS)
   set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${LIBRADOS_LIBRARIES})
   set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${LIBRADOS_LIBRARIES})
 
-  set(PERF_PROTO_GENERATED_FILES "${CMAKE_CURRENT_BINARY_DIR}/scan_request.pb.cc"
-                                 "${CMAKE_CURRENT_BINARY_DIR}/scan_request.pb.h")
 
-  add_custom_command(OUTPUT ${PERF_PROTO_GENERATED_FILES}
-                     COMMAND ${ARROW_PROTOBUF_PROTOC} "-I${CMAKE_CURRENT_SOURCE_DIR}"
-                             "--cpp_out=${CMAKE_CURRENT_BINARY_DIR}" "scan_request.proto"
-                     DEPENDS ${PROTO_DEPENDS})
+  set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${ARROW_PROTOBUF_LIBPROTOBUF})
+  set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${ARROW_PROTOBUF_LIBPROTOBUF})
+
+  add_definitions(-DPROTOBUF_USE_DLLS)
+
+  set(PROTO_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  set(PROTO_OUTPUT_FILES "${PROTO_OUTPUT_DIR}/scan_request.pb.cc")
+  set(PROTO_OUTPUT_FILES ${PROTO_OUTPUT_FILES} "${PROTO_OUTPUT_DIR}/scan_request.pb.h")
+
+  set_source_files_properties(${PROTO_OUTPUT_FILES} PROPERTIES GENERATED TRUE)
+  
+  get_filename_component(ABS_SCAN_REQUEST_PROTO ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto/scan_request.proto
+                         ABSOLUTE)
+
+  add_custom_command(OUTPUT ${PROTO_OUTPUT_FILES}
+                   COMMAND ${ARROW_PROTOBUF_PROTOC}
+                           --proto_path
+                           ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto
+                           --cpp_out
+                           ${PROTO_OUTPUT_DIR}
+                           ${CMAKE_SOURCE_DIR}/src/arrow/dataset/proto/scan_request.proto
+                   DEPENDS ${ABS_SCAN_REQUEST_PROTO} ${ARROW_PROTOBUF_LIBPROTOBUF}
+                   COMMENT "Running PROTO compiler on scan_request.proto"
+                   VERBATIM)
+
+  add_custom_target(scan_request_proto ALL DEPENDS ${PROTO_OUTPUT_FILES})
+  set(PROTO_SRCS "${PROTO_OUTPUT_DIR}/scan_request.pb.cc")
+  set(PROTO_HDRS "${PROTO_OUTPUT_DIR}/scan_request.pb.h")
 
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} file_rados_parquet.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados_utils.cc)
   set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} rados.cc)
-  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} scan_request.pb.cc)
+  set(ARROW_DATASET_SRCS ${ARROW_DATASET_SRCS} ${PROTO_SRCS})
 endif()
 
 if(ARROW_CSV)
@@ -68,6 +90,7 @@ add_arrow_lib(arrow_dataset
               ArrowDataset
               PKG_CONFIG_NAME
               arrow-dataset
+              scan_request_proto
               OUTPUTS
               ARROW_DATASET_LIBRARIES
               SOURCES
