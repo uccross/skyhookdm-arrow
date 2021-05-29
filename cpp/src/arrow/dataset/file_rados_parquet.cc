@@ -117,6 +117,8 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
     ARROW_LOG(INFO) << "Serialized\n";
 
     *cached_scan_request_ = scan_request;
+    ARROW_LOG(INFO) << "Cached successfully\n";
+
   }
   ARROW_LOG(INFO) << "Launching ScanTasks\n";
 
