@@ -94,13 +94,13 @@ add_arrow_lib(arrow_dataset
               ${ARROW_DATASET_SRCS}
               PRECOMPILED_HEADERS
               "$<$<COMPILE_LANGUAGE:CXX>:arrow/dataset/pch.h>"
+              DEPENDENCIES
+              scan_request_proto
               PRIVATE_INCLUDES
               ${ARROW_DATASET_PRIVATE_INCLUDES}
               SHARED_LINK_LIBS
-              scan_request_proto
               ${ARROW_DATASET_LINK_SHARED}
               STATIC_LINK_LIBS
-              scan_request_proto
               ${ARROW_DATASET_LINK_STATIC})
 
 if(ARROW_TEST_LINKAGE STREQUAL "static")
