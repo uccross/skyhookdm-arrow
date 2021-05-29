@@ -62,7 +62,7 @@ if(ARROW_RADOS)
                    COMMENT "Running PROTO compiler on scan_request.proto"
                    VERBATIM)
 
-  add_custom_target(scan_request_proto ALL DEPENDS ${PROTO_OUTPUT_FILES})
+  add_custom_target(dataset_proto ALL DEPENDS ${PROTO_OUTPUT_FILES})
   set(PROTO_SRCS "${PROTO_OUTPUT_DIR}/scan_request.pb.cc")
   set(PROTO_HDRS "${PROTO_OUTPUT_DIR}/scan_request.pb.h")
 
@@ -95,7 +95,7 @@ add_arrow_lib(arrow_dataset
               PRECOMPILED_HEADERS
               "$<$<COMPILE_LANGUAGE:CXX>:arrow/dataset/pch.h>"
               DEPENDENCIES
-              scan_request_proto
+              dataset_proto
               PRIVATE_INCLUDES
               ${ARROW_DATASET_PRIVATE_INCLUDES}
               SHARED_LINK_LIBS
