@@ -42,23 +42,14 @@
 namespace arrow {
 namespace dataset {
 
-/// \brief Convert a 64-bit integer to a buffer.
-ARROW_DS_EXPORT Status Int64ToChar(char* buffer, int64_t num);
-
-/// \brief Convert a buffer to 64-bit integer.
-ARROW_DS_EXPORT Status CharToInt64(char* buffer, int64_t& num);
-
-/// \brief Serialize Expression(s) and Schema to a bufferlist.
 ARROW_DS_EXPORT Status WriteScanRequestToBufferList(
     std::shared_ptr<ScanOptions> options,
     int64_t file_size, ceph::bufferlist& bl);
 
-/// \brief Deserialize Expression(s) and Schema from a bufferlist.
 ARROW_DS_EXPORT Status ReadScanRequestFromBufferList(
     std::shared_ptr<ScanOptions> options,
     int64_t& file_size, ceph::bufferlist& bl);
 
-/// \brief Serialize a Table to an Arrow IPC binary buffer.
 ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
                                                   ceph::bufferlist& bl);
 

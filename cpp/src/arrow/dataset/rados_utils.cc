@@ -32,13 +32,13 @@ Status WriteScanRequestToBufferList(std::shared_ptr<ScanOptions> options,
   ARROW_ASSIGN_OR_RAISE(auto projection_schema, ipc::SerializeSchema(*options->projected_schema));
   ARROW_ASSIGN_OR_RAISE(auto dataset_schema, ipc::SerializeSchema(*options->dataset_schema));
   
-  request.set_dataset_schema(dataset_schema->data());
-  request.set_partition_expression(partition_expression->data());
-  request.set_filter_expression(filter->data());
-  request.set_projection_schema(projection_schema->data());
+  request.set_dataset_schema((char*)dataset_schema->data());
+  request.set_partition_expression((char*)partition_expression->data());
+  request.set_filter_expression((char*)filter->data());
+  request.set_projection_schema((char*)projection_schema->data());
   request.set_file_size(file_size);
 
-  size_t size = options.ByteSizeLong(); 
+  size_t size = request.ByteSizeLong(); 
   void *buffer = malloc(size);
   options.SerializeToArray(buffer, size);
 
@@ -54,7 +54,7 @@ Status ReadScanRequestFromBufferList(compute::Expression* filter,
   ScanRequest request;
   bool done = request.ParseFromArray(bl.c_str(), bl.length());
   if (!done) {
-    return Status::Invalid("Invalid ProtoBuf message.");
+    return Status::Invalid("Invalid Protocol Buffer message.");
   }
 
   ARROW_ASSIGN_OR_RAISE(*filter, compute::Deserialize(std::make_shared<Buffer>(
