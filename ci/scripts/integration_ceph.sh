@@ -71,6 +71,7 @@ osd class default list = *
 EOF
 
 export CEPH_CONF=${DIR}/ceph.conf
+cp $CEPH_CONF /etc/ceph/ceph.conf
 
 # start an osd
 ceph-mon --id ${MON_NAME} --mkfs --keyring /dev/null

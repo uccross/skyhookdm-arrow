@@ -14,6 +14,8 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
+#include <mutex>
+
 #include "arrow/dataset/file_rados_parquet.h"
 
 #include "arrow/api.h"
@@ -31,6 +33,8 @@
 
 namespace arrow {
 namespace dataset {
+
+std::mutex mutex {};
 
 class RadosParquetScanTask : public ScanTask {
  public:
@@ -50,11 +54,15 @@ class RadosParquetScanTask : public ScanTask {
     if (!s.ok()) {
       return Status::Invalid(s.message());
     }
-
+    ARROW_LOG(INFO) << "checking doa->request\n";
     if (doa_->request == NULL) {
-      doa_->request = new ceph::bufferlist;
+      ARROW_LOG(INFO) << "doa->request is null\n";
+      std::lock_guard<std::mutex> lock(mutex);
+      doa_->request = new ceph::bufferlist();
       ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, *doa_->request));
     }
+
+    ARROW_LOG(INFO) << "about to call exec\n";
 
     s = doa_->Exec(st.st_ino, "scan_op", *doa_->request, out);
     if (!s.ok()) {
