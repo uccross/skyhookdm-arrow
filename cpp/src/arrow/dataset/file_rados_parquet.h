@@ -141,7 +141,7 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
 
   Result<ScanTaskIterator> ScanFile(
       const std::shared_ptr<ScanOptions>& options,
-      const std::shared_ptr<FileFragment>& file) override;
+      const std::shared_ptr<FileFragment>& file) const override;
 
   Result<std::shared_ptr<FileWriter>> MakeWriter(
       std::shared_ptr<io::OutputStream> destination, std::shared_ptr<Schema> schema,
