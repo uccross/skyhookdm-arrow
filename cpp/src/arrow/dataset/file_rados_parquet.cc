@@ -109,8 +109,10 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
 
   ceph::bufferlist scan_request;
   if (cached_scan_request_ != NULL) {
+    ARROW_LOG(INFO) << "Already cached !\n";
     scan_request = *cached_scan_request_;
   } else {
+    ARROW_LOG(INFO) << "Not cached. Caching !\n";
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, scan_request));
     *cached_scan_request_ = scan_request;
   }
