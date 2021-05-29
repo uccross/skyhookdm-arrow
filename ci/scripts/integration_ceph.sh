@@ -93,23 +93,12 @@ ceph-mds -i ${MDS_NAME}
 ceph status
 while [[ ! $(ceph mds stat | grep "up:active") ]]; do sleep 1; done
 
-
 # start a manager
 ceph-mgr --id ${MGR_NAME}
 
 # test the setup
 ceph --version
 ceph status
-test_pool=$(uuidgen)
-temp_file=$(mktemp)
-ceph osd pool create ${test_pool} 0
-rados --pool ${test_pool} put group /etc/group
-rados --pool ${test_pool} get group ${temp_file}
-diff /etc/group ${temp_file}
-ceph osd pool delete ${test_pool} ${test_pool} --yes-i-really-really-mean-it
-rm ${temp_file}
-
-touch ${DIR}/.ready
 
 apt update
 apt install -y ceph-fuse
@@ -121,7 +110,7 @@ pushd ${ARROW_BUILD_DIR}
 
     # mount a ceph filesystem to /mnt/cephfs in the user-space using ceph-fuse
     mkdir -p /mnt/cephfs
-    ceph-fuse --id client.admin -m 127.0.0.1:6789  --client_fs cephfs /mnt/cephfs
+    ceph-fuse /mnt/cephfs
     sleep 5
 
     # download an example dataset and copy into the mounted dir
