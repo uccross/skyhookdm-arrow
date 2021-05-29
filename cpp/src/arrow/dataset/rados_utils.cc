@@ -73,6 +73,8 @@ Status ReadScanRequestFromBufferList(compute::Expression* filter,
                         ipc::ReadSchema(&projection_schema_reader, &empty_memo));
   ARROW_ASSIGN_OR_RAISE(*dataset_schema,
                         ipc::ReadSchema(&dataset_schema_reader, &empty_memo));
+
+  file_size = request.file_size();
   return Status::OK();
 }
 
