@@ -40,14 +40,14 @@ Status WriteScanRequestToBufferList(std::shared_ptr<ScanOptions> options,
 
   size_t size = request.ByteSizeLong(); 
   void *buffer = malloc(size);
-  options.SerializeToArray(buffer, size);
+  request.SerializeToArray(buffer, size);
 
   bl.append((char*)buffer, size);
   return Status::OK();
 }
 
 Status ReadScanRequestFromBufferList(compute::Expression* filter,
-                                      compute::Expression* parition,
+                                      compute::Expression* partition,
                                       std::shared_ptr<Schema>* projection_schema,
                                       std::shared_ptr<Schema>* dataset_schema,
                                       int64_t& file_size, ceph::bufferlist& bl) {
