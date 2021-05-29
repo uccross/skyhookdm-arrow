@@ -57,7 +57,7 @@ class RadosParquetScanTask : public ScanTask {
       ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, *doa_->request));
     }
     
-    s = doa_->Exec(st.st_ino, "scan_op", doa_->request, out);
+    s = doa_->Exec(st.st_ino, "scan_op", *doa_->request, out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
     }
