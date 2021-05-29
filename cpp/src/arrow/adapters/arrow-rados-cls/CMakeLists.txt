@@ -37,7 +37,7 @@ add_arrow_lib(cls_arrow
               SOURCES
               ${ARROW_CLS_SRCS}
               DEPENDENCIES
-              arrow-dataset
+              arrow_dataset
               PRIVATE_INCLUDES
               ${ARROW_CLS_PRIVATE_INCLUDES}
               SHARED_LINK_LIBS
