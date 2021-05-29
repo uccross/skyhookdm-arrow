@@ -106,7 +106,7 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   if (!s.ok()) {
     return Status::Invalid(s.message());
   }
-
+  ARROW_LOG(INFO) << "Starting Scan\n";
   ceph::bufferlist scan_request;
   if (cached_scan_request_ != NULL) {
     ARROW_LOG(INFO) << "Already cached !\n";
@@ -116,6 +116,7 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
     ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, scan_request));
     *cached_scan_request_ = scan_request;
   }
+  ARROW_LOG(INFO) << "Launching ScanTasks\n";
 
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
       std::move(options_), std::move(file), std::move(doa_), st.st_ino, scan_request)};
