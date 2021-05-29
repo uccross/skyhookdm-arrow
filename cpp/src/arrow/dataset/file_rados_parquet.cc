@@ -35,19 +35,26 @@ namespace dataset {
 class RadosParquetScanTask : public ScanTask {
  public:
   RadosParquetScanTask(std::shared_ptr<ScanOptions> options,
-                       std::shared_ptr<Fragment> fragment,
-                       std::shared_ptr<DirectObjectAccess> doa,
-                       uint64_t inode,
-                       ceph::bufferlist request)
+                       std::shared_ptr<Fragment> fragment, FileSource source,
+                       std::shared_ptr<DirectObjectAccess> doa)
       : ScanTask(std::move(options), std::move(fragment)),
-        doa_(std::move(doa)),
-        inode_(std::move(inode)),
-        request_(std::move(request)) {}
+        source_(std::move(source)),
+        doa_(std::move(doa)) {}
 
   Result<RecordBatchIterator> Execute() override {
     ceph::bufferlist out;
 
-    Status s = doa_->Exec(inode_, "scan_op", request_, out);
+    Status s;
+    struct stat st {};
+    s = doa_->Stat(source_.path(), st);
+    if (!s.ok()) {
+      return Status::Invalid(s.message());
+    }
+
+    ceph::bufferlist in;
+    ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, in));
+
+    s = doa_->Exec(st.st_ino, "scan_op", in, out);
     if (!s.ok()) {
       return Status::ExecutionError(s.message());
     }
@@ -65,9 +72,8 @@ class RadosParquetScanTask : public ScanTask {
   }
 
  protected:
+  FileSource source_;
   std::shared_ptr<DirectObjectAccess> doa_;
-  uint64_t inode_;
-  ceph::bufferlist request_;
 };
 
 RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_path,
@@ -100,28 +106,8 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
-
-  struct stat st {};
-  Status s = doa_->Stat(file->source().path(), st);
-  if (!s.ok()) {
-    return Status::Invalid(s.message());
-  }
-  ARROW_LOG(INFO) << "Starting Scan\n";
-  if (scan_request_ != NULL) {
-    ARROW_LOG(INFO) << "Already cached !\n";
-  } else {
-    ARROW_LOG(INFO) << "Not cached. Caching !\n";
-    scan_request_ = new ceph::bufferlist;
-    ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, *scan_request_));
-    ARROW_LOG(INFO) << "Serialized\n";
-
-    ARROW_LOG(INFO) << "Cached successfully\n";
-
-  }
-  ARROW_LOG(INFO) << "Launching ScanTasks\n";
-
   ScanTaskVector v{std::make_shared<RadosParquetScanTask>(
-      std::move(options_), std::move(file), std::move(doa_), st.st_ino, scan_request_)};
+      std::move(options_), std::move(file), file->source(), std::move(doa_))};
   return MakeVectorIterator(v);
 }
 
