@@ -129,6 +129,10 @@ if(ARROW_PARQUET)
   add_arrow_dataset_test(file_parquet_test)
 endif()
 
+if(ARROW_RADOS)
+  add_arrow_dataset_test(file_rados_parquet_test)
+endif()
+
 if(ARROW_BUILD_BENCHMARKS)
   add_arrow_benchmark(file_benchmark PREFIX "arrow-dataset")
 
