@@ -7,18 +7,32 @@
 namespace arrow {
 namespace dataset {
 
-TEST(TestRadosParquetFileFormat, SerializeDeserializeRoundTrip) {
+TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
     std::shared_ptr<ScanOptions> options;
     ceph::bufferlist bl;
     int64_t file_size = 1000000;
-    RETURN_NOT_OK(SerializeScanRequest(options, file_size, bl));
+    SerializeScanRequest(options, file_size, bl);
 
     compute::Expression filter_;
     compute::Expression partition_expression_;
     std::shared_ptr<Schema> projected_schema;
     std::shared_ptr<Schema> dataset_schema_;
     int64_t file_size_;
-    RETURN_NOT_OK(DeserializeScanRequest(filter_, partition_expression_, projected_schema, dataset_schema_, file_size_, bl);
+    DeserializeScanRequest(filter_, partition_expression_, projected_schema, dataset_schema_, file_size_, bl);
+}
+
+TEST(TestRadosParquetFileFormat, SerializeTable) {
+    std::shared_ptr<ScanOptions> options;
+    ceph::bufferlist bl;
+    int64_t file_size = 1000000;
+    SerializeScanRequest(options, file_size, bl);
+
+    compute::Expression filter_;
+    compute::Expression partition_expression_;
+    std::shared_ptr<Schema> projected_schema;
+    std::shared_ptr<Schema> dataset_schema_;
+    int64_t file_size_;
+    DeserializeScanRequest(filter_, partition_expression_, projected_schema, dataset_schema_, file_size_, bl);
 }
 
 } // namespace dataset
