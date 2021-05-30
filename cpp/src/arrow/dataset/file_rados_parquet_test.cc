@@ -29,7 +29,7 @@ TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
     ASSERT_EQ(options->dataset_schema->Equals(dataset_schema_), 1);
 }
 
-TEST(TestRadosParquetFileFormat, SerializeTable) {
+TEST(TestRadosParquetFileFormat, SerializeDeserializeTable) {
     
 }
 
