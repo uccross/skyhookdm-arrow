@@ -8,7 +8,7 @@ namespace arrow {
 namespace dataset {
 
 TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
-    std::shared_ptr<ScanOptions> options;
+    std::shared_ptr<ScanOptions> options = std::make_shared<ScanOptions>();
     options->projected_schema = arrow::schema({arrow::field("a", arrow::int64())});
     options->dataset_schema = arrow::schema({arrow::field("a", arrow::int64())});
 
