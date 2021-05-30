@@ -23,7 +23,7 @@
 
 1. Clone the repository.
 ```bash
-git clone --branch rados-dataset-dev https://github.com/uccross/arrow
+git clone --branch v0.2.0 https://github.com/uccross/arrow
 ```
 
 2. Install [Archery](https://arrow.apache.org/docs/developers/archery.html#), the daily development tool by Apache Arrow community.
