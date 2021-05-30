@@ -9,8 +9,8 @@ namespace dataset {
 
 TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
     std::shared_ptr<ScanOptions> options;
-    options->projected_schema = arrow::schema({});
-    options->dataset_schema = arrow::schema({});
+    options->projected_schema = arrow::schema({arrow::field("a", arrow::int64())});
+    options->dataset_schema = arrow::schema({arrow::field("a", arrow::int64())});
 
     ceph::bufferlist bl;
     int64_t file_size = 1000000;
