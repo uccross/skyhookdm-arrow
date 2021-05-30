@@ -4,6 +4,15 @@
 #include "arrow/dataset/file_rados_parquet.h"
 #include "arrow/dataset/test_util.h"
 
+#define ABORT_ON_FAILURE(expr)                     \
+  do {                                             \
+    arrow::Status status_ = (expr);                \
+    if (!status_.ok()) {                           \
+      std::cerr << status_.message() << std::endl; \
+      abort();                                     \
+    }                                              \
+  } while (0);
+
 namespace arrow {
 namespace dataset {
 
@@ -55,7 +64,7 @@ TEST(TestRadosParquetFileFormat, SerializeDeserializeTable) {
 
     RecordBatchVector batches;
     DeserializeTable(batches, bl);
-    std::shared_ptr<Table> materialized_table = arrow::Table::FromRecordBatches(batches);
+    ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(batches));
     
     ASSERT_EQ(table->Equals(*materialized_table), 1);
 }
