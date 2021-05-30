@@ -42,12 +42,11 @@ namespace dataset {
 ARROW_DS_EXPORT Status SerializeScanRequestToBufferlist(
     std::shared_ptr<ScanOptions> options, int64_t file_size, ceph::bufferlist& bl);
 
-ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(compute::Expression* filter,
-                                            compute::Expression* partition,
-                                            std::shared_ptr<Schema>* projected_schema,
-                                            std::shared_ptr<Schema>* dataset_schema,
-                                            int64_t& file_size, ceph::bufferlist& bl);
-  
+ARROW_DS_EXPORT Status DeserializeScanRequestFromBufferlist(
+    compute::Expression* filter, compute::Expression* partition,
+    std::shared_ptr<Schema>* projected_schema, std::shared_ptr<Schema>* dataset_schema,
+    int64_t& file_size, ceph::bufferlist& bl);
+
 ARROW_DS_EXPORT Status SerializeTableToBufferlist(std::shared_ptr<Table>& table,
                                                   ceph::bufferlist& bl);
 

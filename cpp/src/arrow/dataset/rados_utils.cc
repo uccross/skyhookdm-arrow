@@ -14,7 +14,7 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-#include <flatbuffers/flatbuffers.h> 
+#include <flatbuffers/flatbuffers.h>
 
 #include "arrow/dataset/rados_utils.h"
 #include "arrow/util/compression.h"
@@ -33,19 +33,20 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
                         compute::Serialize(options->partition_expression));
   ARROW_ASSIGN_OR_RAISE(auto projection,
                         ipc::SerializeSchema(*options->projected_schema));
-  ARROW_ASSIGN_OR_RAISE(auto schema,
-                        ipc::SerializeSchema(*options->dataset_schema));
+  ARROW_ASSIGN_OR_RAISE(auto schema, ipc::SerializeSchema(*options->dataset_schema));
 
   flatbuffers::FlatBufferBuilder builder(1024);
 
   auto filter_vec = builder.CreateVector(filter->data(), filter->size());
   auto partition_vec = builder.CreateVector(partition->data(), partition->size());
-  auto projected_schema_vec = builder.CreateVector(projection->data(), projection->size());
+  auto projected_schema_vec =
+      builder.CreateVector(projection->data(), projection->size());
   auto dataset_schema_vec = builder.CreateVector(schema->data(), schema->size());
 
-  auto request = flatbuf::CreateRequest(builder, file_size, filter_vec, partition_vec, dataset_schema_vec, projected_schema_vec);
+  auto request = flatbuf::CreateRequest(builder, file_size, filter_vec, partition_vec,
+                                        dataset_schema_vec, projected_schema_vec);
   builder.Finish(request);
-  uint8_t *buf = builder.GetBufferPointer();
+  uint8_t* buf = builder.GetBufferPointer();
   int size = builder.GetSize();
 
   bl.append((char*)buf, size);
@@ -57,23 +58,30 @@ Status DeserializeScanRequestFromBufferlist(compute::Expression* filter,
                                             std::shared_ptr<Schema>* projected_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
                                             int64_t& file_size, ceph::bufferlist& bl) {
-  
   auto request = flatbuf::GetRequest((uint8_t*)bl.c_str());
 
-  ARROW_ASSIGN_OR_RAISE(auto filter_, compute::Deserialize(std::make_shared<Buffer>(request->filter()->data(), request->filter()->size())));
+  ARROW_ASSIGN_OR_RAISE(auto filter_,
+                        compute::Deserialize(std::make_shared<Buffer>(
+                            request->filter()->data(), request->filter()->size())));
   *filter = filter_;
 
-  ARROW_ASSIGN_OR_RAISE(auto partition_, compute::Deserialize(std::make_shared<Buffer>(request->partition()->data(), request->partition()->size())));
+  ARROW_ASSIGN_OR_RAISE(auto partition_,
+                        compute::Deserialize(std::make_shared<Buffer>(
+                            request->partition()->data(), request->partition()->size())));
   *partition = partition_;
 
   ipc::DictionaryMemo empty_memo;
-  io::BufferReader projection_reader(request->projection_schema()->data(), request->projection_schema()->size());
-  io::BufferReader schema_reader(request->dataset_schema()->data(), request->dataset_schema()->size());
+  io::BufferReader projection_reader(request->projection_schema()->data(),
+                                     request->projection_schema()->size());
+  io::BufferReader schema_reader(request->dataset_schema()->data(),
+                                 request->dataset_schema()->size());
 
-  ARROW_ASSIGN_OR_RAISE(auto projected_schema_, ipc::ReadSchema(&projection_reader, &empty_memo));
+  ARROW_ASSIGN_OR_RAISE(auto projected_schema_,
+                        ipc::ReadSchema(&projection_reader, &empty_memo));
   *projected_schema = projected_schema_;
 
-  ARROW_ASSIGN_OR_RAISE(auto dataset_schema_, ipc::ReadSchema(&schema_reader, &empty_memo));
+  ARROW_ASSIGN_OR_RAISE(auto dataset_schema_,
+                        ipc::ReadSchema(&schema_reader, &empty_memo));
   *dataset_schema = dataset_schema_;
 
   file_size = request->file_size();
