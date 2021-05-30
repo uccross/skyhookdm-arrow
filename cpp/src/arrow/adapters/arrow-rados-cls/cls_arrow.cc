@@ -22,7 +22,7 @@
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/file_parquet.h"
-#include "arrow/dataset/rados_utils.h"
+#include "arrow/dataset/file_rados_parquet.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "parquet/api/reader.h"

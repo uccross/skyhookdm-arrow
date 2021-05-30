@@ -25,7 +25,6 @@
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/file_base.h"
 #include "arrow/dataset/file_rados_parquet.h"
-#include "arrow/dataset/rados_utils.h"
 #include "arrow/filesystem/api.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
