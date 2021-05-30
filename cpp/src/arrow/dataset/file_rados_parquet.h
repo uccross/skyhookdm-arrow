@@ -161,19 +161,19 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
-ARROW_DS_EXPORT Status SerializeScanRequest(
-    std::shared_ptr<ScanOptions>& options, int64_t& file_size, ceph::bufferlist& bl);
+ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
+                                            int64_t& file_size, ceph::bufferlist& bl);
 
-ARROW_DS_EXPORT Status DeserializeScanRequest(
-    compute::Expression* filter, compute::Expression* partition,
-    std::shared_ptr<Schema>* projected_schema, std::shared_ptr<Schema>* dataset_schema,
-    int64_t& file_size, ceph::bufferlist& bl);
+ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
+                                              compute::Expression* partition,
+                                              std::shared_ptr<Schema>* projected_schema,
+                                              std::shared_ptr<Schema>* dataset_schema,
+                                              int64_t& file_size, ceph::bufferlist& bl);
 
 ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table,
-                                                  ceph::bufferlist& bl);
+                                      ceph::bufferlist& bl);
 
-ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches,
-                                        ceph::bufferlist& bl);
+ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl);
 
 }  // namespace dataset
 }  // namespace arrow
