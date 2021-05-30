@@ -162,7 +162,7 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
 };
 
 ARROW_DS_EXPORT Status SerializeScanRequest(
-    std::shared_ptr<ScanOptions> options, int64_t file_size, ceph::bufferlist& bl);
+    std::shared_ptr<ScanOptions>& options, int64_t& file_size, ceph::bufferlist& bl);
 
 ARROW_DS_EXPORT Status DeserializeScanRequest(
     compute::Expression* filter, compute::Expression* partition,

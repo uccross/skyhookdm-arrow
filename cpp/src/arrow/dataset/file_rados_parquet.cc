@@ -104,8 +104,8 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   return MakeVectorIterator(v);
 }
 
-Status SerializeScanRequest(std::shared_ptr<ScanOptions> options,
-                                        int64_t file_size, ceph::bufferlist& bl) {
+Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
+                                        int64_t& file_size, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
                         compute::Serialize(options->partition_expression));
