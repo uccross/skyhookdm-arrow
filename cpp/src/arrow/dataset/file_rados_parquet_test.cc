@@ -11,14 +11,14 @@ TEST(TestRadosParquetFileFormat, SerializeDeserializeRoundTrip) {
     std::shared_ptr<ScanOptions> options;
     ceph::bufferlist bl;
     int64_t file_size = 1000000;
-    ASSERT_OK(SerializeScanRequest(options, file_size, bl));
+    RETURN_NOT_OK(SerializeScanRequest(options, file_size, bl));
 
     compute::Expression filter_;
     compute::Expression partition_expression_;
     std::shared_ptr<Schema> projected_schema;
     std::shared_ptr<Schema> dataset_schema_;
     int64_t file_size_;
-    ASSERT_OK(DeserializeScanRequest(filter_, partition_expression_, projected_schema, dataset_schema_, file_size_, bl);
+    RETURN_NOT_OK(DeserializeScanRequest(filter_, partition_expression_, projected_schema, dataset_schema_, file_size_, bl);
 }
 
 } // namespace dataset
