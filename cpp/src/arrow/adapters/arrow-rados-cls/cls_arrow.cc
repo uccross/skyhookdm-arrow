@@ -173,7 +173,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   int64_t file_size;
 
   // deserialize the scan request
-  if (!arrow::dataset::DeserializeScanRequestFromBufferlist(
+  if (!arrow::dataset::DeserializeScanRequest(
            &filter, &partition_expression, &projection_schema, &dataset_schema, file_size,
            *in)
            .ok())
@@ -191,7 +191,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 
   // serialize the resultant table to send back to the client
   ceph::bufferlist bl;
-  if (!arrow::dataset::SerializeTableToBufferlist(table, bl).ok()) return -1;
+  if (!arrow::dataset::SerializeTable(table, bl).ok()) return -1;
 
   *out = bl;
   return 0;

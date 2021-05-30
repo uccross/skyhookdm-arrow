@@ -58,7 +58,7 @@ class RadosParquetScanTask : public ScanTask {
     }
 
     ceph::bufferlist in;
-    ARROW_RETURN_NOT_OK(SerializeScanRequestToBufferlist(options_, st.st_size, in));
+    ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, st.st_size, in));
 
     ceph::bufferlist result;
     s = doa_->Exec(st.st_ino, "scan_op", in, result);
@@ -118,22 +118,22 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   return MakeVectorIterator(v);
 }
 
-Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
+Status SerializeScanRequest(std::shared_ptr<ScanOptions> options,
                                         int64_t file_size, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
                         compute::Serialize(options->partition_expression));
-  ARROW_ASSIGN_OR_RAISE(auto projection,
+  ARROW_ASSIGN_OR_RAISE(auto projected_schema,
                         ipc::SerializeSchema(*options->projected_schema));
-  ARROW_ASSIGN_OR_RAISE(auto schema, ipc::SerializeSchema(*options->dataset_schema));
+  ARROW_ASSIGN_OR_RAISE(auto dataset_schema, ipc::SerializeSchema(*options->dataset_schema));
 
   flatbuffers::FlatBufferBuilder builder(1024);
 
   auto filter_vec = builder.CreateVector(filter->data(), filter->size());
   auto partition_vec = builder.CreateVector(partition->data(), partition->size());
   auto projected_schema_vec =
-      builder.CreateVector(projection->data(), projection->size());
-  auto dataset_schema_vec = builder.CreateVector(schema->data(), schema->size());
+      builder.CreateVector(projected_schema->data(), projected_schema->size());
+  auto dataset_schema_vec = builder.CreateVector(dataset_schema->data(), dataset_schema->size());
 
   auto request = flatbuf::CreateScanRequest(builder, file_size, filter_vec, partition_vec,
                                             dataset_schema_vec, projected_schema_vec);
@@ -145,7 +145,7 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
   return Status::OK();
 }
 
-Status DeserializeScanRequestFromBufferlist(compute::Expression* filter,
+Status DeserializeScanRequest(compute::Expression* filter,
                                             compute::Expression* partition,
                                             std::shared_ptr<Schema>* projected_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
@@ -163,24 +163,24 @@ Status DeserializeScanRequestFromBufferlist(compute::Expression* filter,
   *partition = partition_;
 
   ipc::DictionaryMemo empty_memo;
-  io::BufferReader projection_reader(request->projection_schema()->data(),
+  io::BufferReader projected_schema_reader(request->projection_schema()->data(),
                                      request->projection_schema()->size());
-  io::BufferReader schema_reader(request->dataset_schema()->data(),
+  io::BufferReader dataset_schema_reader(request->dataset_schema()->data(),
                                  request->dataset_schema()->size());
 
   ARROW_ASSIGN_OR_RAISE(auto projected_schema_,
-                        ipc::ReadSchema(&projection_reader, &empty_memo));
+                        ipc::ReadSchema(&projected_schema_reader, &empty_memo));
   *projected_schema = projected_schema_;
 
   ARROW_ASSIGN_OR_RAISE(auto dataset_schema_,
-                        ipc::ReadSchema(&schema_reader, &empty_memo));
+                        ipc::ReadSchema(&dataset_schema_reader, &empty_memo));
   *dataset_schema = dataset_schema_;
 
   file_size = request->file_size();
   return Status::OK();
 }
 
-Status SerializeTableToBufferlist(std::shared_ptr<Table>& table, ceph::bufferlist& bl) {
+Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
   ipc::IpcWriteOptions options = ipc::IpcWriteOptions::Defaults();

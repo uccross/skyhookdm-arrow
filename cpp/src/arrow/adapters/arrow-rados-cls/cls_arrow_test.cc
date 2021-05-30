@@ -102,7 +102,7 @@ std::shared_ptr<arrow::dataset::Scanner> GetScannerFromDataset(
   return scanner_builder->Finish().ValueOrDie();
 }
 
-TEST(TestClsSDK, SelectEntireDataset) {
+TEST(TestArrowRadosCLS, SelectEntireDataset) {
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns;
@@ -122,7 +122,7 @@ TEST(TestClsSDK, SelectEntireDataset) {
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
-TEST(TestClsSDK, SelectFewRows) {
+TEST(TestArrowRadosCLS, SelectFewRows) {
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns;
@@ -142,7 +142,7 @@ TEST(TestClsSDK, SelectFewRows) {
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
-TEST(TestClsSDK, SelectFewColumns) {
+TEST(TestArrowRadosCLS, SelectFewColumns) {
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns = {"fare_amount", "total_amount"};
@@ -162,7 +162,7 @@ TEST(TestClsSDK, SelectFewColumns) {
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
-TEST(TestClsSDK, SelectRowsAndColumnsOnPartitionKey) {
+TEST(TestArrowRadosCLS, SelectRowsAndColumnsOnPartitionKey) {
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns = {"fare_amount", "VendorID", "payment_type"};
@@ -183,7 +183,7 @@ TEST(TestClsSDK, SelectRowsAndColumnsOnPartitionKey) {
   ASSERT_EQ(table_parquet->num_rows(), table_rados_parquet->num_rows());
 }
 
-TEST(TestClsSDK, SelectRowsAndColumnsOnlyOnPartitionKey) {
+TEST(TestArrowRadosCLS, SelectRowsAndColumnsOnlyOnPartitionKey) {
   std::string path;
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns = {"total_amount", "VendorID", "payment_type"};
