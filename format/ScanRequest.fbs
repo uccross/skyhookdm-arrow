@@ -21,7 +21,7 @@
 
 namespace org.apache.arrow.flatbuf;
 
-table Request {
+table ScanRequest {
   file_size: long;
   filter: [ubyte];
   partition: [ubyte];
@@ -30,4 +30,4 @@ table Request {
 
 }
 
-root_type Request;
+root_type ScanRequest;

@@ -32,7 +32,7 @@
 #include <flatbuffers/flatbuffers.h>
 
 #include "arrow/util/compression.h"
-#include "generated/Request_generated.h"
+#include "generated/ScanRequest_generated.h"
 
 namespace arrow {
 
@@ -136,7 +136,7 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
       builder.CreateVector(projection->data(), projection->size());
   auto dataset_schema_vec = builder.CreateVector(schema->data(), schema->size());
 
-  auto request = flatbuf::CreateRequest(builder, file_size, filter_vec, partition_vec,
+  auto request = flatbuf::CreateScanRequest(builder, file_size, filter_vec, partition_vec,
                                         dataset_schema_vec, projected_schema_vec);
   builder.Finish(request);
   uint8_t* buf = builder.GetBufferPointer();
@@ -151,7 +151,7 @@ Status DeserializeScanRequestFromBufferlist(compute::Expression* filter,
                                             std::shared_ptr<Schema>* projected_schema,
                                             std::shared_ptr<Schema>* dataset_schema,
                                             int64_t& file_size, ceph::bufferlist& bl) {
-  auto request = flatbuf::GetRequest((uint8_t*)bl.c_str());
+  auto request = flatbuf::GetScanRequest((uint8_t*)bl.c_str());
 
   ARROW_ASSIGN_OR_RAISE(auto filter_,
                         compute::Deserialize(std::make_shared<Buffer>(
