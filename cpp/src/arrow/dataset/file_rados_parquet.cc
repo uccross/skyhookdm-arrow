@@ -50,21 +50,14 @@ class RadosParquetScanTask : public ScanTask {
         doa_(std::move(doa)) {}
 
   Result<RecordBatchIterator> Execute() override {
-    Status s;
     struct stat st {};
-    s = doa_->Stat(source_.path(), st);
-    if (!s.ok()) {
-      return Status::Invalid(s.message());
-    }
+    ARROW_RETURN_NOT_OK(doa_->Stat(source_.path(), st));
 
     ceph::bufferlist request;
     ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, st.st_size, request));
 
     ceph::bufferlist result;
-    s = doa_->Exec(st.st_ino, "scan_op", in, result);
-    if (!s.ok()) {
-      return Status::ExecutionError(s.message());
-    }
+    ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
 
     RecordBatchVector batches;
     ARROW_RETURN_NOT_OK(DeserializeTable(batches, result));
