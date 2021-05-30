@@ -32,8 +32,6 @@
 #include <vector>
 
 #include "arrow/api.h"
-#include "arrow/io/api.h"
-#include "arrow/ipc/api.h"
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset.h"
 #include "arrow/dataset/discovery.h"
@@ -45,6 +43,8 @@
 #include "arrow/dataset/visibility.h"
 #include "arrow/filesystem/api.h"
 #include "arrow/filesystem/path_util.h"
+#include "arrow/io/api.h"
+#include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/macros.h"
 

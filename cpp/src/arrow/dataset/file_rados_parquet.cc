@@ -118,7 +118,6 @@ Result<ScanTaskIterator> RadosParquetFileFormat::ScanFile(
   return MakeVectorIterator(v);
 }
 
-
 Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
                                         int64_t file_size, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
@@ -137,7 +136,7 @@ Status SerializeScanRequestToBufferlist(std::shared_ptr<ScanOptions> options,
   auto dataset_schema_vec = builder.CreateVector(schema->data(), schema->size());
 
   auto request = flatbuf::CreateScanRequest(builder, file_size, filter_vec, partition_vec,
-                                        dataset_schema_vec, projected_schema_vec);
+                                            dataset_schema_vec, projected_schema_vec);
   builder.Finish(request);
   uint8_t* buf = builder.GetBufferPointer();
   int size = builder.GetSize();
