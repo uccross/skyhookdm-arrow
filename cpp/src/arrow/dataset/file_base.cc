@@ -102,7 +102,7 @@ Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
   if (is_dataset_schema) {
     return std::shared_ptr<FileFragment>(new FileFragment(
         std::move(source), shared_from_this(), std::move(partition_expression), nullptr,
-        std::move(dataset_schema)));
+        std::move(schema)));
   } else {
     return MakeFragment(std::move(source), std::move(partition_expression), schema);
   }
