@@ -110,6 +110,8 @@ Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
         std::move(source), shared_from_this(), std::move(partition_expression), nullptr,
         std::move(schema)));
   }
+      ARROW_LOG(INFO) << "route to using -parquet \n";
+
   return std::shared_ptr<FileFragment>(new FileFragment(
       std::move(source), shared_from_this(), std::move(partition_expression),
       std::move(schema), nullptr));
