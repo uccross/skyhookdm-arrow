@@ -267,10 +267,10 @@ Result<std::shared_ptr<Dataset>> FileSystemDatasetFactory::Finish(FinishOptions 
     std::shared_ptr<FileFragment> fragment;
     if (format_->type_name() == "rados-parquet") {
       ARROW_ASSIGN_OR_RAISE(fragment,
-                          format_->MakeFragment({info, fs_}, partition, schema, true));
+                          format_->MakeFragment({info, fs_}, partition, true, schema));
     } else {
       ARROW_ASSIGN_OR_RAISE(fragment,
-                          format_->MakeFragment({info, fs_}, partition, nullptr, false));
+                          format_->MakeFragment({info, fs_}, partition, false, nullptr));
     }
     fragments.push_back(fragment);
   }
