@@ -82,10 +82,10 @@ cp ceph.client.admin.keyring  /etc/ceph/ceph.client.admin.keyring
 ceph -s
 
 echo "[7] deploying OSDs"
-for (( i=1; i<=$OSD; i++ )); do
-    scp /tmp/deployment/ceph.bootstrap-osd.keyring node${i}:/etc/ceph/ceph.keyring
-    scp /tmp/deployment/ceph.bootstrap-osd.keyring node${i}:/var/lib/ceph/bootstrap-osd/ceph.keyring
-    ceph-deploy osd create --data /dev/nvme0n1p4 node${i}
+for node in ${OSD_LIST}; do
+    scp /tmp/deployment/ceph.bootstrap-osd.keyring $node:/etc/ceph/ceph.keyring
+    scp /tmp/deployment/ceph.bootstrap-osd.keyring $node:/var/lib/ceph/bootstrap-osd/ceph.keyring
+    ceph-deploy osd create --data /dev/nvme0n1p4 $node
 done
 
 echo "[8] deploying MDSs"
