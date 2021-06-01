@@ -266,6 +266,7 @@ Result<std::shared_ptr<Dataset>> FileSystemDatasetFactory::Finish(FinishOptions 
     ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
     std::shared_ptr<FileFragment> fragment;
     if (format_->type_name() == "rados-parquet") {
+      ARROW_LOG(INFO) << "using rados-parquet" << "\n";
       ARROW_ASSIGN_OR_RAISE(fragment,
                           format_->MakeFragment({info, fs_}, partition, schema));
     } else {
