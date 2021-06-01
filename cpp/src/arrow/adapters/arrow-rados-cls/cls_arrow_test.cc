@@ -110,12 +110,12 @@ TEST(TestArrowRadosCLS, SelectEntireDataset) {
   auto format = GetParquetFormat();
   auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner =
-      GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
+      GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), false);
   auto table_parquet = scanner->ToTable().ValueOrDie();
 
   format = GetRadosParquetFormat();
   dataset = GetDatasetFromPath(fs, format, path);
-  scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
+  scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), false);
   auto table_rados_parquet = scanner->ToTable().ValueOrDie();
 
   ASSERT_EQ(table_parquet->Equals(*table_rados_parquet), 1);
