@@ -264,8 +264,14 @@ Result<std::shared_ptr<Dataset>> FileSystemDatasetFactory::Finish(FinishOptions 
   for (const auto& info : files_) {
     auto fixed_path = StripPrefixAndFilename(info.path(), options_.partition_base_dir);
     ARROW_ASSIGN_OR_RAISE(auto partition, partitioning->Parse(fixed_path));
-    ARROW_ASSIGN_OR_RAISE(auto fragment,
-                          format_->MakeFragment({info, fs_}, partition, 1, schema));
+    std::shared_ptr<Fragment> fragment;
+    if (type_name() == "rados-parquet") {
+      ARROW_ASSIGN_OR_RAISE(fragment,
+                          format_->MakeFragment({info, fs_}, partition, schema, true));
+    } else {
+      ARROW_ASSIGN_OR_RAISE(fragment,
+                          format_->MakeFragment({info, fs_}, partition, nullptr, false));
+    }
     fragments.push_back(fragment);
   }
 
