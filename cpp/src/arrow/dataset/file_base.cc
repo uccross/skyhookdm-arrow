@@ -97,30 +97,22 @@ Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
 }
 
 Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
-    FileSource source, compute::Expression partition_expression, int flag,
-    std::shared_ptr<Schema> dataset_schema) {
-  if (type_name() == "rados-parquet") {
-    /// don't create a parquet file fragment, just create a FileFragment..
-    return std::shared_ptr<FileFragment>(new FileFragment(
-        std::move(source), shared_from_this(), std::move(partition_expression), nullptr,
-        std::move(dataset_schema)));
-  } else {
-    /// whereas here it creates a ParquetFileFragment
-    return MakeFragment(std::move(source), std::move(partition_expression), nullptr);
-  }
-}
-
-Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
     FileSource source, compute::Expression partition_expression) {
   return MakeFragment(std::move(source), std::move(partition_expression), nullptr);
 }
 
 Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
     FileSource source, compute::Expression partition_expression,
-    std::shared_ptr<Schema> physical_schema) {
+    std::shared_ptr<Schema> schema) {
+  if (type_name() == "rados-parquet") {
+    /// don't create a parquet file fragment, just create a FileFragment..
+    return std::shared_ptr<FileFragment>(new FileFragment(
+        std::move(source), shared_from_this(), std::move(partition_expression), nullptr,
+        std::move(schema)));
+  }
   return std::shared_ptr<FileFragment>(new FileFragment(
       std::move(source), shared_from_this(), std::move(partition_expression),
-      std::move(physical_schema), nullptr));
+      std::move(schema), nullptr));
 }
 
 // TODO(ARROW-12355[CSV], ARROW-11772[IPC], ARROW-11843[Parquet]) The following
