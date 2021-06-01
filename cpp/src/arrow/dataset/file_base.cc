@@ -105,7 +105,7 @@ Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
     FileSource source, compute::Expression partition_expression,
     std::shared_ptr<Schema> schema) {
   if (type_name() == "rados-parquet") {
-    /// don't create a parquet file fragment, just create a FileFragment..
+    ARROW_LOG(INFO) << "route to using rados-parquet \n";
     return std::shared_ptr<FileFragment>(new FileFragment(
         std::move(source), shared_from_this(), std::move(partition_expression), nullptr,
         std::move(schema)));
