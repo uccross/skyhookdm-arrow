@@ -53,11 +53,17 @@ class RadosParquetScanTask : public ScanTask {
     struct stat st {};
     ARROW_RETURN_NOT_OK(doa_->Stat(source_.path(), st));
 
+    ARROW_LOG(INFO) << "stat\n";
+
     ceph::bufferlist request;
     ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, st.st_size, request));
 
+    ARROW_LOG(INFO) << "serialize\n";
+
     ceph::bufferlist result;
     ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
+
+    ARROW_LOG(INFO) << "exec\n";
 
     RecordBatchVector batches;
     ARROW_RETURN_NOT_OK(DeserializeTable(batches, result));
