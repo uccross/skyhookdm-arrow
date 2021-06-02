@@ -22,8 +22,10 @@ set -eu
 apt update
 apt install -y attr
 
-# usage:
-# ./deploy_data.sh [source] [destination] [count] [stripeunit]
+if [[ $# -lt 4 ]] ; then
+    echo "./deploy_data.sh [source] [destination] [count] [stripeunit]"
+    exit 1
+fi
 
 source=${1}
 destination=${2}
