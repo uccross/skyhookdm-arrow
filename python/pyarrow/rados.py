@@ -39,7 +39,7 @@ class SplittedParquetWriter(object):
 
     def write_file(self, filename, table):
         open(filename, 'a').close()
-        attribute="ceph.file.layout.object_size"
+        attribute = "ceph.file.layout.object_size"
         os.system(
             f"setfattr -n {attribute} -v 134217728 {filename}")
         pq.write_table(
