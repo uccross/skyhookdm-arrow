@@ -114,11 +114,9 @@ class ARROW_DS_EXPORT DirectObjectAccess {
     return oid;
   }
 
-  Status Exec(const std::string& path, const std::string& fn, ceph::bufferlist& in,
+  Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
-    struct stat st {};
-    ARROW_RETURN_NOT_OK(Stat(path, st));
-    std::string oid = ConvertFileInodeToObjectID(st.st_ino);
+    std::string oid = ConvertFileInodeToObjectID(inode);
     if (cluster_->ioCtx->exec(oid.c_str(), cluster_->ctx.cls_name.c_str(), fn.c_str(), in,
                               out)) {
       return Status::ExecutionError("librados::exec returned non-zero exit code.");
