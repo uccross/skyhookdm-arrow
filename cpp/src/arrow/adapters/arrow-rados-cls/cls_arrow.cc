@@ -39,6 +39,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
     hctx_ = hctx;
     content_length_ = file_size;
+    chunks_ = std::vector<ceph::bufferlist*>();
   }
 
   arrow::Status CheckClosed() const {
@@ -70,6 +71,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     if (nbytes > 0) {
       ceph::bufferlist* bl = new ceph::bufferlist();
       cls_cxx_read(hctx_, position, nbytes, bl);
+      chunks_.push_back(bl);
       return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
     }
     return std::make_shared<arrow::Buffer>("");
@@ -107,6 +109,9 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
   arrow::Status Close() {
     closed_ = true;
+    for (auto chunk : chunks_) {
+      delete chunk;
+    }
     return arrow::Status::OK();
   }
 
@@ -117,6 +122,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   bool closed_ = false;
   int64_t pos_ = 0;
   int64_t content_length_ = -1;
+  std::vector<ceph::bufferlist*> chunks_;
 };
 
 static arrow::Status ScanParquetObject(cls_method_context_t hctx,
