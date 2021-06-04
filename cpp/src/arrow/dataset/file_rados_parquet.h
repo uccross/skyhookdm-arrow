@@ -54,6 +54,12 @@
 namespace arrow {
 namespace dataset {
 
+/// \addtogroup dataset-file-formats
+///
+/// @{
+
+/// \brief A class that specifies the connection and disconnection from the
+/// Rados cluster with the config options.
 class ARROW_DS_EXPORT RadosCluster {
  public:
   struct RadosConnectionCtx {
@@ -68,6 +74,7 @@ class ARROW_DS_EXPORT RadosCluster {
 
   ~RadosCluster() { Shutdown(); }
 
+  /// \brief Connect to the Rados cluster.
   Status Connect() {
     if (rados->init2(ctx.user_name.c_str(), ctx.cluster_name.c_str(), 0))
       return Status::Invalid("librados::init2 returned non-zero exit code.");
@@ -84,6 +91,7 @@ class ARROW_DS_EXPORT RadosCluster {
     return Status::OK();
   }
 
+  /// \brief Disconnect the Rados cluster.
   Status Shutdown() {
     rados->shutdown();
     return Status::OK();
@@ -94,11 +102,13 @@ class ARROW_DS_EXPORT RadosCluster {
   IoCtxInterface* ioCtx;
 };
 
+/// \brief Defines the file operations and access methods.
 class ARROW_DS_EXPORT DirectObjectAccess {
  public:
   explicit DirectObjectAccess(const std::shared_ptr<RadosCluster>& cluster)
       : cluster_(std::move(cluster)) {}
 
+  /// \brief Get stat information about the file.
   Status Stat(const std::string& path, struct stat& st) {
     struct stat file_st;
     if (stat(path.c_str(), &file_st) < 0)
@@ -114,6 +124,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
     return oid;
   }
 
+  /// \brief Executes query on the librados node.
   Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
     std::string oid = ConvertFileInodeToObjectID(inode);
@@ -128,6 +139,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   std::shared_ptr<RadosCluster> cluster_;
 };
 
+/// \brief A ParquetFileFormat implementation that offloads the computation
+/// for the queries onto server Ceph nodes.
 class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
  public:
   explicit RadosParquetFileFormat(const std::string&, const std::string&,
@@ -146,8 +159,10 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
 
   Result<bool> IsSupported(const FileSource& source) const override { return true; }
 
+  /// \brief Return the schema of the file if possible.
   Result<std::shared_ptr<Schema>> Inspect(const FileSource& source) const override;
 
+  /// \brief Open a file for scanning.
   Result<ScanTaskIterator> ScanFile(
       const std::shared_ptr<ScanOptions>& options,
       const std::shared_ptr<FileFragment>& file) const override;
@@ -177,6 +192,8 @@ ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table,
                                       ceph::bufferlist& bl);
 
 ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl);
+
+/// @}
 
 }  // namespace dataset
 }  // namespace arrow
