@@ -75,7 +75,7 @@ class ARROW_DS_EXPORT RadosCluster {
   ~RadosCluster() { Shutdown(); }
 
   /// \brief Connect to the Rados cluster.
-  /// \return Status of the attempted connection.
+  /// \return Status.
   Status Connect() {
     if (rados->init2(ctx.user_name.c_str(), ctx.cluster_name.c_str(), 0))
       return Status::Invalid("librados::init2 returned non-zero exit code.");
@@ -93,7 +93,7 @@ class ARROW_DS_EXPORT RadosCluster {
   }
 
   /// \brief Shutdown the connection to the Rados cluster.
-  /// \return Status of the attempted shutdown.
+  /// \return Status.
   Status Shutdown() {
     rados->shutdown();
     return Status::OK();
@@ -115,7 +115,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   /// \brief Executes the POSIX stat call on a file.
   /// \param[in] path Path of the file.
   /// \param[out] st Refernce to the struct object to store the result.
-  /// \return Status of the attempted POSIX stat call.
+  /// \return Status.
   Status Stat(const std::string& path, struct stat& st) {
     struct stat file_st;
     if (stat(path.c_str(), &file_st) < 0)
@@ -137,7 +137,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   /// \param[in] fn The function to be executed by the librados::exec call.
   /// \param[in] in The input buffer.
   /// \param[out] in The output buffer.
-  /// \return Status of the attempted librados::exec call.
+  /// \return Status.
   Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
     std::string oid = ConvertFileInodeToObjectID(inode);
