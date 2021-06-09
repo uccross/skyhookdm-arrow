@@ -35,6 +35,8 @@ CLS_NAME(arrow)
 cls_handle_t h_class;
 cls_method_handle_t h_scan_op;
 
+/// \class RandomAccessObject
+/// \brief A RandomAccessFile implementation to read chunks of files.
 class RandomAccessObject : public arrow::io::RandomAccessFile {
  public:
   explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
@@ -43,6 +45,8 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     chunks_ = std::vector<ceph::bufferlist*>();
   }
 
+  /// \brief Check if the file stream is closed.
+  /// \return Status. OK if the stream is not closed.
   arrow::Status CheckClosed() const {
     if (closed_) {
       return arrow::Status::Invalid("Operation on closed stream");
@@ -50,6 +54,10 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return arrow::Status::OK();
   }
 
+  /// \brief Check if the position of the object is valid.
+  /// \param[in] position The position to check.
+  /// \param[in] action The action to perform on the position.
+  /// \return Status. OK if the position is valid.
   arrow::Status CheckPosition(int64_t position, const char* action) const {
     if (position < 0) {
       return arrow::Status::Invalid("Cannot ", action, " from negative position");
@@ -62,6 +70,10 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
   arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) { return 0; }
 
+  /// \brief Read the specified position.
+  /// \param[in] position The position to read.
+  /// \param[in] nbytes Number of bytes.
+  /// \return Buffer of the objects at the position.
   arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) {
     RETURN_NOT_OK(CheckClosed());
     RETURN_NOT_OK(CheckPosition(position, "read"));
@@ -78,23 +90,36 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return std::make_shared<arrow::Buffer>("");
   }
 
+  /// \brief Read the byte stream.
+  /// \param[in] nbytes Number of bytes.
+  /// \return Buffer of the objects in the stream.
   arrow::Result<std::shared_ptr<arrow::Buffer>> Read(int64_t nbytes) {
     ARROW_ASSIGN_OR_RAISE(auto buffer, ReadAt(pos_, nbytes));
     pos_ += buffer->size();
     return std::move(buffer);
   }
 
+  /// \brief Read the byte stream.
+  /// \param[in] nbytes Number of bytes.
+  /// \param[out] out Output stream.
+  /// \return Read data from the input.
   arrow::Result<int64_t> Read(int64_t nbytes, void* out) {
     ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(pos_, nbytes, out));
     pos_ += bytes_read;
     return bytes_read;
   }
 
+  /// \brief Get size of the file.
+  /// \return Size of the file.
   arrow::Result<int64_t> GetSize() {
     RETURN_NOT_OK(CheckClosed());
     return content_length_;
   }
 
+  /// \brief Sets the file-pointer offset, measured from the beginning of the
+  /// file, at which the next read or write occurs.
+  /// \param[in] position The offset.
+  /// \return Status. OK if the position is valid and the offset is set.
   arrow::Status Seek(int64_t position) {
     RETURN_NOT_OK(CheckClosed());
     RETURN_NOT_OK(CheckPosition(position, "seek"));
@@ -103,11 +128,15 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return arrow::Status::OK();
   }
 
+  /// \brief Returns the file-pointer offset.
+  /// \return The current offset.
   arrow::Result<int64_t> Tell() const {
     RETURN_NOT_OK(CheckClosed());
     return pos_;
   }
 
+  /// \brief Closes the file stream and deletes the chunks.
+  /// \return Status. OK.
   arrow::Status Close() {
     closed_ = true;
     for (auto chunk : chunks_) {
@@ -126,6 +155,15 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   std::vector<ceph::bufferlist*> chunks_;
 };
 
+/// \brief Scan the Parquet file objects.
+/// \param[in] hctx Context.
+/// \param[in] filter Filters.
+/// \param[in] partition_expression Partition expression.
+/// \param[in] projection_schema The projection schema.
+/// \param[in] dataset_schema The dataset schema.
+/// \param[out] t Table to store the resultant data.
+/// \param[in] file_size File size.
+/// \return Status.
 static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        arrow::compute::Expression filter,
                                        arrow::compute::Expression partition_expression,
@@ -162,6 +200,13 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   return arrow::Status::OK();
 }
 
+/// \brief The scanning operation to register on Ceph nodes. The request is
+/// deserialized, the object is scanned, and the resulting table is serialized
+/// and sent to the user.
+/// \param[in] hctx Method context.
+/// \param[in] in Input buffer.
+/// \param[out] out Output buffer.
+/// \return Status code.
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
   // the components required to construct a ParquetFragment.

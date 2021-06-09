@@ -58,6 +58,7 @@ namespace dataset {
 ///
 /// @{
 
+/// \class RadosCluster
 /// \brief An interface to connect to a RADOS cluster and hold the connection
 /// information for usage in later stages.
 class ARROW_DS_EXPORT RadosCluster {
@@ -104,6 +105,7 @@ class ARROW_DS_EXPORT RadosCluster {
   IoCtxInterface* ioCtx;
 };
 
+/// \class DirectObjectAccess
 /// \brief Interface for translating the name of a file in CephFS to its
 /// corresponding object ID in RADOS assuming 1:1 mapping between a file
 /// and its underlying object.
@@ -124,6 +126,8 @@ class ARROW_DS_EXPORT DirectObjectAccess {
     return Status::OK();
   }
 
+  // Helper function to convert Inode to ObjectID because Rados calls work with
+  // ObjectIDs.
   std::string ConvertFileInodeToObjectID(uint64_t inode) {
     std::stringstream ss;
     ss << std::hex << inode;
@@ -152,6 +156,7 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   std::shared_ptr<RadosCluster> cluster_;
 };
 
+/// \class RadosParquetFileFormat
 /// \brief A ParquetFileFormat implementation that offloads the fragment
 /// scan operations to the Ceph OSDs
 class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
@@ -197,18 +202,39 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
+/// \brief Serialize the scan request.
+/// \param[in] options Scan options.
+/// \param[in] file_size File size.
+/// \param[out] bl Output buffer.
+/// \return Status.
 ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
                                             int64_t& file_size, ceph::bufferlist& bl);
 
+/// \brief Deserialize the scan request.
+/// \param[out] filter Filters.
+/// \param[out] partition Partition expression.
+/// \param[out] projected_schema The projection schema.
+/// \param[out] dataset_schema The dataset schema.
+/// \param[out] file_size File size.
+/// \param[in] bl Input Ceph buffer.
+/// \return Status.
 ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
                                               compute::Expression* partition,
                                               std::shared_ptr<Schema>* projected_schema,
                                               std::shared_ptr<Schema>* dataset_schema,
                                               int64_t& file_size, ceph::bufferlist& bl);
 
+/// \brief Serialize the table.
+/// \param[in] table The table.
+/// \param[out] bl Output buffer.
+/// \return Status.
 ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table,
                                       ceph::bufferlist& bl);
 
+/// \brief Deserialize the table.
+/// \param[out] batches Output record batches.
+/// \param[in] bl Input buffer.
+/// \return Status.
 ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl);
 
 /// @}
