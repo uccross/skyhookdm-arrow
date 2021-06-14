@@ -90,27 +90,21 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return std::move(buffer);
   }
 
-  /// \brief Read the byte stream.
-  /// \param[in] nbytes Number of bytes.
-  /// \param[out] out Output stream.
-  /// \return Read data from the input.
+  /// Read the byte stream into an output stream. Returns read data from the input.
   arrow::Result<int64_t> Read(int64_t nbytes, void* out) {
     ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(pos_, nbytes, out));
     pos_ += bytes_read;
     return bytes_read;
   }
 
-  /// \brief Get size of the file.
-  /// \return Size of the file.
+  /// Return the size of the file.
   arrow::Result<int64_t> GetSize() {
     RETURN_NOT_OK(CheckClosed());
     return content_length_;
   }
 
-  /// \brief Sets the file-pointer offset, measured from the beginning of the
+  /// Sets the file-pointer offset, measured from the beginning of the
   /// file, at which the next read or write occurs.
-  /// \param[in] position The offset.
-  /// \return Status. OK if the position is valid and the offset is set.
   arrow::Status Seek(int64_t position) {
     RETURN_NOT_OK(CheckClosed());
     RETURN_NOT_OK(CheckPosition(position, "seek"));
@@ -119,15 +113,13 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return arrow::Status::OK();
   }
 
-  /// \brief Returns the file-pointer offset.
-  /// \return The current offset.
+  /// Returns the file-pointer offset.
   arrow::Result<int64_t> Tell() const {
     RETURN_NOT_OK(CheckClosed());
     return pos_;
   }
 
-  /// \brief Closes the file stream and deletes the chunks.
-  /// \return Status. OK.
+  /// Closes the file stream and deletes the chunks.
   arrow::Status Close() {
     closed_ = true;
     for (auto chunk : chunks_) {
