@@ -136,11 +136,11 @@ class ARROW_DS_EXPORT DirectObjectAccess {
   }
 
   /// \brief Executes query on the librados node. It uses the librados::exec API to
-  /// perform queries on the storage node and stores the result in the output buffer.
+  /// perform queries on the storage node and stores the result in the output bufferlist.
   /// \param[in] inode inode of the file.
   /// \param[in] fn The function to be executed by the librados::exec call.
-  /// \param[in] in The input buffer.
-  /// \param[out] in The output buffer.
+  /// \param[in] in The input bufferlist.
+  /// \param[out] in The output bufferlist.
   /// \return Status.
   Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
@@ -202,21 +202,21 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
-/// \brief Serialize the scan request.
+/// \brief Serialize scan request to a bufferlist.
 /// \param[in] options Scan options.
 /// \param[in] file_size File size.
-/// \param[out] bl Output buffer.
+/// \param[out] bl Output bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
                                             int64_t& file_size, ceph::bufferlist& bl);
 
-/// \brief Deserialize the scan request.
-/// \param[out] filter Filters.
+/// \brief Deserialize scan request from bufferlist.
+/// \param[out] filter The filter expression to apply.
 /// \param[out] partition Partition expression.
 /// \param[out] projected_schema The projection schema.
 /// \param[out] dataset_schema The dataset schema.
 /// \param[out] file_size File size.
-/// \param[in] bl Input Ceph buffer.
+/// \param[in] bl Input Ceph bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
                                               compute::Expression* partition,
@@ -224,16 +224,16 @@ ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
                                               std::shared_ptr<Schema>* dataset_schema,
                                               int64_t& file_size, ceph::bufferlist& bl);
 
-/// \brief Serialize the table.
+/// \brief Serialize the result Table to a bufferlist.
 /// \param[in] table The table.
-/// \param[out] bl Output buffer.
+/// \param[out] bl Output bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table,
                                       ceph::bufferlist& bl);
 
-/// \brief Deserialize the table.
+/// \brief Deserialize the result table from bufferlist.
 /// \param[out] batches Output record batches.
-/// \param[in] bl Input buffer.
+/// \param[in] bl Input bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl);
 
