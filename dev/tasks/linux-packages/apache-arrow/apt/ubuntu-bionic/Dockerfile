@@ -55,7 +55,6 @@ RUN \
     rados-objclass-dev \
     python3-rados \
     libssl-dev \
-    libutf8proc-dev \
     libzstd-dev \
     llvm-10-dev \
     lsb-release \

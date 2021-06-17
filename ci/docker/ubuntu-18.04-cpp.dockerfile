@@ -70,6 +70,7 @@ RUN apt-get update -y -q && \
         libboost-system-dev \
         libbrotli-dev \
         libbz2-dev \
+        libc-ares-dev \
         libcurl4-openssl-dev \
         libgflags-dev \
         libgoogle-glog-dev \
@@ -82,7 +83,6 @@ RUN apt-get update -y -q && \
         rados-objclass-dev \
         python3-rados \
         libssl-dev \
-        libutf8proc-dev \
         libzstd-dev \
         ninja-build \
         pkg-config \
@@ -106,6 +106,7 @@ RUN /arrow/ci/scripts/install_ceph.sh
 # - libgtest-dev only provide sources
 # - libprotobuf-dev only provide sources
 # - thrift is too old
+# - utf8proc is too old(v2.1.0)
 # - s3 tests would require boost-asio that is included since Boost 1.66.0
 ENV ARROW_BUILD_TESTS=ON \
     ARROW_DEPENDENCY_SOURCE=SYSTEM \
@@ -135,4 +136,5 @@ ENV ARROW_BUILD_TESTS=ON \
     PARQUET_BUILD_EXECUTABLES=ON \
     PARQUET_BUILD_EXAMPLES=ON \
     PATH=/usr/lib/ccache/:$PATH \
-    Thrift_SOURCE=BUNDLED
+    Thrift_SOURCE=BUNDLED \
+    utf8proc_SOURCE=BUNDLED
