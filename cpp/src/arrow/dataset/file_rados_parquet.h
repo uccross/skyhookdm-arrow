@@ -203,8 +203,8 @@ class ARROW_DS_EXPORT RadosParquetFileFormat : public ParquetFileFormat {
 };
 
 /// \brief Serialize scan request to a bufferlist.
-/// \param[in] options Scan options.
-/// \param[in] file_size File size.
+/// \param[in] options The scan options to use to build a ScanRequest.
+/// \param[in] file_size The size of the file fragment.
 /// \param[out] bl Output bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
@@ -212,10 +212,10 @@ ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& option
 
 /// \brief Deserialize scan request from bufferlist.
 /// \param[out] filter The filter expression to apply.
-/// \param[out] partition Partition expression.
-/// \param[out] projected_schema The projection schema.
-/// \param[out] dataset_schema The dataset schema.
-/// \param[out] file_size File size.
+/// \param[out] partition The partition expression to use.
+/// \param[out] projected_schema The schema to project the filtered record batches.
+/// \param[out] dataset_schema The dataset schema to use.
+/// \param[out] file_size The size of the file.
 /// \param[in] bl Input Ceph bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
@@ -225,7 +225,7 @@ ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
                                               int64_t& file_size, ceph::bufferlist& bl);
 
 /// \brief Serialize the result Table to a bufferlist.
-/// \param[in] table The table.
+/// \param[in] table The table to serialize.
 /// \param[out] bl Output bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table,

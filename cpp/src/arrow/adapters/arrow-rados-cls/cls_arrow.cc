@@ -66,7 +66,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
   arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) { return 0; }
 
-  /// Read the specified position. Return a buffer of the objects at the position.
+  /// Read at a specified number of bytes from a specified position.
   arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) {
     RETURN_NOT_OK(CheckClosed());
     RETURN_NOT_OK(CheckPosition(position, "read"));
@@ -83,14 +83,14 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return std::make_shared<arrow::Buffer>("");
   }
 
-  /// Read the byte stream. Returns a buffer of the objects in the stream.
+  /// Read a specified number of bytes from the current position.
   arrow::Result<std::shared_ptr<arrow::Buffer>> Read(int64_t nbytes) {
     ARROW_ASSIGN_OR_RAISE(auto buffer, ReadAt(pos_, nbytes));
     pos_ += buffer->size();
     return std::move(buffer);
   }
 
-  /// Read the byte stream into an output stream. Returns read data from the input.
+  /// Read a specified number of bytes from the current position into an output stream.
   arrow::Result<int64_t> Read(int64_t nbytes, void* out) {
     ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(pos_, nbytes, out));
     pos_ += bytes_read;
@@ -119,7 +119,8 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return pos_;
   }
 
-  /// Closes the file stream and deletes the chunks.
+  /// Closes the file stream and deletes the chunks and releases the memory
+  /// used by the chunks.
   arrow::Status Close() {
     closed_ = true;
     for (auto chunk : chunks_) {
@@ -141,11 +142,11 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 /// \brief Scan RADOS objects containing Parquet binary data.
 /// \param[in] hctx RADOS object context.
 /// \param[in] filter The filter expression to apply.
-/// \param[in] partition_expression Partition expression.
+/// \param[in] partition_expression The partition expression to use.
 /// \param[in] projection_schema The projection schema.
 /// \param[in] dataset_schema The dataset schema.
 /// \param[out] table Table to store the resultant data.
-/// \param[in] file_size File size.
+/// \param[in] object_size The size of the object.
 /// \return Status.
 static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        arrow::compute::Expression filter,
@@ -153,8 +154,8 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        std::shared_ptr<arrow::Schema> projection_schema,
                                        std::shared_ptr<arrow::Schema> dataset_schema,
                                        std::shared_ptr<arrow::Table>& table,
-                                       int64_t file_size) {
-  auto file = std::make_shared<RandomAccessObject>(hctx, file_size);
+                                       int64_t object_size) {
+  auto file = std::make_shared<RandomAccessObject>(hctx, object_size);
 
   arrow::dataset::FileSource source(file);
 
@@ -185,7 +186,7 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 
 /// \brief The scanning operation to register on Ceph nodes. The request is
 /// deserialized, the object is scanned, and the resulting table is serialized
-/// and sent to the user.
+/// and sent to the client.
 /// \param[in] hctx RADOS object context.
 /// \param[in] in Input bufferlist.
 /// \param[out] out Output bufferlist.
