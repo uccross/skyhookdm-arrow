@@ -229,7 +229,8 @@ ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
 /// \param[out] bl Output bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table,
-                                      ceph::bufferlist& bl);
+                                      ceph::bufferlist& bl,
+                                      bool aggressive = false);
 
 /// \brief Deserialize the result table from bufferlist.
 /// \param[out] batches Output record batches.
