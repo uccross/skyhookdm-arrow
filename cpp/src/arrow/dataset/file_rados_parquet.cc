@@ -168,7 +168,7 @@ Status DeserializeScanRequest(compute::Expression* filter, compute::Expression* 
   return Status::OK();
 }
 
-Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl, bool aggresive) {
+Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl, bool aggressive) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
   ipc::IpcWriteOptions options = ipc::IpcWriteOptions::Defaults();
