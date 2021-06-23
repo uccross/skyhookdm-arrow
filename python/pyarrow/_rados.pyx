@@ -24,14 +24,14 @@ from pyarrow.lib import frombytes, tobytes
 cdef class RadosParquetFileFormat(FileFormat):
     """
     A ParquetFileFormat implementation that offloads the fragment
-    scan operations to the Ceph OSDs
+    scan operations to the Ceph OSDs.
 
     Parameters
     ---------
-    ceph_config_path: The path to the ceph config file.
+    ceph_config_path: The path to the Ceph config file.
     data_pool: Name of the CephFS data pool.  
-    user_name: Username to access the Ceph data cluster.
-    cluster_name: Name of the data cluster.
+    user_name: The username accessing the Ceph cluster.
+    cluster_name: Name of the cluster.
     """
     cdef:
         CRadosParquetFileFormat* rados_parquet_format

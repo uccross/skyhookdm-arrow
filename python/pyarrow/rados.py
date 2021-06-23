@@ -25,12 +25,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 class SplittedParquetWriter(object):
     """
-    Write data to a file of RadosParquetFile format.
+    Split a large multi rowgroup Parquet file to a set of single row group
+    Parquet files of a specified size.
 
     Parameters
     ---------
-    filename: The name of the file to write to.
-    destination: The destination of the file to write to.
+    filename: the name of the file to split.
+    destination: The directory where to write the split Parquet files.
     chunksize: The required chunk size.
     """
     def __init__(self, filename, destination, chunksize=128*1024*1024):
@@ -60,12 +61,12 @@ class SplittedParquetWriter(object):
 
     def write_file(self, filename, table):
         """
-        The call to write a table to a file.
+        Update CephFS striping strategy and write the table to a set of split files.
 
         Parameters
         ---------
-        filename: Name of the file to write.
-        table: The table to write.
+        filename: Name of the file to write to.
+        table: The table slice to write.
         """
         open(filename, 'a').close()
         attribute = "ceph.file.layout.object_size"
@@ -98,7 +99,7 @@ class SplittedParquetWriter(object):
 
     def write(self):
         """
-        Write the data to a file.
+        Write the data to a set of split files.
         """
         os.makedirs(self.destination, exist_ok=True)
         s_time = time.time()
