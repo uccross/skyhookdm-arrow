@@ -25,7 +25,7 @@ if [[ $# -lt 6 ]] ; then
     exit 1
 fi
 
-# in default mode (without any arguments), deploy a single node Ceph cluster"
+# in default mode (without any arguments), deploy a single OSD Ceph cluster 
 MON=${1:-node1}
 OSD=${2:-node1}
 MDS=${3:-node1}
@@ -43,55 +43,74 @@ OSD_LIST=${OSD_LIST[@]}
 MDS_LIST=${MDS_LIST[@]}
 MGR_LIST=${MGR_LIST[@]}
 
+# disable host key checking
 cat > ~/.ssh/config << EOF
 Host *
     StrictHostKeyChecking no
 EOF
 
+# delete CephFS application along with any mountpoint
+function delete_cephfs {
+    echo "deleting cephfs"
+    fusermount -uz /mnt/cephfs || true
+    rm -rf /mnt/cephfs
+}
+
+# delete the trailing pools
+function delete_pools {
+    echo "deleting pools"
+    ceph osd pool delete cephfs_data cephfs_data --yes-i-really-really-mean-it
+    ceph osd pool delete cephfs_metadata cephfs_metadata --yes-i-really-really-mean-it
+    ceph osd pool delete device_health_metrics device_health_metrics --yes-i-really-really-mean-it
+}
+
+# delete trailing OSD daemons
+function delete_osds {
+    # kill the daemon and format the LVM partition
+    for node in ${OSD_LIST}; do
+        ssh $node pkill ceph-osd || true
+        # try to zap the block devices.
+        ssh $node ceph-volume lvm zap $BLKDEV --destroy || true
+        ssh $node rm -rf /etc/ceph/*
+    done
+
+    # clear the OSDs
+    NUM_OSDS=${#OSD_LIST[@]}
+    for ((i=0; i<$NUM_OSDS; i++)); do 
+        ceph osd down osd.${i} || true
+        ceph osd out osd.${i} || true 
+        ceph osd rm osd.${i} || true
+        ceph osd crush rm osd.${i} || true 
+        ceph auth del osd.${i} || true
+    done
+}
+
+function delete_mon_mgr_mds {
+    for node in ${MON_LIST}; do
+        ssh $node rm -rf /etc/ceph/*
+        ssh $node pkill ceph-mon
+    done
+    for node in ${MGR_LIST}; do
+        ssh $node rm -rf /etc/ceph/*
+        ssh $node pkill ceph-mgr
+    done
+    for node in ${MDS_LIST}; do
+        ssh $node rm -rf /etc/ceph/*
+        ssh $node pkill ceph-mds
+    done
+}
+
 echo "[0] cleaning up a previous Ceph installation"
+# clean the cluster
+delete_cephfs
+delete_pools
+delete_osds
+delete_mon_mgr_mds
 
-# clean the CephFS
-fusermount -uz /mnt/cephfs || true
-rm -rf /mnt/cephfs
-
-# clean the old cluster configs
-rm -rf /etc/ceph/*
+# clean the old workspace
 rm -rf /tmp/deployment
 rm -rf /tmp/ceph-deploy
-
-# clean the mons, osds, mds, mgrs
-for node in ${OSD_LIST}; do
-    ssh $node rm -rf /etc/ceph/*
-    ssh $node pkill ceph-osd
-    # try to zap the block devices.
-    ssh $node ceph-volume lvm zap $BLKDEV --destroy || true
-done
-
-# clear the osds
-NUM_OSDS=${#OSD_LIST[@]}
-for ((i=0; i<$NUM_OSDS; i++)); do 
-    ceph osd down osd.${i}
-    ceph osd out osd.${i}
-    ceph osd rm osd.${i}
-    ceph osd crush rm osd.${i}
-    ceph auth del osd.${i}
-done
-
-# show the Ceph cluster status to the user once.
-ceph -s
-
-for node in ${MON_LIST}; do
-    ssh $node rm -rf /etc/ceph/*
-    ssh $node pkill ceph-mon
-done
-for node in ${MGR_LIST}; do
-    ssh $node rm -rf /etc/ceph/*
-    ssh $node pkill ceph-mgr
-done
-for node in ${MDS_LIST}; do
-    ssh $node rm -rf /etc/ceph/*
-    ssh $node pkill ceph-mds
-done
+rm -rf /etc/ceph/*
 
 echo "[1] installing common packages"
 apt update
