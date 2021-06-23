@@ -16,12 +16,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-set -e
+set -eu
 
 if [[ $# -lt 4 ]] ; then
-    echo "usage: ./deploy_ceph.sh [mon hosts] [osd hosts] [mds hosts] [mgr hosts]"
+    echo "usage: ./deploy_ceph.sh [mon hosts] [osd hosts] [mds hosts] [mgr hosts] [blkdevice]"
     echo " "
-    echo "for example: ./deploy_ceph.sh node1,node2,node3 node4,node5,node6 node1 node1"
+    echo "for example: ./deploy_ceph.sh node1,node2,node3 node4,node5,node6 node1 node1 /dev/sdb"
     exit 1
 fi
 
@@ -29,6 +29,7 @@ MON=$1
 OSD=$2
 MDS=$3
 MGR=$4
+BLKDEV=$5
 
 IFS=',' read -ra MON_LIST <<< "$MON"; unset IFS
 IFS=',' read -ra OSD_LIST <<< "$OSD"; unset IFS
@@ -44,6 +45,23 @@ cat > ~/.ssh/config << EOF
 Host *
     StrictHostKeyChecking no
 EOF
+
+echo "[0] cleaning up a previous Ceph installation"
+rm -rf /etc/ceph/*
+rm -rf /tmp/deployment
+rm -rf /tmp/ceph-deploy
+for node in ${OSD_LIST}; do
+    ssh $node rm -rf /etc/ceph/ceph.conf
+done
+for node in ${MON_LIST}; do
+    ssh $node rm -rf /etc/ceph/ceph.conf
+done
+for node in ${MGR_LIST}; do
+    ssh $node rm -rf /etc/ceph/ceph.conf
+done
+for node in ${MDS_LIST}; do
+    ssh $node rm -rf /etc/ceph/ceph.conf
+done
 
 echo "[1] installing common packages"
 apt update
@@ -85,7 +103,7 @@ echo "[7] deploying OSDs"
 for node in ${OSD_LIST}; do
     scp /tmp/deployment/ceph.bootstrap-osd.keyring $node:/etc/ceph/ceph.keyring
     scp /tmp/deployment/ceph.bootstrap-osd.keyring $node:/var/lib/ceph/bootstrap-osd/ceph.keyring
-    ceph-deploy osd create --data /dev/nvme0n1p4 $node
+    ceph-deploy osd create --data $BLKDEV $node
 done
 
 echo "[8] deploying MDSs"
