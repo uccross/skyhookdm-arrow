@@ -18,12 +18,9 @@
 # under the License.
 set -eu
 
-if [[ $# -lt 6 ]] ; then
-    echo "usage: ./deploy_ceph.sh [mon hosts] [osd hosts] [mds hosts] [mgr hosts] [blkdevice] [pool size]"
-    echo " "
-    echo "for example: ./deploy_ceph.sh node1,node2,node3 node4,node5,node6 node1 node1 /dev/sdb 3"
-    exit 1
-fi
+echo "usage: ./deploy_ceph.sh [mon hosts] [osd hosts] [mds hosts] [mgr hosts] [blkdevice] [pool size]"
+echo " "
+echo "for example: ./deploy_ceph.sh node1,node2,node3 node4,node5,node6 node1 node1 /dev/sdb 3"
 
 # in default mode (without any arguments), deploy a single OSD Ceph cluster 
 MON=${1:-node1}
@@ -33,11 +30,11 @@ MGR=${4:-node1}
 BLKDEV=${5:-/dev/nvme0n1p4}
 POOL_SIZE=${6:-1}
 
+# split the comma separated nodes into a list
 IFS=',' read -ra MON_LIST <<< "$MON"; unset IFS
 IFS=',' read -ra OSD_LIST <<< "$OSD"; unset IFS
 IFS=',' read -ra MDS_LIST <<< "$MDS"; unset IFS
 IFS=',' read -ra MGR_LIST <<< "$MGR"; unset IFS
-
 MON_LIST=${MON_LIST[@]}
 OSD_LIST=${OSD_LIST[@]}
 MDS_LIST=${MDS_LIST[@]}
@@ -54,14 +51,16 @@ function delete_cephfs {
     echo "deleting cephfs"
     fusermount -uz /mnt/cephfs || true
     rm -rf /mnt/cephfs
+    ceph fs fail cephfs || true
+    ceph fs rm cephfs --yes-i-really-mean-it || true
 }
 
 # delete the trailing pools
 function delete_pools {
     echo "deleting pools"
-    ceph osd pool delete cephfs_data cephfs_data --yes-i-really-really-mean-it
-    ceph osd pool delete cephfs_metadata cephfs_metadata --yes-i-really-really-mean-it
-    ceph osd pool delete device_health_metrics device_health_metrics --yes-i-really-really-mean-it
+    ceph osd pool delete cephfs_data cephfs_data --yes-i-really-really-mean-it || true
+    ceph osd pool delete cephfs_metadata cephfs_metadata --yes-i-really-really-mean-it || true
+    ceph osd pool delete device_health_metrics device_health_metrics --yes-i-really-really-mean-it || true
 }
 
 # delete trailing OSD daemons
@@ -74,29 +73,35 @@ function delete_osds {
         ssh $node rm -rf /etc/ceph/*
     done
 
-    # clear the OSDs
+    # remove all the OSDs
     NUM_OSDS=${#OSD_LIST[@]}
     for ((i=0; i<$NUM_OSDS; i++)); do 
+        # mark an OSD down and remove it
         ceph osd down osd.${i} || true
-        ceph osd out osd.${i} || true 
+        ceph osd out osd.${i} || true
         ceph osd rm osd.${i} || true
-        ceph osd crush rm osd.${i} || true 
+
+        # remove entry from crush map
+        ceph osd crush rm osd.${i} || true
+
+        # remove auth entry
         ceph auth del osd.${i} || true
     done
 }
 
+# kill the MONs, MGRs and MDSs.
 function delete_mon_mgr_mds {
     for node in ${MON_LIST}; do
         ssh $node rm -rf /etc/ceph/*
-        ssh $node pkill ceph-mon
+        ssh $node pkill ceph-mon || true
     done
     for node in ${MGR_LIST}; do
         ssh $node rm -rf /etc/ceph/*
-        ssh $node pkill ceph-mgr
+        ssh $node pkill ceph-mgr || true
     done
     for node in ${MDS_LIST}; do
         ssh $node rm -rf /etc/ceph/*
-        ssh $node pkill ceph-mds
+        ssh $node pkill ceph-mds || true
     done
 }
 
@@ -136,14 +141,20 @@ ceph-deploy admin $MON_LIST
 echo "[6] deploying MGRs"
 ceph-deploy mgr create $MGR_LIST
 
+# update the Ceph config to allow pool deletion and to recognize object class libs.
 cat >> ceph.conf << EOF
 mon allow pool delete = true
 osd class load list = *
 osd op threads = 16
 EOF
 
+# deploy the updated Ceph config and restat the MONs for the config to take effect
 ceph-deploy --overwrite-conf config push $MON_LIST $OSD_LIST $MDS_LIST $MGR_LIST
+for node in ${MON_LIST}; do
+    ssh $node systemctl restart ceph-mon.target
+done
 
+# copy the config to the default location on the admin node
 cp ceph.conf /etc/ceph/ceph.conf
 cp ceph.client.admin.keyring  /etc/ceph/ceph.client.admin.keyring
 
