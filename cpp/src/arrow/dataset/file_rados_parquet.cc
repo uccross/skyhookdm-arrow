@@ -70,19 +70,15 @@ class RadosParquetScanTask : public ScanTask {
   std::shared_ptr<DirectObjectAccess> doa_;
 };
 
-RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_path,
-                                               const std::string& data_pool,
-                                               const std::string& user_name,
-                                               const std::string& cluster_name) {
-  arrow::dataset::RadosCluster::RadosConnectionCtx ctx;
-  ctx.ceph_config_path = "/etc/ceph/ceph.conf";
-  ctx.data_pool = "cephfs_data";
-  ctx.user_name = "client.admin";
-  ctx.cluster_name = "ceph";
-  ctx.cls_name = "arrow";
-  auto cluster = std::make_shared<RadosCluster>(ctx);
-  cluster->Connect();
-  auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(cluster);
+
+RadosParquetFileFormat::RadosParquetFileFormat(const std::string& ceph_config_path, const std::string& data_pool,
+                                               const std::string& user_name, const std::string& cluster_name,
+                                               const std::string& cls_name)
+                                               : RadosParquetFileFormat(std::make_shared<connection::RadosConnection>(connection::RadosConnection::RadosConnectionCtx(ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {}
+
+RadosParquetFileFormat::RadosParquetFileFormat(const std::shared_ptr<connection::RadosConnection>& connection) {
+  connection->connect();
+  auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(connection);
   doa_ = doa;
 }
 
