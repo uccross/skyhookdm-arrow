@@ -19,13 +19,14 @@
 
 set -eu
 
-if [[ $# -lt 2 ]] ; then
-    echo "./deploy_skyhook.sh [nodes] [skyhook-branch]"
+if [[ $# -lt 3 ]] ; then
+    echo "./deploy_skyhook.sh [nodes] [skyhook-branch] [deploy cls libs]"
     exit 1
 fi
 
 NODES=$1
 BRANCH=$2
+DEPLOY_CLS_LIBS=$3
 
 IFS=',' read -ra NODE_LIST <<< "$NODES"; unset IFS
 
@@ -63,13 +64,15 @@ rm -rf dist/*
 python3 setup.py build_ext --inplace --bundle-arrow-cpp bdist_wheel
 pip3 install --upgrade dist/*.whl
 
-cd /tmp/arrow/cpp/release/release
-for node in ${NODE_LIST[@]}; do
-  scp libcls* $node:/usr/lib/rados-classes/
-  scp libarrow* $node:/usr/lib/
-  scp libparquet* $node:/usr/lib/
-  ssh $node systemctl restart ceph-osd.target
-done
+if [[ "${DEPLOY_CLS_LIBS}" == "true" ]]; then
+  cd /tmp/arrow/cpp/release/release
+  for node in ${NODE_LIST[@]}; do
+    scp libcls* $node:/usr/lib/rados-classes/
+    scp libarrow* $node:/usr/lib/
+    scp libparquet* $node:/usr/lib/
+    ssh $node systemctl restart ceph-osd.target
+  done
+fi
 
 export LD_LIBRARY_PATH=/usr/local/lib
 cp /usr/local/lib/libparq* /usr/lib/
