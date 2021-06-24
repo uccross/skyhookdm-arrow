@@ -18,9 +18,12 @@
 # under the License.
 set -eu
 
-echo "usage: ./deploy_ceph.sh [mon hosts] [osd hosts] [mds hosts] [mgr hosts] [blkdevice] [pool size]"
-echo " "
-echo "for example: ./deploy_ceph.sh node1,node2,node3 node4,node5,node6 node1 node1 /dev/sdb 3"
+if [[ $# -lt 6 ]] ; then
+    echo "usage: ./deploy_ceph.sh [mon hosts] [osd hosts] [mds hosts] [mgr hosts] [blkdevice] [pool size]"
+    echo " "
+    echo "for example: ./deploy_ceph.sh node1,node2,node3 node4,node5,node6 node1 node1 /dev/sdb 3"
+    exit 1
+fi
 
 # in default mode (without any arguments), deploy a single OSD Ceph cluster 
 MON=${1:-node1}
