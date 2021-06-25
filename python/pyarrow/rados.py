@@ -34,6 +34,7 @@ class SplittedParquetWriter(object):
     destination: The directory where to write the split Parquet files.
     chunksize: The required chunk size.
     """
+
     def __init__(self, filename, destination, chunksize=128*1024*1024):
         self.filename = filename
         self.destination = destination
