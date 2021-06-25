@@ -74,6 +74,8 @@ BufferOutputStream::~BufferOutputStream() {
   }
 }
 
+CephOutputStream::~CephOutputStream() {}
+
 Status BufferOutputStream::Close() {
   if (is_open_) {
     is_open_ = false;

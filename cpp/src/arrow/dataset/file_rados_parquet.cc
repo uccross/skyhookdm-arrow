@@ -168,10 +168,11 @@ Status DeserializeScanRequest(compute::Expression* filter, compute::Expression* 
   return Status::OK();
 }
 
-Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
+Status SerializeTable(std::shared_ptr<Table>& table, 
+                      ceph::bufferlist& bl,
                       bool aggressive) {
-  ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
-
+  auto result_bl = std::make_shared<ceph::bufferlist>();
+  auto stream = std::make_shared<io::CephOutputStream>(result_bl);
   ipc::IpcWriteOptions options = ipc::IpcWriteOptions::Defaults();
 
   Compression::type codec;
@@ -184,13 +185,11 @@ Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
   ARROW_ASSIGN_OR_RAISE(options.codec,
                         util::Codec::Create(codec, std::numeric_limits<int>::min()));
   ARROW_ASSIGN_OR_RAISE(
-      auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
+      auto writer, ipc::MakeStreamWriter(stream, table->schema(), options));
 
   ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
   ARROW_RETURN_NOT_OK(writer->Close());
-
-  ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
-  bl.append((char*)buffer->data(), buffer->size());
+  bl = *result_bl;
   return Status::OK();
 }
 

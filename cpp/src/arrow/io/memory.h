@@ -29,6 +29,8 @@
 #include "arrow/util/string_view.h"
 #include "arrow/util/visibility.h"
 
+#include <rados/librados.hpp>
+
 namespace arrow {
 
 class Status;
@@ -110,6 +112,43 @@ class ARROW_EXPORT MockOutputStream : public OutputStream {
 
  private:
   int64_t extent_bytes_written_;
+  bool is_open_;
+};
+
+class ARROW_EXPORT CephOutputStream : public OutputStream {
+ public:
+  CephOutputStream(std::shared_ptr<ceph::bufferlist>& bl) {
+    bl_ = bl;
+    is_open_ = true;
+  }
+  ~CephOutputStream() override;
+
+  Status Close() { 
+    is_open_ = false; 
+    return Status::OK();
+  }
+
+  bool closed() const { 
+    return !is_open_; 
+  }
+
+  Result<std::shared_ptr<Buffer>> Finish() {
+    auto buffer = std::make_shared<Buffer>((uint8_t*)bl_->c_str(), bl_->length());
+    return buffer;
+  }
+
+  Result<int64_t> Tell() const { return bl_->length(); }
+  
+  Status Write(const void* data, int64_t nbytes) {
+    bl_->append((char*)data, nbytes);
+    return Status::OK();
+  }
+  /// \cond FALSE
+  using Writable::Write;
+  /// \endcond
+
+ private:
+  std::shared_ptr<ceph::bufferlist> bl_;
   bool is_open_;
 };
 
