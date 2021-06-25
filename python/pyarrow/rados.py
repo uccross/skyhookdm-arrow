@@ -25,7 +25,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 class SplittedParquetWriter(object):
     """
-    Split a large multi rowgroup Parquet file to a set of single row group
+    Split a large multi rowgroup Parquet file to a set of single rowgroup
     Parquet files of a specified size.
 
     Parameters
@@ -34,6 +34,7 @@ class SplittedParquetWriter(object):
     destination: The directory where to write the split Parquet files.
     chunksize: The required chunk size.
     """
+
     def __init__(self, filename, destination, chunksize=128*1024*1024):
         self.filename = filename
         self.destination = destination
@@ -50,7 +51,7 @@ class SplittedParquetWriter(object):
         Returns
         ---------
         result: int
-            The rounded off number. 
+            The rounded off number.
         """
         num_str = str(int(num))
         result_str = ""
@@ -61,7 +62,8 @@ class SplittedParquetWriter(object):
 
     def write_file(self, filename, table):
         """
-        Update CephFS striping strategy and write the table to a set of split files.
+        Update CephFS striping strategy and write the table to a set of split
+        files.
 
         Parameters
         ---------
