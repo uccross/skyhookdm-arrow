@@ -140,8 +140,7 @@ class ARROW_EXPORT CephOutputStream : public OutputStream {
   Result<int64_t> Tell() const { return bl_->length(); }
 
   Status Write(const void* data, int64_t nbytes) {
-    auto ptr = std::make_shared<ceph::bufferptr>(ceph::buffer::create_static(nbytes, (char*)data));
-    bl_->push_back(*ptr);
+    bl_->push_back(ceph::bufferptr((char*)data, nbytes));
     return Status::OK();
   }
   /// \cond FALSE
