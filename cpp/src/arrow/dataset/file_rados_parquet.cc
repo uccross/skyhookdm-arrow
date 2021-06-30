@@ -61,7 +61,7 @@ class RadosParquetScanTask : public ScanTask {
     ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
 
     RecordBatchVector batches;
-    ARROW_RETURN_NOT_OK(DeserializeTable(batches, result));
+    ARROW_RETURN_NOT_OK(DeserializeTable(batches, result, !options_->use_threads));
     return MakeVectorIterator(batches);
   }
 
