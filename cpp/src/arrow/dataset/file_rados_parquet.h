@@ -105,13 +105,15 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
     if (connected) {
       return Status::OK();
     }
+
+    // Locks the mutex. Only one thread can pass here at a time.
+    // Another thread handled the connection already.
     std::unique_lock<std::mutex> lock(
-        connectionMutex);  // locks the mutex. 1 thread can pass here at a time.
-    if (connected) {       // Another thread handled the connection already.
+        connection_mutex);
+    if (connected) {
       return Status::OK();
     }
-    connected = true;  // We are the first thread to lock the mutex. Close the gates for
-                       // the others.
+    connected = true;
 
     if (rados->init2(ctx.user_name.c_str(), ctx.cluster_name.c_str(), 0))
       return Status::Invalid("librados::init2 returned non-zero exit code.");
@@ -139,7 +141,7 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
   RadosInterface* rados;
   IoCtxInterface* ioCtx;
   bool connected;
-  std::mutex connectionMutex;
+  std::mutex connection_mutex;
 };
 }  // namespace connection
 
