@@ -77,7 +77,37 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 * `cpp/src/arrow/adapters/arrow-rados-cls/cls_arrow.cc`: Contains the Rados objclass functions and APIs for interacting with objects in the OSDs. Also, it includes a `RandomAccessObject` API to give a random access file view of objects for allowing operations like reading byte ranges, seeks, tell, etc. 
 
-# Setting up the development environment using docker
+# Setting up the development environment
+
+## Using docker
+
+1. Clone the SkyhookDM repository.
+```bash
+git clone https://github.com/uccross/skyhookdm-arrow
+cd skyhookdm-arrow/
+```
+
+2. Run the SkyhookDM container in interactive mode.
+```bash
+docker run -it -v $PWD:/w -w /w --privileged uccross/skyhookdm-arrow:v0.2.0 bash
+```
+
+3. Install docker.
+```bash
+curl -o- https://get.docker.com | bash
+```
+
+3. Run the build script.
+```bash
+./build.sh
+```
+
+4. Run the tests script.
+```bash
+./test.sh
+```
+
+## Using Archery
 
 **NOTE:** Please make sure [docker](https://docs.docker.com/engine/install/ubuntu/) and [docker-compose](https://docs.docker.com/compose/install/) is installed.
 
@@ -104,7 +134,7 @@ export UBUNTU=20.04
 archery docker run ubuntu-python-cls
 ```
 
-# Setting up development environemnt on bare-metal
+## On bare-metal
 
 1. Clone the repository.
 ```bash
