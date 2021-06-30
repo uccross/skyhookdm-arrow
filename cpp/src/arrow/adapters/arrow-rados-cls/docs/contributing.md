@@ -39,12 +39,12 @@ curl -o- https://get.docker.com | bash
 
 3. Run the build script.
 ```bash
-../docker/build.sh
+./cpp/src/arrow/adapters/arrow-rados-cls/scripts/build.sh
 ```
 
 4. Run the tests script.
 ```bash
-../docker/test.sh
+./cpp/src/arrow/adapters/arrow-rados-cls/scripts/test.sh
 ```
 
 ## Using Archery
