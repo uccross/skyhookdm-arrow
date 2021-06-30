@@ -281,7 +281,8 @@ ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table, ceph::buffe
 /// \param[out] batches Output record batches.
 /// \param[in] bl Input bufferlist.
 /// \return Status.
-ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl);
+ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl, 
+                                        bool use_threads);
 
 /// @}
 
