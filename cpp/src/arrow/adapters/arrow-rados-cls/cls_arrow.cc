@@ -31,6 +31,10 @@
 #include "parquet/arrow/reader.h"
 #include "parquet/file_reader.h"
 
+#define SCAN_ERR_CODE 25
+#define SCAN_REQ_DESER_ERR_CODE 26
+#define SCAN_RES_SER_ERR_CODE 27
+
 CLS_VER(1, 0)
 CLS_NAME(arrow)
 
@@ -234,7 +238,8 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 /// \return Status code.
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
-  // Components required to construct a ParquetFragment.
+  // Components required to construct a File fragment.
+  arrow::Status s;
   arrow::compute::Expression filter;
   arrow::compute::Expression partition_expression;
   std::shared_ptr<arrow::Schema> projection_schema;
@@ -243,15 +248,15 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   int64_t file_format = 0; // 0 = Parquet, 1 = Ipc
 
   // Deserialize the scan request
-  if (!arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
-                                              &projection_schema, &dataset_schema,
-                                              file_size, *in)
-           .ok())
-    return -1;
+  if (!(s = arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
+                                                   &projection_schema, &dataset_schema,
+                                                   file_size, *in)).ok()) {
+    CLS_LOG(0, s.message().c_str());
+    return SCAN_REQ_DESER_ERR_CODE;
+  }
 
   // Scan the object
   std::shared_ptr<arrow::Table> table;
-  arrow::Status s;
   if (file_format == 0) {
     s = ScanParquetObject(hctx, filter, partition_expression, projection_schema,
                           dataset_schema, table, file_size);
@@ -261,15 +266,17 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   } else {
     s = arrow::Status::Invalid("Invalid file format");
   }
-
   if (!s.ok()) {
     CLS_LOG(0, "error: %s", s.message().c_str());
-    return -1;
+    return SCAN_ERR_CODE;
   }
 
   // Serialize the resultant table to send back to the client
   ceph::bufferlist bl;
-  if (!arrow::dataset::SerializeTable(table, bl).ok()) return -1;
+  if (!(s = arrow::dataset::SerializeTable(table, bl)).ok()) {
+    CLS_LOG(0, "error: %s", s.message().c_str());
+    return SCAN_RES_SER_ERR_CODE;
+  }
 
   *out = bl;
   return 0;
