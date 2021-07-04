@@ -240,7 +240,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
   int64_t file_size;
-  int format = 0; // 0 = Parquet, 1 = Ipc
+  int64_t file_format = 0; // 0 = Parquet, 1 = Ipc
 
   // Deserialize the scan request
   if (!arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
@@ -252,14 +252,14 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   // Scan the object
   std::shared_ptr<arrow::Table> table;
   arrow::Status s;
-  if (format == 0) {
+  if (file_format == 0) {
     s = ScanParquetObject(hctx, filter, partition_expression, projection_schema,
                           dataset_schema, table, file_size);
-  } else if (format == 1) {
+  } else if (file_format == 1) {
     s = ScanIpcObject(hctx, filter, partition_expression, projection_schema,
                       dataset_schema, table, file_size);
   } else {
-    s = arrow::Status::Invalid("Invalid format");
+    s = arrow::Status::Invalid("Invalid file format");
   }
 
   if (!s.ok()) {
