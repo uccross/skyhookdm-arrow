@@ -234,31 +234,37 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
 /// \return Status code.
 static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
-  // the components required to construct a ParquetFragment.
+  // Components required to construct a ParquetFragment.
   arrow::compute::Expression filter;
   arrow::compute::Expression partition_expression;
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
   int64_t file_size;
+  int format; // 0 = Parquet, 1 = Ipc
 
-  // deserialize the scan request
+  // Deserialize the scan request
   if (!arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
                                               &projection_schema, &dataset_schema,
                                               file_size, *in)
            .ok())
     return -1;
 
-  // scan the parquet object
+  // Scan the object
   std::shared_ptr<arrow::Table> table;
-  arrow::Status s =
-      ScanParquetObject(hctx, filter, partition_expression, projection_schema,
-                        dataset_schema, table, file_size);
+  arrow::Status s;
+  if (format == 0) {
+    s = ScanParquetObject(hctx, filter, partition_expression, projection_schema,
+                          dataset_schema, table, file_size);
+  } else {
+    s = ScanIpcObject(hctx, filter, partition_expression, projection_schema,
+                      dataset_schema, table, file_size);
+  }
   if (!s.ok()) {
     CLS_LOG(0, "error: %s", s.message().c_str());
     return -1;
   }
 
-  // serialize the resultant table to send back to the client
+  // Serialize the resultant table to send back to the client
   ceph::bufferlist bl;
   if (!arrow::dataset::SerializeTable(table, bl).ok()) return -1;
 
@@ -267,7 +273,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 }
 
 void __cls_init() {
-  CLS_LOG(0, "loading cls_arrow");
+  CLS_LOG(0, "Loading cls_arrow");
 
   cls_register("arrow", &h_class);
 
