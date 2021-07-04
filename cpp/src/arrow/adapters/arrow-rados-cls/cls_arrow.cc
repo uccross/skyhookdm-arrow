@@ -139,6 +139,46 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   std::vector<ceph::bufferlist*> chunks_;
 };
 
+/// \brief Scan RADOS objects containing Arrow IPC data.
+/// \param[in] hctx RADOS object context.
+/// \param[in] filter The filter expression to apply.
+/// \param[in] partition_expression The partition expression to use.
+/// \param[in] projection_schema The projection schema.
+/// \param[in] dataset_schema The dataset schema.
+/// \param[out] table Table to store the resultant data.
+/// \param[in] object_size The size of the object.
+/// \return Status.
+static arrow::Status ScanIpcObject(cls_method_context_t hctx,
+                                   arrow::dataset::Expression filter,
+                                   arrow::dataset::Expression partition_expression,
+                                   std::shared_ptr<arrow::Schema> projection_schema,
+                                   std::shared_ptr<arrow::Schema> dataset_schema,
+                                   std::shared_ptr<arrow::Table>& t,
+                                   int64_t object_size) {
+  auto file = std::make_shared<RandomAccessObject>(hctx, object_size);
+  arrow::dataset::FileSource source(file, Compression::LZ4_FRAME);
+
+  auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
+  ARROW_ASSIGN_OR_RAISE(auto fragment,
+                        format->MakeFragment(source, partition_expression));
+
+  auto ctx = std::make_shared<arrow::dataset::ScanContext>();
+  auto builder =
+      std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, ctx);
+
+  ARROW_RETURN_NOT_OK(builder->Filter(filter));
+  ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
+  ARROW_RETURN_NOT_OK(builder->UseThreads(false));
+
+  ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
+  ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
+
+  t = table;
+
+  ARROW_RETURN_NOT_OK(file->Close());
+  return arrow::Status::OK();
+}
+
 /// \brief Scan RADOS objects containing Parquet binary data.
 /// \param[in] hctx RADOS object context.
 /// \param[in] filter The filter expression to apply.
