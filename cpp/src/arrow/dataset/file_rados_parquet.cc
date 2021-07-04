@@ -24,9 +24,9 @@
 #include "arrow/filesystem/path_util.h"
 #include "arrow/filesystem/util_internal.h"
 #include "arrow/util/checked_cast.h"
+#include "arrow/util/compression.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/logging.h"
-#include "arrow/util/compression.h"
 #include "parquet/arrow/reader.h"
 #include "parquet/file_reader.h"
 
@@ -124,8 +124,9 @@ Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int64_t& file
   auto dataset_schema_vec =
       builder.CreateVector(dataset_schema->data(), dataset_schema->size());
 
-  auto request = flatbuf::CreateScanRequest(builder, file_size, options->file_format, filter_vec, partition_vec,
-                                            dataset_schema_vec, projected_schema_vec);
+  auto request =
+      flatbuf::CreateScanRequest(builder, file_size, options->file_format, filter_vec,
+                                 partition_vec, dataset_schema_vec, projected_schema_vec);
   builder.Finish(request);
   uint8_t* buf = builder.GetBufferPointer();
   int size = builder.GetSize();
@@ -195,8 +196,7 @@ Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
   return Status::OK();
 }
 
-Status DeserializeTable(RecordBatchVector& batches,
-                        ceph::bufferlist& bl,
+Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
                         bool use_threads) {
   auto buffer = std::make_shared<Buffer>((uint8_t*)bl.c_str(), bl.length());
   auto buffer_reader = std::make_shared<io::BufferReader>(buffer);

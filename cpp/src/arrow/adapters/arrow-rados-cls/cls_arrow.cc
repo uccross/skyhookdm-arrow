@@ -245,12 +245,13 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
   int64_t file_size;
-  int64_t file_format = 0; // 0 = Parquet, 1 = Ipc
+  int64_t file_format = 0;  // 0 = Parquet, 1 = Ipc
 
   // Deserialize the scan request
   if (!(s = arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
                                                    &projection_schema, &dataset_schema,
-                                                   file_size, file_format, *in)).ok()) {
+                                                   file_size, file_format, *in))
+           .ok()) {
     CLS_LOG(0, "error: %s", s.message().c_str());
     return SCAN_REQ_DESER_ERR_CODE;
   }

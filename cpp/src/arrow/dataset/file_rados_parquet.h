@@ -116,8 +116,7 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
 
     // Locks the mutex. Only one thread can pass here at a time.
     // Another thread handled the connection already.
-    std::unique_lock<std::mutex> lock(
-        connection_mutex);
+    std::unique_lock<std::mutex> lock(connection_mutex);
     if (connected) {
       return Status::OK();
     }
@@ -277,8 +276,7 @@ ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
                                               compute::Expression* partition,
                                               std::shared_ptr<Schema>* projected_schema,
                                               std::shared_ptr<Schema>* dataset_schema,
-                                              int64_t& file_size, 
-                                              int64_t& file_format,
+                                              int64_t& file_size, int64_t& file_format,
                                               ceph::bufferlist& bl);
 
 /// \brief Serialize the result Table to a bufferlist.
