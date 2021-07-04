@@ -283,7 +283,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 }
 
 void __cls_init() {
-  CLS_LOG(0, "Loading cls_arrow");
+  CLS_LOG(0, "info: loading cls_arrow");
 
   cls_register("arrow", &h_class);
 

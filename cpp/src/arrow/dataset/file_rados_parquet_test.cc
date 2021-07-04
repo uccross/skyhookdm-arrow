@@ -66,8 +66,9 @@ TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
   std::shared_ptr<Schema> projected_schema_;
   std::shared_ptr<Schema> dataset_schema_;
   int64_t file_size_;
+  int64_t file_format_;
   DeserializeScanRequest(&filter_, &partition_expression_, &projected_schema_,
-                         &dataset_schema_, file_size_, bl);
+                         &dataset_schema_, file_size_, file_format_, bl);
 
   ASSERT_EQ(options->filter.Equals(filter_), 1);
   ASSERT_EQ(options->partition_expression.Equals(partition_expression_), 1);

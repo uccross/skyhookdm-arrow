@@ -26,12 +26,12 @@
 #include "arrow/util/checked_cast.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/logging.h"
+#include "arrow/util/compression.h"
 #include "parquet/arrow/reader.h"
 #include "parquet/file_reader.h"
 
 #include <flatbuffers/flatbuffers.h>
 
-#include "arrow/util/compression.h"
 #include "generated/ScanRequest_generated.h"
 
 namespace arrow {
