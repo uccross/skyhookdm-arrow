@@ -137,7 +137,7 @@ Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int64_t& file
 Status DeserializeScanRequest(compute::Expression* filter, compute::Expression* partition,
                               std::shared_ptr<Schema>* projected_schema,
                               std::shared_ptr<Schema>* dataset_schema, int64_t& file_size,
-                              int64_t file_format, ceph::bufferlist& bl) {
+                              int64_t& file_format, ceph::bufferlist& bl) {
   auto request = flatbuf::GetScanRequest((uint8_t*)bl.c_str());
 
   ARROW_ASSIGN_OR_RAISE(auto filter_,

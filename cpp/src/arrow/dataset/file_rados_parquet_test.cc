@@ -56,6 +56,7 @@ TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
   std::shared_ptr<ScanOptions> options = std::make_shared<ScanOptions>();
   options->projected_schema = arrow::schema({arrow::field("a", arrow::int64())});
   options->dataset_schema = arrow::schema({arrow::field("a", arrow::int64())});
+  options->file_format = 1;
 
   ceph::bufferlist bl;
   int64_t file_size = 1000000;
@@ -74,6 +75,8 @@ TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
   ASSERT_EQ(options->partition_expression.Equals(partition_expression_), 1);
   ASSERT_EQ(options->projected_schema->Equals(projected_schema_), 1);
   ASSERT_EQ(options->dataset_schema->Equals(dataset_schema_), 1);
+  ASSERT_EQ(file_size_, file_size);
+  ASSERT_EQ(file_format_, options_->file_format);
 }
 
 TEST(TestRadosParquetFileFormat, SerializeDeserializeTable) {
