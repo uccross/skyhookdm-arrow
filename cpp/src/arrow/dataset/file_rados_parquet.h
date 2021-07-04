@@ -270,6 +270,7 @@ ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& option
 /// \param[out] projected_schema The schema to project the filtered record batches.
 /// \param[out] dataset_schema The dataset schema to use.
 /// \param[out] file_size The size of the file.
+/// \param[out] file_format The file format to use.
 /// \param[in] bl Input Ceph bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
