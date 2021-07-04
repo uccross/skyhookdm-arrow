@@ -158,7 +158,7 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
                                    std::shared_ptr<arrow::Table>& result_table,
                                    int64_t object_size) {
   auto file = std::make_shared<RandomAccessObject>(hctx, object_size);
-  arrow::dataset::FileSource source(file, arrow::util::Compression::LZ4_FRAME);
+  arrow::dataset::FileSource source(file, arrow::Compression::LZ4_FRAME);
 
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
   ARROW_ASSIGN_OR_RAISE(auto fragment,
