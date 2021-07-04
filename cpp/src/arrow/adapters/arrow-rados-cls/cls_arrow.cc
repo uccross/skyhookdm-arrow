@@ -21,10 +21,12 @@
 #include "arrow/api.h"
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset.h"
+#include "arrow/dataset/file_ipc.h"
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/file_rados_parquet.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
+#include "arrow/util/compression.h"
 #include "parquet/api/reader.h"
 #include "parquet/arrow/reader.h"
 #include "parquet/file_reader.h"
@@ -156,7 +158,7 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
                                    std::shared_ptr<arrow::Table>& t,
                                    int64_t object_size) {
   auto file = std::make_shared<RandomAccessObject>(hctx, object_size);
-  arrow::dataset::FileSource source(file, Compression::LZ4_FRAME);
+  arrow::dataset::FileSource source(file, arrow::util::Compression::LZ4_FRAME);
 
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
   ARROW_ASSIGN_OR_RAISE(auto fragment,
