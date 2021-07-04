@@ -250,7 +250,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   // Deserialize the scan request
   if (!(s = arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
                                                    &projection_schema, &dataset_schema,
-                                                   file_size, *in)).ok()) {
+                                                   file_size, file_format, *in)).ok()) {
     CLS_LOG(0, s.message().c_str());
     return SCAN_REQ_DESER_ERR_CODE;
   }
