@@ -76,7 +76,7 @@ TEST(TestRadosParquetFileFormat, ScanRequestSerializeDeserialize) {
   ASSERT_EQ(options->projected_schema->Equals(projected_schema_), 1);
   ASSERT_EQ(options->dataset_schema->Equals(dataset_schema_), 1);
   ASSERT_EQ(file_size_, file_size);
-  ASSERT_EQ(file_format_, options_->file_format);
+  ASSERT_EQ(file_format_, options->file_format);
 }
 
 TEST(TestRadosParquetFileFormat, SerializeDeserializeTable) {
