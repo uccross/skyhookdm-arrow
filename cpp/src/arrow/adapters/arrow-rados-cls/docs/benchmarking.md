@@ -41,12 +41,12 @@ where mon1, mon2, osd1, etc. are the internal hostnames of the nodes.
 ```
 This will build the CLS plugins as shared libraries and deploy them to the OSD nodes.
 
-4. Pull datasets from the [datasets repository](https://github.com/JayjeetAtGithub/datasets):
+4. Download a sample dataset from [this](https://github.com/jayjeetc/datasets) repository:
 
 ```bash
 apt update
 apt install git-lfs
-git clone https://github.com/JayjeetAtGithub/datasets
+git clone https://github.com/jayjeetc/datasets
 cd datasets/
 git lfs pull
 ```
