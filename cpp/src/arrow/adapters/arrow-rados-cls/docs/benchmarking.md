@@ -17,7 +17,7 @@
   under the License.
 -->
 
-# Instructions to setup a quick example
+# Setting up and benchmarking SkyhookDM
 
 1. Download the required scripts and make them executable.
 
@@ -37,7 +37,7 @@ where mon1, mon2, osd1, etc. are the internal hostnames of the nodes.
 3. Build and install the SkyhookDM CLS plugins and PyArrow (with Rados Parquet extensions):
 
 ```bash
-./deploy_skyhook.sh osd1,osd2,osd3 arrow-master
+./deploy_skyhook.sh osd1,osd2,osd3 arrow-master true true
 ```
 This will build the CLS plugins as shared libraries and deploy them to the OSD nodes.
 
@@ -59,22 +59,10 @@ git lfs pull
 
 This will write 100 of ~128MB Parquet files to /mnt/cephfs/dataset using a CephFS stripe size of 128MB.
 
-6. Write a client script and get started with querying datasets in SkyhookDM. An example script is given below:
+6. Optionally, you can also deploy Prometheus and Grafana for monitoring the cluster by following [this](https://github.com/JayjeetAtGithub/prometheus-on-baremetal#readme) guide.
+
+7. The benchmark script ([bench.py](../scripts/bench.py)) can be used to generate benchmarks in the following syntax:
 
 ```bash
-import pyarrow.dataset as ds
-mydataset = ds.dataset("file:///mnt/cephfs/dataset", format="rados-parquet")
-print(mydataset.to_table())
+./bench.py <format(pq/rpq)> <iterations> <dataset> <workers> <file>
 ```
-
-# Benchmarking
-
-The benchmark script ([bench.py](https://github.com/JayjeetAtGithub/skyhook-nsdi/blob/master/bench.py)) resides in a separate [skyhook-nsdi](https://github.com/JayjeetAtGithub/skyhook-nsdi) repository. The benchmark against one of the previously seen dataset can be determined as:
-
-```bash
-./bench.py pq <iterations> 128MB.parquet <workers> <file>
-```
-
-# Set up a Prometheus-based monitoring setup
-
-Optionally, you can also deploy Prometheus and Grafana for monitoring the cluster by following [this](https://github.com/JayjeetAtGithub/prometheus-on-baremetal#readme) guide.
