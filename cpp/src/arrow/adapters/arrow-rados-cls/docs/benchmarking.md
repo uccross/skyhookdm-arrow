@@ -30,7 +30,7 @@ wget https://raw.githubusercontent.com/uccross/skyhookdm-arrow/arrow-master/cpp/
 2. Execute deploy_ceph script to deploy a Ceph cluster on a set of nodes and to mount CephFS on the client/admin node. On the client node, execute:
 
 ```bash
-./deploy_ceph.sh mon1,mon2,mon3 osd1,osd2,osd3 mds1 mgr1
+./deploy_ceph.sh mon1,mon2,mon3 osd1,osd2,osd3 mds1 mgr1 /dev/sdb 3
 ```
 where mon1, mon2, osd1, etc. are the internal hostnames of the nodes.
 
@@ -49,12 +49,13 @@ apt install git-lfs
 git clone https://github.com/jayjeetc/datasets
 cd datasets/
 git lfs pull
+cd ..
 ```
 
 5. Create and write a sample dataset to the CephFS mount by replicating the 128MB Parquet file downloaded in the previous step:
 
 ```bash
-./deploy_data.sh datasets/128MB.parquet /mnt/cephfs/dataset 100 134217728
+./deploy_data.sh datasets/128MB.parquet /mnt/cephfs/dataset 240 134217728
 ```
 
 This will write 100 of ~128MB Parquet files to /mnt/cephfs/dataset using a CephFS stripe size of 128MB.
