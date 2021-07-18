@@ -11,9 +11,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
 
-      - run: |
-          mkdir modified_docs
-          echo "the docs will go here" > modified_docs/index.html
+      - name: Build docs
+        shell: bash -l {0}
+        run: |
+          mkdir -p documentation
+          echo "Documentation will go here" > documentation/index.html
 
       - name: Deploy to netlify
         uses: netlify/actions/cli@master
@@ -21,4 +23,4 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         with:
-          args: deploy --dir=modified_docs --prod
+          args: deploy --dir=documentation --prod
