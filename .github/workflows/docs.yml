@@ -24,7 +24,6 @@ jobs:
       - name: Build docs
         shell: bash -l {0}
         run: |
-          mkdir -p documentation
           $CONDA/bin/conda install -c conda-forge --file=ci/conda_env_sphinx.txt
           pushd cpp/apidoc
           $CONDA/bin/doxygen
@@ -32,7 +31,6 @@ jobs:
           pushd docs
           make html
           popd
-          echo "Documentation will go here" > documentation/index.html
 
       - name: Deploy to netlify
         uses: netlify/actions/cli@master
@@ -40,4 +38,4 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         with:
-          args: deploy --dir=documentation --prod
+          args: deploy --dir=docs/_build/html --prod
