@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r docs/requirements.txt
-          pip install pyarrow
+          pip install pyarrow pandas
 
       - name: Build docs
         shell: bash -l {0}
