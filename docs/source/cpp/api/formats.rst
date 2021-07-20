@@ -95,4 +95,16 @@ Parquet writer
 .. doxygenclass:: parquet::StreamWriter
    :members:
 
+Rados Parquet
+=============
+
+.. doxygenclass:: arrow::dataset::RadosParquetFileFormat
+   :members:
+
+.. doxygenclass:: arrow::dataset::DirectObjectAccess
+   :members:
+
+.. doxygenclass:: arrow::dataset::connection::RadosConnection
+   :members:
+
 .. TODO ORC
