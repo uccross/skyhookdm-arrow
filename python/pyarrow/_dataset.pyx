@@ -34,7 +34,7 @@ from pyarrow._fs cimport FileSystem, FileInfo, FileSelector
 from pyarrow._csv cimport (
     ConvertOptions, ParseOptions, ReadOptions, WriteOptions)
 from pyarrow.util import _is_iterable, _is_path_like, _stringify_path
-from pyarrow._rados import RadosParquetFileFormat
+from pyarrow._rados import SkyhookFileFormat
 
 from pyarrow._parquet cimport (
     _create_writer_properties, _create_arrow_writer_properties,
@@ -830,7 +830,7 @@ cdef class FileFormat(_Weakrefable):
             'ipc': IpcFileFormat,
             'csv': CsvFileFormat,
             'parquet': ParquetFileFormat,
-            'rados-parquet': RadosParquetFileFormat,
+            'skyhook': SkyhookFileFormat,
         }
 
         class_ = classes.get(type_name, None)
@@ -921,7 +921,7 @@ cdef class Fragment(_Weakrefable):
             # subclasses of FileFragment
             'ipc': FileFragment,
             'csv': FileFragment,
-            'rados-parquet': FileFragment,
+            'skyhook': FileFragment,
             'parquet': ParquetFileFragment,
         }
 

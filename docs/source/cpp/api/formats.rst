@@ -109,7 +109,7 @@ Parquet writer
 Rados Parquet
 =============
 
-.. doxygenclass:: arrow::dataset::RadosParquetFileFormat
+.. doxygenclass:: arrow::dataset::SkyhookFileFormat
    :members:
 
 .. doxygenclass:: arrow::dataset::DirectObjectAccess
