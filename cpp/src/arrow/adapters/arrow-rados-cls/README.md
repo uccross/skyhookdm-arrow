@@ -77,6 +77,6 @@ docker-compose run --service-ports ubuntu-cls-demo
 
 Check out these [instructions](docs/contributing.md) for setting up a local development environment.
 
-# Publication
+# Publications
 
-[Towards an Arrow-native Storage System](https://arxiv.org/pdf/2105.09894.pdf)
+1. [Towards an Arrow-native Storage System](https://arxiv.org/pdf/2105.09894.pdf)
