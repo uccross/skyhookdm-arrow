@@ -25,7 +25,7 @@
 ```
 where mon1, mon2, osd1, etc. are the internal hostnames of the nodes.
 
-2. Build and install the SkyhookDM CLS plugins and PyArrow (with Rados Parquet extensions) using [this](../scripts/deploy_skyhook.sh) script. For example,
+2. Build and install the SkyhookDM CLS plugins and PyArrow (with Skyhook extensions) using [this](../scripts/deploy_skyhook.sh) script. For example,
 ```bash
 ./deploy_skyhook.sh osd1,osd2,osd3
 ```
