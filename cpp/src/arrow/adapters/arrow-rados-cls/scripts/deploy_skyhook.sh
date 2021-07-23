@@ -40,9 +40,9 @@ apt install -y python3 \
                python3-numpy \
                cmake \
                libradospp-dev \
-               rados-objclass-dev \ 
-               llvm \ 
-               default-jdk \ 
+               rados-objclass-dev \
+               llvm \
+               default-jdk \
                maven
 
 if [ ! -d "/tmp/arrow" ]; then
