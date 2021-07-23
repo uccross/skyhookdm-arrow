@@ -245,7 +245,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Schema> projection_schema;
   std::shared_ptr<arrow::Schema> dataset_schema;
   int64_t file_size;
-  int64_t file_format = 0;  // 0 = Parquet, 1 = Ipc
+  int file_format = 0;  // 0 = Parquet, 1 = Ipc
 
   // Deserialize the scan request
   if (!(s = arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,

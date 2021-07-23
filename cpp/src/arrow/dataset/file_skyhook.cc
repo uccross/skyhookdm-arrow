@@ -126,7 +126,7 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   return MakeVectorIterator(v);
 }
 
-Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int64_t& file_size,
+Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int& file_format, int64_t& file_size,
                             ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
@@ -146,7 +146,7 @@ Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int64_t& file
       builder.CreateVector(dataset_schema->data(), dataset_schema->size());
 
   auto request =
-      flatbuf::CreateScanRequest(builder, file_size, options->file_format, filter_vec,
+      flatbuf::CreateScanRequest(builder, file_size, file_format, filter_vec,
                                  partition_vec, dataset_schema_vec, projected_schema_vec);
   builder.Finish(request);
   uint8_t* buf = builder.GetBufferPointer();
@@ -159,7 +159,7 @@ Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int64_t& file
 Status DeserializeScanRequest(compute::Expression* filter, compute::Expression* partition,
                               std::shared_ptr<Schema>* projected_schema,
                               std::shared_ptr<Schema>* dataset_schema, int64_t& file_size,
-                              int64_t& file_format, ceph::bufferlist& bl) {
+                              int& file_format, ceph::bufferlist& bl) {
   auto request = flatbuf::GetScanRequest((uint8_t*)bl.c_str());
 
   ARROW_ASSIGN_OR_RAISE(auto filter_,
