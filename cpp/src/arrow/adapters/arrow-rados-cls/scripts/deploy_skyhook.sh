@@ -40,15 +40,18 @@ apt install -y python3 \
                python3-numpy \
                cmake \
                libradospp-dev \
-               rados-objclass-dev \
-               llvm
+               rados-objclass-dev \ 
+               llvm \ 
+               default-jdk \ 
+               maven
 
 if [ ! -d "/tmp/arrow" ]; then
   git clone https://github.com/uccross/arrow /tmp/arrow
+  git submodule update --init --recursive
 fi
 
 cd /tmp/arrow
-git submodule update --init --recursive
+git pull
 git checkout $BRANCH
 mkdir -p cpp/release
 cd cpp/release
@@ -103,9 +106,12 @@ if [[ "${DEPLOY_CLS_LIBS}" == "true" ]]; then
 fi
 
 if [[ "${BUILD_JAVA_BINDINGS}" == "true" ]]; then
-    apt install -y default-jdk maven
+    mvn="mvn -B -DskipTests -Drat.skip=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+    # Use `2 * ncores` threads
+    mvn="${mvn} -T 2C"
+
     cd /tmp/arrow/java
-    mvn clean install package -P arrow-jni -pl dataset,format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/build/release -Dmaven.test.skip=true -Dcheckstyle.skip -Dos.detected.name=linux -Dos.detected.arch=x86_64 -Dos.detected.classifier=linux-x86_64
+    ${mvn} clean install package -P arrow-jni -pl dataset,format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/build/release 
 fi
 
 export LD_LIBRARY_PATH=/usr/local/lib
