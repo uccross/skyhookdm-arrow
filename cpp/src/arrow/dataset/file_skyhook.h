@@ -253,7 +253,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
 
  protected:
   std::shared_ptr<DirectObjectAccess> doa_;
-  std::string format_; 
+  std::string fragment_format_; 
 };
 
 /// \brief Serialize scan request to a bufferlist.

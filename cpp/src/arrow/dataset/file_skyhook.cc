@@ -75,7 +75,7 @@ class SkyhookScanTask : public ScanTask {
   int fragment_format_;
 };
 
-SkyhookFileFormat::SkyhookFileFormat(const std::string& format,
+SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
                                      const std::string& ceph_config_path,
                                      const std::string& data_pool,
                                      const std::string& user_name,
@@ -84,7 +84,7 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& format,
     : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
           connection::RadosConnection::RadosConnectionCtx(
               ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {
-                format_ = format;
+                fragment_format_ = fragment_format;
               }
 
 SkyhookFileFormat::SkyhookFileFormat(
@@ -97,9 +97,9 @@ SkyhookFileFormat::SkyhookFileFormat(
 Result<std::shared_ptr<Schema>> SkyhookFileFormat::Inspect(
     const FileSource& source) const {
   std::shared_ptr<FileFormat> format;
-  if (format_ == "parquet") {
+  if (fragment_format_ == "parquet") {
     format = std::make_shared<ParquetFileFormat>();
-  } else if (format_ == "ipc") {
+  } else if (fragment_format_ == "ipc") {
     format = std::make_shared<IpcFileFormat>();
   } else {
     return Status::Invalid("invalid file format");
@@ -117,8 +117,8 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   options_->dataset_schema = file->dataset_schema();
 
   int fragment_format = -1;
-  if (format_ == "parquet") fragment_format = 0;
-  else if (format_ == "ipc") fragment_format = 1;
+  if (fragment_format_ == "parquet") fragment_format = 0;
+  else if (fragment_format_ == "ipc") fragment_format = 1;
   else return Status::Invalid("Unsupported file format");
 
   ScanTaskVector v{std::make_shared<SkyhookScanTask>(
