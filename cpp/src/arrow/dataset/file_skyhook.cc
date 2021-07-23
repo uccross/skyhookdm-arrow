@@ -47,17 +47,19 @@ class SkyhookScanTask : public ScanTask {
  public:
   SkyhookScanTask(std::shared_ptr<ScanOptions> options,
                        std::shared_ptr<Fragment> fragment, FileSource source,
-                       std::shared_ptr<DirectObjectAccess> doa)
+                       std::shared_ptr<DirectObjectAccess> doa,
+                       int fragment_format)
       : ScanTask(std::move(options), std::move(fragment)),
         source_(std::move(source)),
-        doa_(std::move(doa)) {}
+        doa_(std::move(doa)),
+        fragment_format_(fragment_format) {}
 
   Result<RecordBatchIterator> Execute() override {
     struct stat st {};
     ARROW_RETURN_NOT_OK(doa_->Stat(source_.path(), st));
 
     ceph::bufferlist request;
-    ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, st.st_size, request));
+    ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, fragment_format_, st.st_size, request));
 
     ceph::bufferlist result;
     ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
@@ -70,6 +72,7 @@ class SkyhookScanTask : public ScanTask {
  protected:
   FileSource source_;
   std::shared_ptr<DirectObjectAccess> doa_;
+  int fragment_format_;
 };
 
 SkyhookFileFormat::SkyhookFileFormat(const std::string& format,
@@ -113,11 +116,13 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   options_->partition_expression = file->partition_expression();
   options_->dataset_schema = file->dataset_schema();
 
-  if (format_ == "parquet") options_->file_format = 0;
-  if (format_ == "ipc") options_->file_format = 1;
+  int fragment_format = -1;
+  if (format_ == "parquet") fragment_format = 0;
+  else if (format_ == "ipc") fragment_format = 1;
+  else return Status::Invalid("Unsupported file format");
 
   ScanTaskVector v{std::make_shared<SkyhookScanTask>(
-      std::move(options_), std::move(file), file->source(), std::move(doa_))};
+      std::move(options_), std::move(file), file->source(), std::move(doa_), fragment_format)};
   return MakeVectorIterator(v);
 }
 

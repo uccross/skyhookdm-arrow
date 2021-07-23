@@ -265,7 +265,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
     s = ScanIpcObject(hctx, filter, partition_expression, projection_schema,
                       dataset_schema, table, file_size);
   } else {
-    s = arrow::Status::Invalid("Invalid file format");
+    s = arrow::Status::Invalid("Unsupported file format");
   }
   if (!s.ok()) {
     CLS_LOG(0, "error: %s", s.message().c_str());
