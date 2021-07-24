@@ -258,6 +258,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
 
 /// \brief Serialize scan request to a bufferlist.
 /// \param[in] options The scan options to use to build a ScanRequest.
+/// \param[in] file_format The underlying file format to use.
 /// \param[in] file_size The size of the file fragment.
 /// \param[out] bl Output bufferlist.
 /// \return Status.
@@ -270,8 +271,8 @@ ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& option
 /// \param[out] partition The partition expression to use.
 /// \param[out] projected_schema The schema to project the filtered record batches.
 /// \param[out] dataset_schema The dataset schema to use.
-/// \param[out] file_size The size of the file.
-/// \param[out] file_format The file format to use.
+/// \param[out] file_size The size of the file fragment.
+/// \param[out] file_format The underlying file format to use.
 /// \param[in] bl Input Ceph bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
