@@ -56,11 +56,11 @@ TEST(TestSkyhookFileFormat, ScanRequestSerializeDeserialize) {
   std::shared_ptr<ScanOptions> options = std::make_shared<ScanOptions>();
   options->projected_schema = arrow::schema({arrow::field("a", arrow::int64())});
   options->dataset_schema = arrow::schema({arrow::field("a", arrow::int64())});
-  options->file_format = 1;
 
   ceph::bufferlist bl;
   int64_t file_size = 1000000;
-  SerializeScanRequest(options, file_size, bl);
+  int file_format = 1;
+  SerializeScanRequest(options, file_format, file_size, bl);
 
   compute::Expression filter_;
   compute::Expression partition_expression_;
