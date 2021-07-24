@@ -47,7 +47,7 @@ class SkyhookScanTask : public ScanTask {
  public:
   SkyhookScanTask(std::shared_ptr<ScanOptions> options,
                        std::shared_ptr<Fragment> fragment, FileSource source,
-                       std::shared_ptr<DirectObjectAccess> doa,
+                       std::shared_ptr<SkyhookDirectObjectAccess> doa,
                        int fragment_format)
       : ScanTask(std::move(options), std::move(fragment)),
         source_(std::move(source)),
@@ -71,7 +71,7 @@ class SkyhookScanTask : public ScanTask {
 
  protected:
   FileSource source_;
-  std::shared_ptr<DirectObjectAccess> doa_;
+  std::shared_ptr<SkyhookDirectObjectAccess> doa_;
   int fragment_format_;
 };
 
@@ -90,7 +90,7 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
 SkyhookFileFormat::SkyhookFileFormat(
     const std::shared_ptr<connection::RadosConnection>& connection) {
   connection->connect();
-  auto doa = std::make_shared<arrow::dataset::DirectObjectAccess>(connection);
+  auto doa = std::make_shared<arrow::dataset::SkyhookDirectObjectAccess>(connection);
   doa_ = doa;
 }
 

@@ -152,13 +152,13 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
 };
 }  // namespace connection
 
-/// \class DirectObjectAccess
+/// \class SkyhookDirectObjectAccess
 /// \brief Interface for translating the name of a file in CephFS to its
 /// corresponding object ID in RADOS assuming 1:1 mapping between a file
 /// and its underlying object.
-class ARROW_DS_EXPORT DirectObjectAccess {
+class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
  public:
-  explicit DirectObjectAccess(
+  explicit SkyhookDirectObjectAccess(
       const std::shared_ptr<connection::RadosConnection>& connection)
       : connection_(std::move(connection)) {}
 
@@ -217,7 +217,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
   explicit SkyhookFileFormat(
       const std::shared_ptr<connection::RadosConnection>& conn);
 
-  explicit SkyhookFileFormat(std::shared_ptr<DirectObjectAccess>& doa)
+  explicit SkyhookFileFormat(std::shared_ptr<SkyhookDirectObjectAccess>& doa)
       : doa_(std::move(doa)) {}
 
   std::string type_name() const override { return "skyhook"; }
@@ -252,7 +252,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
   std::shared_ptr<FileWriteOptions> DefaultWriteOptions() override { return NULLPTR; }
 
  protected:
-  std::shared_ptr<DirectObjectAccess> doa_;
+  std::shared_ptr<SkyhookDirectObjectAccess> doa_;
   std::string fragment_format_; 
 };
 

@@ -112,7 +112,7 @@ Skyhook
 .. doxygenclass:: arrow::dataset::SkyhookFileFormat
    :members:
 
-.. doxygenclass:: arrow::dataset::DirectObjectAccess
+.. doxygenclass:: arrow::dataset::SkyhookDirectObjectAccess
    :members:
 
 .. doxygenclass:: arrow::dataset::connection::RadosConnection
