@@ -67,7 +67,7 @@ TEST(TestSkyhookFileFormat, ScanRequestSerializeDeserialize) {
   std::shared_ptr<Schema> projected_schema_;
   std::shared_ptr<Schema> dataset_schema_;
   int64_t file_size_;
-  int64_t file_format_;
+  int file_format_;
   DeserializeScanRequest(&filter_, &partition_expression_, &projected_schema_,
                          &dataset_schema_, file_size_, file_format_, bl);
 
@@ -76,7 +76,7 @@ TEST(TestSkyhookFileFormat, ScanRequestSerializeDeserialize) {
   ASSERT_EQ(options->projected_schema->Equals(projected_schema_), 1);
   ASSERT_EQ(options->dataset_schema->Equals(dataset_schema_), 1);
   ASSERT_EQ(file_size_, file_size);
-  ASSERT_EQ(file_format_, options->file_format);
+  ASSERT_EQ(file_format_, file_format);
 }
 
 TEST(TestSkyhookFileFormat, SerializeDeserializeTable) {
