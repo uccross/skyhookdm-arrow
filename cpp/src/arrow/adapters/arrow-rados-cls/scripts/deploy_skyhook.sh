@@ -51,6 +51,7 @@ if [ ! -d "/tmp/arrow" ]; then
 fi
 
 cd /tmp/arrow
+git fetch origin $BRANCH
 git pull
 git checkout $BRANCH
 mkdir -p cpp/release
