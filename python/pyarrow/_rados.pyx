@@ -35,7 +35,7 @@ cdef class SkyhookFileFormat(FileFormat):
     cluster_name: Name of the cluster.
     """
     cdef:
-        CSkyhookFileFormat* rados_parquet_format
+        CSkyhookFileFormat* skyhook_format
 
     def __init__(
         self,
@@ -59,4 +59,4 @@ cdef class SkyhookFileFormat(FileFormat):
 
     cdef void init(self, const shared_ptr[CFileFormat]& sp):
         FileFormat.init(self, sp)
-        self.rados_parquet_format = <CSkyhookFileFormat*> sp.get()
+        self.skyhook_format = <CSkyhookFileFormat*> sp.get()
