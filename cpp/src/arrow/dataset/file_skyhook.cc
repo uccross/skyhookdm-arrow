@@ -44,6 +44,8 @@ namespace flatbuf = org::apache::arrow::flatbuf;
 
 namespace dataset {
 
+std::mutex connection_mutex;
+
 RadosConnection::~RadosConnection() { shutdown(); }
 
 Status RadosConnection::Connect() {

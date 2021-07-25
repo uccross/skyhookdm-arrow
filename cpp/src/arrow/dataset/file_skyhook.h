@@ -118,7 +118,6 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
   RadosInterface* rados;
   IoCtxInterface* ioCtx;
   bool connected;
-  std::mutex connection_mutex;
 };
 }  // namespace connection
 
