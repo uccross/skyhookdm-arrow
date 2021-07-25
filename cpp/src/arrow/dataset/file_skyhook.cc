@@ -44,6 +44,8 @@ namespace flatbuf = org::apache::arrow::flatbuf;
 
 namespace dataset {
 
+namespace connection {
+
 std::mutex connection_mutex;
 
 RadosConnection::~RadosConnection() { shutdown(); }
@@ -79,6 +81,8 @@ Status RadosConnection::Connect() {
 Status RadosConnection::Shutdown() {
   rados->shutdown();
   return Status::OK();
+}
+
 }
 
 /// \brief A ScanTask to scan a file fragment in Skyhook format.

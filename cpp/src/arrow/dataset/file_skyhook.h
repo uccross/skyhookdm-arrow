@@ -119,6 +119,7 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
   IoCtxInterface* ioCtx;
   bool connected;
 };
+
 }  // namespace connection
 
 /// \class SkyhookDirectObjectAccess
