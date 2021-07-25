@@ -110,7 +110,7 @@ if [[ "${BUILD_JAVA_BINDINGS}" == "true" ]]; then
     mkdir -p /tmp/arrow/java/dist
     cp -r /tmp/arrow/cpp/release/release/libarrow_dataset_jni.so* /tmp/arrow/java/dist
     
-    mvn="mvn -B -DskipTests -Drat.skip=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+    mvn="mvn -B -DskipTests -Dcheckstyle.skip -Drat.skip=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
     mvn="${mvn} -T 2C"
 
     cd /tmp/arrow/java
