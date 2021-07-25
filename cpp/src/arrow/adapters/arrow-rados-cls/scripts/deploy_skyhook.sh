@@ -114,7 +114,7 @@ if [[ "${BUILD_JAVA_BINDINGS}" == "true" ]]; then
     mvn="${mvn} -T 2C"
 
     cd /tmp/arrow/java
-    ${mvn} clean install package -P arrow-jni -pl dataset,format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/release
+    ${mvn} clean install package -P arrow-jni -pl dataset,format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/release/release
 fi
 
 export LD_LIBRARY_PATH=/usr/local/lib
