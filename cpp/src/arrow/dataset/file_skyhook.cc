@@ -48,7 +48,7 @@ namespace connection {
 
 std::mutex connection_mutex;
 
-RadosConnection::~RadosConnection() { shutdown(); }
+RadosConnection::~RadosConnection() { Shutdown(); }
 
 Status RadosConnection::Connect() {
   if (connected) {
