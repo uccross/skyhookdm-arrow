@@ -26,7 +26,6 @@
 
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -105,44 +104,15 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
         ioCtx(new IoCtxWrapper()),
         connected(false) {}
 
-  ~RadosConnection() override { shutdown(); }
+  ~RadosConnection();
 
   /// \brief Connect to the Rados cluster.
   /// \return Status.
-  Status connect() override {
-    if (connected) {
-      return Status::OK();
-    }
-
-    // Locks the mutex. Only one thread can pass here at a time.
-    // Another thread handled the connection already.
-    std::unique_lock<std::mutex> lock(connection_mutex);
-    if (connected) {
-      return Status::OK();
-    }
-    connected = true;
-
-    if (rados->init2(ctx.user_name.c_str(), ctx.cluster_name.c_str(), 0))
-      return Status::Invalid("librados::init2 returned non-zero exit code.");
-
-    if (rados->conf_read_file(ctx.ceph_config_path.c_str()))
-      return Status::Invalid("librados::conf_read_file returned non-zero exit code.");
-
-    if (rados->connect())
-      return Status::Invalid("librados::connect returned non-zero exit code.");
-
-    if (rados->ioctx_create(ctx.data_pool.c_str(), ioCtx))
-      return Status::Invalid("librados::ioctx_create returned non-zero exit code.");
-
-    return Status::OK();
-  }
+  Status connect();
 
   /// \brief Shutdown the connection to the Rados cluster.
   /// \return Status.
-  Status shutdown() {
-    rados->shutdown();
-    return Status::OK();
-  }
+  Status shutdown();
 
   RadosConnectionCtx ctx;
   RadosInterface* rados;

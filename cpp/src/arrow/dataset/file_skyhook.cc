@@ -16,6 +16,8 @@
 // under the License.
 #include "arrow/dataset/file_skyhook.h"
 
+#include <mutex>
+
 #include "arrow/api.h"
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset_internal.h"
@@ -41,6 +43,41 @@ namespace arrow {
 namespace flatbuf = org::apache::arrow::flatbuf;
 
 namespace dataset {
+
+RadosConnection::~RadosConnection() { shutdown(); }
+
+Status RadosConnection::connect() {
+  if (connected) {
+    return Status::OK();
+  }
+
+  // Locks the mutex. Only one thread can pass here at a time.
+  // Another thread handled the connection already.
+  std::unique_lock<std::mutex> lock(connection_mutex);
+  if (connected) {
+    return Status::OK();
+  }
+  connected = true;
+
+  if (rados->init2(ctx.user_name.c_str(), ctx.cluster_name.c_str(), 0))
+    return Status::Invalid("librados::init2 returned non-zero exit code.");
+
+  if (rados->conf_read_file(ctx.ceph_config_path.c_str()))
+    return Status::Invalid("librados::conf_read_file returned non-zero exit code.");
+
+  if (rados->connect())
+    return Status::Invalid("librados::connect returned non-zero exit code.");
+
+  if (rados->ioctx_create(ctx.data_pool.c_str(), ioCtx))
+    return Status::Invalid("librados::ioctx_create returned non-zero exit code.");
+
+  return Status::OK();
+}
+
+Status RadosConnection::shutdown() {
+  rados->shutdown();
+  return Status::OK();
+}
 
 /// \brief A ScanTask to scan a file fragment in Skyhook format.
 class SkyhookScanTask : public ScanTask {
