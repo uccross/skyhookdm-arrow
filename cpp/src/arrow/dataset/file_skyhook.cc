@@ -46,7 +46,7 @@ namespace dataset {
 
 RadosConnection::~RadosConnection() { shutdown(); }
 
-Status RadosConnection::connect() {
+Status RadosConnection::Connect() {
   if (connected) {
     return Status::OK();
   }
@@ -74,7 +74,7 @@ Status RadosConnection::connect() {
   return Status::OK();
 }
 
-Status RadosConnection::shutdown() {
+Status RadosConnection::Shutdown() {
   rados->shutdown();
   return Status::OK();
 }
@@ -126,7 +126,7 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
 
 SkyhookFileFormat::SkyhookFileFormat(
     const std::shared_ptr<connection::RadosConnection>& connection) {
-  connection->connect();
+  connection->Connect();
   auto doa = std::make_shared<arrow::dataset::SkyhookDirectObjectAccess>(connection);
   doa_ = doa;
 }

@@ -70,7 +70,7 @@ namespace connection {
 /// \brief An interface for general connections.
 class ARROW_DS_EXPORT Connection {
  public:
-  virtual Status connect() = 0;
+  virtual Status Connect() = 0;
 
   Connection() = default;
   virtual ~Connection() = default;
@@ -108,11 +108,11 @@ class ARROW_DS_EXPORT RadosConnection : public Connection {
 
   /// \brief Connect to the Rados cluster.
   /// \return Status.
-  Status connect();
+  Status Connect();
 
   /// \brief Shutdown the connection to the Rados cluster.
   /// \return Status.
-  Status shutdown();
+  Status Shutdown();
 
   RadosConnectionCtx ctx;
   RadosInterface* rados;
