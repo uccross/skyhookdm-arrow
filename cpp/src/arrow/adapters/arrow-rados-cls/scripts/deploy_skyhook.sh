@@ -107,14 +107,16 @@ if [[ "${DEPLOY_CLS_LIBS}" == "true" ]]; then
 fi
 
 if [[ "${BUILD_JAVA_BINDINGS}" == "true" ]]; then
+    # copy the libs into the dist folder in /tmp/arrow/java
     mkdir -p /tmp/arrow/java
     cd /tmp/arrow/cpp/release/release/libarrow_dataset_jni.so* /tmp/arrow/java/dist
+    
     mvn="mvn -B -DskipTests -Drat.skip=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
     # Use `2 * ncores` threads
     mvn="${mvn} -T 2C"
 
     cd /tmp/arrow/java
-    ${mvn} clean install package -P arrow-jni -pl dataset,format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/build/release 
+    ${mvn} clean install package -P arrow-jni -pl dataset,format,memory,vector -am -Darrow.cpp.build.dir=/tmp/arrow/cpp/build/release/release 
 fi
 
 export LD_LIBRARY_PATH=/usr/local/lib
