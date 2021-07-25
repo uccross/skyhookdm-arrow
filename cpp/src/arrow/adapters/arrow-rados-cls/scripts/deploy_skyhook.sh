@@ -106,6 +106,8 @@ if [[ "${DEPLOY_CLS_LIBS}" == "true" ]]; then
 fi
 
 if [[ "${BUILD_JAVA_BINDINGS}" == "true" ]]; then
+    mkdir -p /tmp/arrow/java
+    cd /tmp/arrow/cpp/release/release/libarrow_dataset_jni.so* /tmp/arrow/java/dist
     mvn="mvn -B -DskipTests -Drat.skip=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
     # Use `2 * ncores` threads
     mvn="${mvn} -T 2C"
