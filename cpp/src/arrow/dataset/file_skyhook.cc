@@ -83,15 +83,14 @@ Status RadosConnection::Shutdown() {
   return Status::OK();
 }
 
-}
+}  // namespace connection
 
 /// \brief A ScanTask to scan a file fragment in Skyhook format.
 class SkyhookScanTask : public ScanTask {
  public:
   SkyhookScanTask(std::shared_ptr<ScanOptions> options,
-                       std::shared_ptr<Fragment> fragment, FileSource source,
-                       std::shared_ptr<SkyhookDirectObjectAccess> doa,
-                       int fragment_format)
+                  std::shared_ptr<Fragment> fragment, FileSource source,
+                  std::shared_ptr<SkyhookDirectObjectAccess> doa, int fragment_format)
       : ScanTask(std::move(options), std::move(fragment)),
         source_(std::move(source)),
         doa_(std::move(doa)),
@@ -102,7 +101,8 @@ class SkyhookScanTask : public ScanTask {
     ARROW_RETURN_NOT_OK(doa_->Stat(source_.path(), st));
 
     ceph::bufferlist request;
-    ARROW_RETURN_NOT_OK(SerializeScanRequest(options_, fragment_format_, st.st_size, request));
+    ARROW_RETURN_NOT_OK(
+        SerializeScanRequest(options_, fragment_format_, st.st_size, request));
 
     ceph::bufferlist result;
     ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
@@ -127,8 +127,8 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
     : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
           connection::RadosConnection::RadosConnectionCtx(
               ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {
-                fragment_format_ = fragment_format;
-              }
+  fragment_format_ = fragment_format;
+}
 
 SkyhookFileFormat::SkyhookFileFormat(
     const std::shared_ptr<connection::RadosConnection>& connection) {
@@ -160,17 +160,21 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   options_->dataset_schema = file->dataset_schema();
 
   int fragment_format = -1;
-  if (fragment_format_ == "parquet") fragment_format = 0;
-  else if (fragment_format_ == "ipc") fragment_format = 1;
-  else return Status::Invalid("Unsupported file format");
+  if (fragment_format_ == "parquet")
+    fragment_format = 0;
+  else if (fragment_format_ == "ipc")
+    fragment_format = 1;
+  else
+    return Status::Invalid("Unsupported file format");
 
-  ScanTaskVector v{std::make_shared<SkyhookScanTask>(
-      std::move(options_), std::move(file), file->source(), std::move(doa_), fragment_format)};
+  ScanTaskVector v{std::make_shared<SkyhookScanTask>(std::move(options_), std::move(file),
+                                                     file->source(), std::move(doa_),
+                                                     fragment_format)};
   return MakeVectorIterator(v);
 }
 
-Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int& file_format, int64_t& file_size,
-                            ceph::bufferlist& bl) {
+Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int& file_format,
+                            int64_t& file_size, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
                         compute::Serialize(options->partition_expression));

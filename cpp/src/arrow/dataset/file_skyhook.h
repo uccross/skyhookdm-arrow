@@ -184,8 +184,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
                     const std::string& data_pool, const std::string& user_name,
                     const std::string& cluster_name, const std::string& cls_name);
 
-  explicit SkyhookFileFormat(
-      const std::shared_ptr<connection::RadosConnection>& conn);
+  explicit SkyhookFileFormat(const std::shared_ptr<connection::RadosConnection>& conn);
 
   explicit SkyhookFileFormat(std::shared_ptr<SkyhookDirectObjectAccess>& doa)
       : doa_(std::move(doa)) {}
@@ -223,7 +222,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
 
  protected:
   std::shared_ptr<SkyhookDirectObjectAccess> doa_;
-  std::string fragment_format_; 
+  std::string fragment_format_;
 };
 
 /// \brief Serialize scan request to a bufferlist.
@@ -233,8 +232,8 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
 /// \param[out] bl Output bufferlist.
 /// \return Status.
 ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
-                                            int& file_format,
-                                            int64_t& file_size, ceph::bufferlist& bl);
+                                            int& file_format, int64_t& file_size,
+                                            ceph::bufferlist& bl);
 
 /// \brief Deserialize scan request from bufferlist.
 /// \param[out] filter The filter expression to apply.
