@@ -28,6 +28,7 @@ ARG llvm
 RUN apt-get update -y -q && \
     apt-get install -y -q --no-install-recommends \
       apt-transport-https \
+      libradospp-dev \
       lsb-release \
       software-properties-common \
       wget && \
