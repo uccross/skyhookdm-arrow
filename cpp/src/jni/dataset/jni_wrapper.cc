@@ -83,8 +83,8 @@ arrow::Result<std::shared_ptr<arrow::dataset::FileFormat>> GetFileFormat(
     case 0:
       return std::make_shared<arrow::dataset::ParquetFileFormat>();
     case 1:
-      return std::make_shared<arrow::dataset::RadosParquetFileFormat>(
-        "/etc/ceph/ceph.conf", "cephfs_data", "client.admin", "ceph", "arrow");
+      return std::make_shared<arrow::dataset::SkyhookFormat>(
+        "parquet", "/etc/ceph/ceph.conf", "cephfs_data", "client.admin", "ceph", "arrow");
     default:
       std::string error_message =
           "illegal file format id: " + std::to_string(file_format_id);
