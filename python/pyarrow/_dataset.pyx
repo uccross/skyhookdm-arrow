@@ -34,7 +34,11 @@ from pyarrow._fs cimport FileSystem, FileInfo, FileSelector
 from pyarrow._csv cimport (
     ConvertOptions, ParseOptions, ReadOptions, WriteOptions)
 from pyarrow.util import _is_iterable, _is_path_like, _stringify_path
-from pyarrow._rados import SkyhookFileFormat
+
+try:
+    from pyarrow._rados import SkyhookFileFormat
+except ImportError:
+    pass
 
 from pyarrow._parquet cimport (
     _create_writer_properties, _create_arrow_writer_properties,
