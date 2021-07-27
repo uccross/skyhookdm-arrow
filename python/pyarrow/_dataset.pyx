@@ -38,7 +38,7 @@ from pyarrow.util import _is_iterable, _is_path_like, _stringify_path
 try:
     from pyarrow._rados import SkyhookFileFormat
 except ImportError:
-    pass
+    SkyhookFileFormat = None
 
 from pyarrow._parquet cimport (
     _create_writer_properties, _create_arrow_writer_properties,
