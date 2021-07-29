@@ -52,7 +52,7 @@ git lfs pull
 cd ..
 ```
 
-5. Create and write a sample dataset to the CephFS mount by replicating the 128MB Parquet file downloaded in the previous step:
+5. Create and write a sample dataset to the CephFS mount by replicating the 16MB Parquet file downloaded in the previous step:
 
 ```bash
 ./deploy_data.sh [source file] [destination dir] [no. of copies] [stripe unit]
@@ -61,10 +61,28 @@ cd ..
 For example,
 
 ```bash
-./deploy_data.sh datasets/128MB.parquet /mnt/cephfs/dataset 240 134217728
+./deploy_data.sh datasets/16MB.parquet /mnt/cephfs/dataset 1500 16777216
 ```
 
-This will write 240 of ~128MB Parquet files to /mnt/cephfs/dataset using a CephFS stripe size of 128MB.
+This will write 1500 of ~16MB Parquet files to /mnt/cephfs/dataset using a CephFS stripe size of 16MB. If your files are not already of size less than 16MB, you can split them up using the `SplittedParquetWriter` API as shown in the code snippet given below. 
+```python
+
+import os
+import sys
+
+from pyarrow.rados import SplittedParquetWriter
+
+if __name__ == "__main__":
+    source_dir = str(sys.argv[1])
+    destination_dir = str(sys.argv[2])
+    chunksize = int(sys.argv[3])
+
+    files = os.listdir(source_dir)
+    for file in files:
+        path = os.path.join(source_dir, file)
+        writer = SplittedParquetWriter(path, destination_dir, chunksize)
+        writer.write()
+```
 
 6. Optionally, you can also deploy Prometheus and Grafana for monitoring the cluster by following [this](https://github.com/JayjeetAtGithub/prometheus-on-baremetal#readme) guide.
 
