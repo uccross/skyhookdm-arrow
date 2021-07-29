@@ -22,8 +22,13 @@
 1. Download the required scripts and make them executable.
 
 ```bash
+# download the ceph deploy script
 wget https://raw.githubusercontent.com/uccross/skyhookdm-arrow/arrow-master/cpp/src/arrow/adapters/arrow-rados-cls/scripts/deploy_ceph.sh && chmod +x deploy_ceph.sh
+
+# download the skyhook deploy script
 wget https://raw.githubusercontent.com/uccross/skyhookdm-arrow/arrow-master/cpp/src/arrow/adapters/arrow-rados-cls/scripts/deploy_skyhook.sh && chmod +x deploy_skyhook.sh
+
+# download the data deploy script
 wget https://raw.githubusercontent.com/uccross/skyhookdm-arrow/arrow-master/cpp/src/arrow/adapters/arrow-rados-cls/scripts/deploy_data.sh && chmod +x deploy_data.sh
 ```
 
@@ -65,8 +70,8 @@ For example,
 ```
 
 This will write 1500 of ~16MB Parquet files to /mnt/cephfs/dataset using a CephFS stripe size of 16MB. If your files are not already of size less than 16MB, you can split them up using the `SplittedParquetWriter` API as shown in the code snippet given below. 
-```python
 
+```python
 import os
 import sys
 
