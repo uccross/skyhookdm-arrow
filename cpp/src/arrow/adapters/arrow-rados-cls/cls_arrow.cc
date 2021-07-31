@@ -150,6 +150,32 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   std::vector<ceph::bufferlist*> chunks_;
 };
 
+Result<arrow::Table> GetResultTableFromScanner(arrow::dataset::FileSource source,
+                                               arrow::compute::Expression filter,
+                                               arrow::compute::Expression partition_expression,
+                                               std::shared_ptr<arrow::Schema> projection_schema,
+                                               std::shared_ptr<arrow::Schema> dataset_schema,
+                                               std::shared_ptr<arrow::FileFormat> format,
+                                               std::shared_ptr<arrow::dataset::FragmentScanOptions> fragment_scan_options
+                                              ) {
+  ARROW_ASSIGN_OR_RAISE(auto fragment,
+                        format->MakeFragment(source, partition_expression));
+  auto options = std::make_shared<arrow::dataset::ScanOptions>();
+  auto builder =
+      std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
+
+  ARROW_RETURN_NOT_OK(builder->Filter(filter));
+  ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
+  ARROW_RETURN_NOT_OK(builder->UseThreads(true));
+  ARROW_RETURN_NOT_OK(builder->FragmentScanOptions(fragment_scan_options));
+
+  ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
+  ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
+  ARROW_RETURN_NOT_OK(file->Close());
+
+  return table;
+}
+
 /// \brief Scan RADOS objects containing Arrow IPC data.
 /// \param[in] hctx RADOS object context.
 /// \param[in] filter The filter expression to apply.
@@ -170,23 +196,12 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
   arrow::dataset::FileSource source(file, arrow::Compression::LZ4_FRAME);
 
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
-  ARROW_ASSIGN_OR_RAISE(auto fragment,
-                        format->MakeFragment(source, partition_expression));
-
-  auto options = std::make_shared<arrow::dataset::ScanOptions>();
-  auto builder =
-      std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
-
-  ARROW_RETURN_NOT_OK(builder->Filter(filter));
-  ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
-  ARROW_RETURN_NOT_OK(builder->UseThreads(true));
-
-  ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
-  ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
-
-  *result_table = table;
-
-  ARROW_RETURN_NOT_OK(file->Close());
+  auto fragment_scan_options =
+      std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
+  
+  *result_table = GetResultTableFromScanner(
+    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options);
+  
   return arrow::Status::OK();
 }
 
@@ -210,27 +225,12 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   arrow::dataset::FileSource source(file);
 
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
-
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
-
-  ARROW_ASSIGN_OR_RAISE(auto fragment,
-                        format->MakeFragment(source, partition_expression));
-  auto options = std::make_shared<arrow::dataset::ScanOptions>();
-  auto builder =
-      std::make_shared<arrow::dataset::ScannerBuilder>(dataset_schema, fragment, options);
-
-  ARROW_RETURN_NOT_OK(builder->Filter(filter));
-  ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
-  ARROW_RETURN_NOT_OK(builder->UseThreads(true));
-  ARROW_RETURN_NOT_OK(builder->FragmentScanOptions(fragment_scan_options));
-
-  ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
-  ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
-
-  *result_table = table;
-
-  ARROW_RETURN_NOT_OK(file->Close());
+  
+  *result_table = GetResultTableFromScanner(
+    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options);
+  
   return arrow::Status::OK();
 }
 
@@ -265,10 +265,10 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Table> table;
   if (file_format == arrow::dataset::SkyhookFileType.PARQUET) {
     s = ScanParquetObject(hctx, filter, partition_expression, projection_schema,
-                          dataset_schema, table, file_size);
+                          dataset_schema, &table, file_size);
   } else if (file_format == arrow::dataset::SkyhookFileType.IPC) {
     s = ScanIpcObject(hctx, filter, partition_expression, projection_schema,
-                      dataset_schema, table, file_size);
+                      dataset_schema, &table, file_size);
   } else {
     s = arrow::Status::Invalid("Unsupported file format");
   }
