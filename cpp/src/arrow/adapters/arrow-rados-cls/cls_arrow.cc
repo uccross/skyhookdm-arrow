@@ -171,7 +171,6 @@ arrow::Result<arrow::Table> GetResultTableFromScanner(arrow::dataset::FileSource
 
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
   ARROW_ASSIGN_OR_RAISE(auto table, scanner->ToTable());
-  ARROW_RETURN_NOT_OK(file->Close());
 
   return table;
 }
@@ -199,9 +198,10 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
   
-  *result_table = GetResultTableFromScanner(
-    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options);
-  
+  ARROW_ASSIGN_OR_RAISE(*result_table, GetResultTableFromScanner(
+    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
+
+  ARROW_RETURN_NOT_OK(file->Close());  
   return arrow::Status::OK();
 }
 
@@ -228,9 +228,10 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
   
-  *result_table = GetResultTableFromScanner(
-    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options);
+  ARROW_ASSIGN_OR_RAISE(*result_table, GetResultTableFromScanner(
+    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
   
+  ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
 }
 
