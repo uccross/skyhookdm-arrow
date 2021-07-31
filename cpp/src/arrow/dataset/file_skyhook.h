@@ -62,6 +62,11 @@
 namespace arrow {
 namespace dataset {
 
+enum SkyhookFileType {
+  PARQUET,
+  IPC
+};
+
 /// \addtogroup dataset-file-formats
 ///
 /// @{

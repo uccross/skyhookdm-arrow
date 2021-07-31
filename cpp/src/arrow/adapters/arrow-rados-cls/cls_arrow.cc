@@ -263,10 +263,10 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 
   // Scan the object
   std::shared_ptr<arrow::Table> table;
-  if (file_format == 0) {
+  if (file_format == arrow::dataset::SkyhookFileType.PARQUET) {
     s = ScanParquetObject(hctx, filter, partition_expression, projection_schema,
                           dataset_schema, table, file_size);
-  } else if (file_format == 1) {
+  } else if (file_format == arrow::dataset::SkyhookFileType.IPC) {
     s = ScanIpcObject(hctx, filter, partition_expression, projection_schema,
                       dataset_schema, table, file_size);
   } else {
