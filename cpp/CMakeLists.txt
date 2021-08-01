@@ -352,6 +352,9 @@ endif()
 
 if(ARROW_SKYHOOK)
   set(ARROW_DATASET ON)
+  set(ARROW_PARQUET ON)
+  set(ARROW_WITH_LZ4 ON)
+  set(ARROW_WITH_SNAPPY ON)
 endif()
 
 if(ARROW_DATASET)
