@@ -73,8 +73,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   }
 
   arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) {
-    return arrow::Status::NotImplemented(
-      "ReadAt has not been implemented in RandomAccessObject");
+    return 0;
   }
 
   /// Read a specified number of bytes from a specified position.
