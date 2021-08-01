@@ -46,7 +46,6 @@
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/macros.h"
-#include "arrow/util/rados_internal.h"
 #include "parquet/arrow/writer.h"
 #include "parquet/exception.h"
 
