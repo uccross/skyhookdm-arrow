@@ -350,10 +350,6 @@ if(ARROW_ENGINE)
   set(ARROW_COMPUTE ON)
 endif()
 
-if(ARROW_CLS)
-  set(ARROW_SKYHOOK ON)
-endif()
-
 if(ARROW_SKYHOOK)
   set(ARROW_DATASET ON)
 endif()
