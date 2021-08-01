@@ -37,7 +37,6 @@
 #include "arrow/dataset/discovery.h"
 #include "arrow/dataset/file_base.h"
 #include "arrow/dataset/file_parquet.h"
-#include "arrow/dataset/rados.h"
 #include "arrow/dataset/scanner.h"
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
@@ -47,6 +46,7 @@
 #include "arrow/ipc/api.h"
 #include "arrow/util/iterator.h"
 #include "arrow/util/macros.h"
+#include "arrow/util/rados_internal.h"
 #include "parquet/arrow/writer.h"
 #include "parquet/exception.h"
 

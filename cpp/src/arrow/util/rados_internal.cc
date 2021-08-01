@@ -15,7 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "arrow/dataset/rados.h"
+#include "arrow/util/rados_internal.h"
+
+#include <rados/librados.hpp>
 
 #include <iostream>
 #include <vector>

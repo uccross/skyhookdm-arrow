@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <rados/librados.hpp>
-
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
 #include "arrow/util/macros.h"
