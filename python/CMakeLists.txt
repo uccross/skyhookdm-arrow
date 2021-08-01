@@ -403,7 +403,7 @@ endif()
 if(PYARROW_BUILD_RADOS)
   set(RADOS_LINK_LIBS arrow_dataset_shared)
   set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _rados)
-  set(ARROW_RADOS ON)
+  set(ARROW_SKYHOOK ON)
 endif()
 
 if(PYARROW_BUILD_CUDA)
