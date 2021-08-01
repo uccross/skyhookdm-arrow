@@ -145,7 +145,8 @@ class build_ext(_build_ext):
                                          'release').lower()
         self.boost_namespace = os.environ.get('PYARROW_BOOST_NAMESPACE',
                                               'boost')
-        self.with_rados = strtobool(os.environ.get('PYARROW_WITH_SKYHOOK', '0'))
+        self.with_rados = strtobool(
+            os.environ.get('PYARROW_WITH_SKYHOOK', '0'))
 
         self.cmake_cxxflags = os.environ.get('PYARROW_CXXFLAGS', '')
 
