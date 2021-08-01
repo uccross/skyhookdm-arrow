@@ -150,12 +150,12 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   std::vector<ceph::bufferlist*> chunks_;
 };
 
-arrow::Result<arrow::Table> GetResultTableFromScanner(arrow::dataset::FileSource source,
+arrow::Result<std::shared_ptr<arrow::Table>> GetResultTableFromScanner(arrow::dataset::FileSource source,
                                                arrow::compute::Expression filter,
                                                arrow::compute::Expression partition_expression,
                                                std::shared_ptr<arrow::Schema> projection_schema,
                                                std::shared_ptr<arrow::Schema> dataset_schema,
-                                               std::shared_ptr<arrow::FileFormat> format,
+                                               std::shared_ptr<arrow::dataset::FileFormat> format,
                                                std::shared_ptr<arrow::dataset::FragmentScanOptions> fragment_scan_options
                                               ) {
   ARROW_ASSIGN_OR_RAISE(auto fragment,
