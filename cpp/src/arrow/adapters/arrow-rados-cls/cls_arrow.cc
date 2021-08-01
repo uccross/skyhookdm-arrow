@@ -41,6 +41,10 @@ CLS_NAME(arrow)
 cls_handle_t h_class;
 cls_method_handle_t h_scan_op;
 
+void LogArrowError(const std::string& msg) {
+  CLS_LOG(0, "error: %s", msg.c_str());
+}
+
 /// \class RandomAccessObject
 /// \brief An interface to provide a file-like view over RADOS objects.
 class RandomAccessObject : public arrow::io::RandomAccessFile {
@@ -257,7 +261,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                                                    &projection_schema, &dataset_schema,
                                                    file_size, file_format, *in))
            .ok()) {
-    CLS_LOG(0, "error: %s", s.message().c_str());
+    LogArrowError(s.message());
     return SCAN_REQ_DESER_ERR_CODE;
   }
 
@@ -273,14 +277,14 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
     s = arrow::Status::Invalid("Unsupported file format");
   }
   if (!s.ok()) {
-    CLS_LOG(0, "error: %s", s.message().c_str());
+    LogArrowError(s.message());
     return SCAN_ERR_CODE;
   }
 
   // Serialize the resultant table to send back to the client
   ceph::bufferlist bl;
   if (!(s = arrow::dataset::SerializeTable(table, bl)).ok()) {
-    CLS_LOG(0, "error: %s", s.message().c_str());
+    LogArrowError(s.message());
     return SCAN_RES_SER_ERR_CODE;
   }
 
@@ -289,9 +293,6 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 }
 
 void __cls_init() {
-  CLS_LOG(0, "info: loading cls_arrow");
-
   cls_register("arrow", &h_class);
-
   cls_register_cxx_method(h_class, "scan_op", CLS_METHOD_RD, scan_op, &h_scan_op);
 }
