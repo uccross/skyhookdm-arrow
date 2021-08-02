@@ -39,8 +39,7 @@ namespace arrow {
 
 namespace dataset {
 
-/// \class CephConn
-/// \brief An interface to connect to a Rados cluster and hold the connection
+/// An interface to connect to a Rados cluster and hold the connection
 /// information for usage in later stages.
 class ARROW_DS_EXPORT CephConn {
  public:
@@ -54,8 +53,6 @@ class ARROW_DS_EXPORT CephConn {
     Shutdown();
   }
 
-  /// \brief Connect to the Rados cluster.
-  /// \return Status.
   Status Connect() {
     if (connected) {
       return Status::OK();
@@ -84,8 +81,6 @@ class ARROW_DS_EXPORT CephConn {
     return Status::OK();
   }
 
-  /// \brief Shutdown the connection to the Rados cluster.
-  /// \return Status.
   Status Shutdown() {
     rados->shutdown();
     return Status::OK();
@@ -134,7 +129,7 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
   std::shared_ptr<CephConn> connection_;
 };
 
-/// \brief A ScanTask to scan a file fragment in Skyhook format.
+/// A ScanTask to scan a file fragment in Skyhook format.
 class SkyhookScanTask : public ScanTask {
  public:
   SkyhookScanTask(std::shared_ptr<ScanOptions> options,

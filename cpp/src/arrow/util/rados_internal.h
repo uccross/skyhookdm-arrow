@@ -138,7 +138,7 @@ class ARROW_DS_EXPORT RadosWrapper : public RadosInterface {
 };
 
 ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<arrow::dataset::ScanOptions>& options,
-                                            int& file_format, int64_t& file_size,
+                                            int& file_size, int64_t& file_format,
                                             ceph::bufferlist& bl);
 
 ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,

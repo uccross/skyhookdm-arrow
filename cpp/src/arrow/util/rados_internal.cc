@@ -74,8 +74,8 @@ int RadosWrapper::connect() { return this->cluster->connect(); }
 
 void RadosWrapper::shutdown() { return this->cluster->shutdown(); }
 
-Status SerializeScanRequest(std::shared_ptr<dataset::ScanOptions>& options, int& file_format,
-                            int64_t& file_size, ceph::bufferlist& bl) {
+Status SerializeScanRequest(std::shared_ptr<dataset::ScanOptions>& options, int& file_size,
+                            int64_t& file_format, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
                         compute::Serialize(options->partition_expression));
