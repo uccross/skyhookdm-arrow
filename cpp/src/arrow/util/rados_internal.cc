@@ -111,27 +111,27 @@ Status DeserializeScanRequest(compute::Expression* filter, compute::Expression* 
   auto request = flatbuf::GetScanRequest((uint8_t*)bl.c_str());
 
   ARROW_ASSIGN_OR_RAISE(auto filter_,
-                        arrow::compute::Deserialize(std::make_shared<Buffer>(
+                        compute::Deserialize(std::make_shared<Buffer>(
                             request->filter()->data(), request->filter()->size())));
   *filter = filter_;
 
   ARROW_ASSIGN_OR_RAISE(auto partition_,
-                        arrow::compute::Deserialize(std::make_shared<Buffer>(
+                        compute::Deserialize(std::make_shared<Buffer>(
                             request->partition()->data(), request->partition()->size())));
   *partition = partition_;
 
-  arrow::ipc::DictionaryMemo empty_memo;
-  arrow::io::BufferReader projected_schema_reader(request->projection_schema()->data(),
+  ipc::DictionaryMemo empty_memo;
+  io::BufferReader projected_schema_reader(request->projection_schema()->data(),
                                            request->projection_schema()->size());
-  arrow::io::BufferReader dataset_schema_reader(request->dataset_schema()->data(),
+  io::BufferReader dataset_schema_reader(request->dataset_schema()->data(),
                                          request->dataset_schema()->size());
 
   ARROW_ASSIGN_OR_RAISE(auto projected_schema_,
-                        arrow::ipc::ReadSchema(&projected_schema_reader, &empty_memo));
+                        ipc::ReadSchema(&projected_schema_reader, &empty_memo));
   *projected_schema = projected_schema_;
 
   ARROW_ASSIGN_OR_RAISE(auto dataset_schema_,
-                        arrow::ipc::ReadSchema(&dataset_schema_reader, &empty_memo));
+                        ipc::ReadSchema(&dataset_schema_reader, &empty_memo));
   *dataset_schema = dataset_schema_;
 
   file_size = request->file_size();
@@ -143,7 +143,7 @@ Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
                       bool aggressive) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream, io::BufferOutputStream::Create());
 
-  auto options = arrow::ipc::IpcWriteOptions::Defaults();
+  auto options = ipc::IpcWriteOptions::Defaults();
 
   Compression::type codec;
   if (aggressive) {
@@ -155,7 +155,7 @@ Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
   ARROW_ASSIGN_OR_RAISE(options.codec,
                         util::Codec::Create(codec, std::numeric_limits<int>::min()));
   ARROW_ASSIGN_OR_RAISE(
-      auto writer, arrow::ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
+      auto writer, ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options));
 
   ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
   ARROW_RETURN_NOT_OK(writer->Close());
@@ -169,10 +169,10 @@ Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
                         bool use_threads) {
   auto buffer = std::make_shared<Buffer>((uint8_t*)bl.c_str(), bl.length());
   auto buffer_reader = std::make_shared<io::BufferReader>(buffer);
-  auto options = arrow::ipc::IpcReadOptions::Defaults();
+  auto options = ipc::IpcReadOptions::Defaults();
   options.use_threads = use_threads;
   ARROW_ASSIGN_OR_RAISE(
-      auto reader, arrow::ipc::RecordBatchStreamReader::Open(buffer_reader, options));
+      auto reader, ipc::RecordBatchStreamReader::Open(buffer_reader, options));
   ARROW_RETURN_NOT_OK(reader->ReadAll(&batches));
   return Status::OK();
 }
