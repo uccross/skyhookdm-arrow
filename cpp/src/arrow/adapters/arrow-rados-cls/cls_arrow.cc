@@ -55,8 +55,6 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     chunks_ = std::vector<ceph::bufferlist*>();
   }
 
-  // ~RandomAccessObject() { Close(); } // need to add this back
-
   /// Check if the file stream is closed.
   arrow::Status CheckClosed() const {
     if (closed_) {
@@ -170,7 +168,7 @@ arrow::Result<std::shared_ptr<arrow::Table>> GetResultTableFromScanner(arrow::da
 
   ARROW_RETURN_NOT_OK(builder->Filter(filter));
   ARROW_RETURN_NOT_OK(builder->Project(projection_schema->field_names()));
-  ARROW_RETURN_NOT_OK(builder->UseThreads(false));
+  ARROW_RETURN_NOT_OK(builder->UseThreads(true));
   ARROW_RETURN_NOT_OK(builder->FragmentScanOptions(fragment_scan_options));
 
   ARROW_ASSIGN_OR_RAISE(auto scanner, builder->Finish());
