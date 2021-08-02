@@ -39,8 +39,8 @@ namespace arrow {
 
 namespace dataset {
 
-/// An interface to connect to a Rados cluster and hold the connection
-/// information for usage in later stages.
+/// Connect to a Ceph cluster and hold the connection
+/// information for use in later stages.
 class ARROW_DS_EXPORT CephConn {
  public:
   explicit CephConn(const CephConnCtx& ctx): 
@@ -53,13 +53,14 @@ class ARROW_DS_EXPORT CephConn {
     Shutdown();
   }
 
+  /// Connect to the Ceph cluster.
   Status Connect() {
     if (connected) {
       return Status::OK();
     }
 
-    // Locks the mutex. Only one thread can pass here at a time.
-    // Another thread handled the connection already.
+    /// Locks the mutex. Only one thread can pass here at a time.
+    /// Another thread handled the connection already.
     std::unique_lock<std::mutex> lock(mutex);
     if (connected) {
       return Status::OK();
@@ -81,6 +82,7 @@ class ARROW_DS_EXPORT CephConn {
     return Status::OK();
   }
 
+  /// Shutdown the connection to the Ceph cluster. 
   Status Shutdown() {
     rados->shutdown();
     return Status::OK();
@@ -93,12 +95,16 @@ class ARROW_DS_EXPORT CephConn {
   std::mutex mutex;
 };
 
+/// An interface for translating the name of a file in CephFS to its
+/// corresponding object ID in RADOS assuming 1:1 mapping between a file
+/// and it's underlying object.
 class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
  public:
   explicit SkyhookDirectObjectAccess(
       const std::shared_ptr<CephConn>& connection)
       : connection_(std::move(connection)) {}
 
+  /// Execute a POSIX stat on a file.
   Status Stat(const std::string& path, struct stat& st) {
     struct stat file_st;
     if (stat(path.c_str(), &file_st) < 0)
@@ -107,6 +113,7 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
     return Status::OK();
   }
 
+  /// Convert file inode to RADOS object ID.
   std::string ConvertInodeToOID(uint64_t inode) {
     std::stringstream ss;
     ss << std::hex << inode;
@@ -114,6 +121,9 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
     return oid;
   }
 
+  /// Execute an object class method. It uses the `librados::exec` api to
+  /// perform object clsass method calls on the storage node and 
+  /// stores the result in an output bufferlist.
   Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
     std::string oid = ConvertInodeToOID(inode);
