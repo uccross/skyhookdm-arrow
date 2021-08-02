@@ -64,7 +64,7 @@ class ARROW_DS_EXPORT CephConn {
   explicit CephConn(const CephConnCtx& ctx): 
         ctx(ctx),
         rados(new util::RadosWrapper()),
-        ioCtx(new util::IoCtxWrapper()),
+        io_ctx(new util::IoCtxWrapper()),
         connected(false) {}
 
   ~CephConn() {
@@ -95,7 +95,7 @@ class ARROW_DS_EXPORT CephConn {
     if (rados->connect())
       return Status::Invalid("librados::connect returned non-zero exit code.");
 
-    if (rados->ioctx_create(ctx.ceph_data_pool.c_str(), ioCtx))
+    if (rados->ioctx_create(ctx.ceph_data_pool.c_str(), io_ctx))
       return Status::Invalid("librados::ioctx_create returned non-zero exit code.");
 
     return Status::OK();
@@ -139,7 +139,7 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
   Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
     std::string oid = ConvertInodeToOID(inode);
-    int e = connection_->ioCtx->exec(oid.c_str(), connection_->ctx.cls_name.c_str(),
+    int e = connection_->io_ctx->exec(oid.c_str(), connection_->ctx.cls_name.c_str(),
                                      fn.c_str(), in, out);
     if (e == SCAN_ERR_CODE) return Status::Invalid(SCAN_ERR_MSG);
     if (e == SCAN_REQ_DESER_ERR_CODE) return Status::Invalid(SCAN_REQ_DESER_ERR_MSG);
@@ -148,7 +148,7 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
   }
 
  protected:
-  std::shared_ptr<CephConnection> connection_;
+  std::shared_ptr<CephConn> connection_;
 };
 
 /// \brief A ScanTask to scan a file fragment in Skyhook format.
