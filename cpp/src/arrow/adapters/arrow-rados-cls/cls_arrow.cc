@@ -55,7 +55,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     chunks_ = std::vector<ceph::bufferlist*>();
   }
 
-  ~RandomAccessObject() { Close(); }
+  // ~RandomAccessObject() { Close(); } // need to add this back
 
   /// Check if the file stream is closed.
   arrow::Status CheckClosed() const {
