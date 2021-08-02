@@ -190,7 +190,7 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
                                      const std::string& ceph_user_name,
                                      const std::string& ceph_cluster_name,
                                      const std::string& ceph_cls_name) {
-  CephConnCtx ctx(ceph_config_path, ceph_data_pool, ceph_user_name, ceph_cluster_name, ceph_cls_name);
+  CephConn::CephConnCtx ctx(ceph_config_path, ceph_data_pool, ceph_user_name, ceph_cluster_name, ceph_cls_name);
   ctx_ = ctx;
   fragment_format_ = fragment_format;
 }
