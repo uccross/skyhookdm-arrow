@@ -151,7 +151,7 @@ class SkyhookScanTask : public ScanTask {
 
     ceph::bufferlist request;
     ARROW_RETURN_NOT_OK(
-        util::SerializeScanRequest(options_, file_format, st.st_size, request));
+        util::SerializeScanRequest(options_, file_format_, st.st_size, request));
 
     ceph::bufferlist result;
     ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
@@ -181,7 +181,7 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& file_format,
 Result<std::shared_ptr<Schema>> SkyhookFileFormat::Inspect(
     const FileSource& source) const {
   std::shared_ptr<FileFormat> file_format;
-  if (file_format == "parquet") {
+  if (file_format_ == "parquet") {
     file_format = std::make_shared<ParquetFileFormat>();
   } else if (file_format_ == "ipc") {
     file_format = std::make_shared<IpcFileFormat>();
