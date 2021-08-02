@@ -21,6 +21,9 @@
 #include <vector>
 
 namespace arrow {
+
+namespace flatbuf = org::apache::arrow::flatbuf;
+
 namespace util {
 
 int IoCtxWrapper::write_full(const std::string& oid, ceph::bufferlist& bl) {
