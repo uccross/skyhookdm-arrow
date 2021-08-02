@@ -15,12 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "arrow/dataset/scanner.h"
 #include "arrow/util/rados_internal.h"
-
-#include <rados/librados.hpp>
-#include <flatbuffers/flatbuffers.h>
-#include "generated/ScanRequest_generated.h"
 
 #include <iostream>
 #include <vector>

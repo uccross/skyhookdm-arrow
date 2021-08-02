@@ -18,10 +18,14 @@
 #pragma once
 
 #include <rados/librados.hpp>
+#include <flatbuffers/flatbuffers.h>
 
+#include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
 #include "arrow/util/macros.h"
+#include "arrow/dataset/scanner.h"
+#include "generated/ScanRequest_generated.h"
 
 namespace arrow {
 namespace util {
