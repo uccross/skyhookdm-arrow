@@ -74,15 +74,15 @@ int RadosWrapper::connect() { return this->cluster->connect(); }
 
 void RadosWrapper::shutdown() { return this->cluster->shutdown(); }
 
-Status SerializeScanRequest(std::shared_ptr<arrow::dataset::ScanOptions>& options, int& file_format,
+Status SerializeScanRequest(std::shared_ptr<dataset::ScanOptions>& options, int& file_format,
                             int64_t& file_size, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
-                        arrow::compute::Serialize(options->partition_expression));
+                        compute::Serialize(options->partition_expression));
   ARROW_ASSIGN_OR_RAISE(auto projected_schema,
-                        arrow::ipc::SerializeSchema(*options->projected_schema));
+                        ipc::SerializeSchema(*options->projected_schema));
   ARROW_ASSIGN_OR_RAISE(auto dataset_schema,
-                        arrow::ipc::SerializeSchema(*options->dataset_schema));
+                        ipc::SerializeSchema(*options->dataset_schema));
 
   flatbuffers::FlatBufferBuilder builder(1024);
 
