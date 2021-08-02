@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+#include "arrow/dataset/scanner.h"
 #include "arrow/util/rados_internal.h"
 
 #include <rados/librados.hpp>
@@ -73,7 +74,7 @@ int RadosWrapper::connect() { return this->cluster->connect(); }
 
 void RadosWrapper::shutdown() { return this->cluster->shutdown(); }
 
-Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options, int& file_format,
+Status SerializeScanRequest(std::shared_ptr<dataset::ScanOptions>& options, int& file_format,
                             int64_t& file_size, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
