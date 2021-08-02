@@ -196,14 +196,14 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
                                    std::shared_ptr<arrow::Table>* result_table,
                                    int64_t object_size) {
   auto file = std::make_shared<RandomAccessObject>(hctx, object_size);
-  arrow::dataset::FileSource source(file, arrow::Compression::LZ4_FRAME);
+  auto source = std::make_shared<arrow::dataset::FileSource>(file, arrow::Compression::LZ4_FRAME);
 
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
   
   ARROW_ASSIGN_OR_RAISE(*result_table, GetResultTableFromScanner(
-    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
+    *source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
 
   ARROW_RETURN_NOT_OK(file->Close());  
   return arrow::Status::OK();
@@ -226,14 +226,14 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
                                        std::shared_ptr<arrow::Table>* result_table,
                                        int64_t object_size) {
   auto file = std::make_shared<RandomAccessObject>(hctx, object_size);
-  arrow::dataset::FileSource source(file);
+  auto source = std::make_shared<arrow::dataset::FileSource>(file);
 
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
   
   ARROW_ASSIGN_OR_RAISE(*result_table, GetResultTableFromScanner(
-    source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
+    *source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
   
   ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
