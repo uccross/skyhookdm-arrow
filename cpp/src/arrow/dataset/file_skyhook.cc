@@ -63,8 +63,8 @@ class ARROW_DS_EXPORT CephConn {
 
   explicit CephConn(const CephConnCtx& ctx): 
         ctx(ctx),
-        rados(new RadosWrapper()),
-        ioCtx(new IoCtxWrapper()),
+        rados(new util::RadosWrapper()),
+        ioCtx(new util::IoCtxWrapper()),
         connected(false) {}
 
   ~CephConn() {
@@ -109,8 +109,8 @@ class ARROW_DS_EXPORT CephConn {
   }
 
   CephConnCtx ctx;
-  RadosInterface* rados;
-  IoCtxInterface* io_ctx;
+  util::RadosInterface* rados;
+  util::IoCtxInterface* io_ctx;
   bool connected;
   std::mutex mutex;
 };
