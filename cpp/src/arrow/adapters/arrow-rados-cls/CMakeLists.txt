@@ -21,8 +21,8 @@ arrow_install_all_headers("arrow/adapters/arrow-rados-cls")
 # cls_arrow
 set(ARROW_SKYHOOK_SRCS cls_arrow.cc)
 
-set(ARROW_SKYHOOK_LINK_STATIC arrow_dataset_static)
-set(ARROW_SKYHOOK_LINK_SHARED arrow_dataset_shared)
+set(ARROW_SKYHOOK_LINK_STATIC arrow_dataset_static arrow_static)
+set(ARROW_SKYHOOK_LINK_SHARED arrow_dataset_shared arrow_shared)
 
 find_package(librados REQUIRED)
 include_directories(${LIBRADOS_INCLUDE_DIR})
