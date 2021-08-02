@@ -66,6 +66,23 @@ enum SkyhookFileType { PARQUET, IPC };
 ///
 /// @{
 
+struct CephConnCtx {
+  std::string ceph_config_path;
+  std::string ceph_data_pool;
+  std::string ceph_user_name;
+  std::string ceph_cluster_name;
+  std::string ceph_cls_name;
+
+  CephConnCtx(const std::string& ceph_config_path, const std::string& ceph_data_pool,
+                      const std::string& ceph_user_name, const std::string& ceph_cluster_name,
+                      const std::string& ceph_cls_name)
+      : ceph_config_path(ceph_config_path),
+        ceph_data_pool(ceph_data_pool),
+        ceph_user_name(ceph_user_name),
+        ceph_cluster_name(ceph_cluster_name),
+        ceph_cls_name(ceph_cls_name) {}
+};
+
 /// \class SkyhookFileFormat
 /// \brief A ParquetFileFormat implementation that offloads the fragment
 /// scan operations to the Ceph OSDs
@@ -108,6 +125,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
 
  protected:
   std::string fragment_format_;
+  CephConnCtx ctx_;
 };
 
 /// @}
