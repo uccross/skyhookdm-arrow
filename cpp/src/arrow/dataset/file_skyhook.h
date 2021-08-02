@@ -125,7 +125,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
 
  protected:
   std::string fragment_format_;
-  CephConnCtx ctx_;
+  std::shared_ptr<CephConnCtx> ctx_;
 };
 
 /// @}

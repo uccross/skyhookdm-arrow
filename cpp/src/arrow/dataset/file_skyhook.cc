@@ -173,7 +173,7 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
                                      const std::string& ceph_user_name,
                                      const std::string& ceph_cluster_name,
                                      const std::string& ceph_cls_name) {
-  CephConnCtx ctx(ceph_config_path, ceph_data_pool, ceph_user_name, ceph_cluster_name, ceph_cls_name);
+  auto ctx = std::make_shared<CephConnCtx>(ceph_config_path, ceph_data_pool, ceph_user_name, ceph_cluster_name, ceph_cls_name);
   ctx_ = ctx;
   fragment_format_ = fragment_format;
 }
@@ -208,7 +208,7 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   else
     return Status::Invalid("Unsupported file format");
 
-  auto connection = std::make_shared<CephConn>(ctx_);
+  auto connection = std::make_shared<CephConn>(*ctx_);
   auto doa = std::make_shared<SkyhookDirectObjectAccess>(connection);
 
   ScanTaskVector v{std::make_shared<SkyhookScanTask>(std::move(options_), std::move(file),
