@@ -20,6 +20,8 @@
 #include <rados/librados.hpp>
 #include <flatbuffers/flatbuffers.h>
 
+#include "arrow/ipc/api.h"
+#include "arrow/io/api.h"
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/type_fwd.h"
 #include "arrow/dataset/visibility.h"
