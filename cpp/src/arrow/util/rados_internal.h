@@ -128,7 +128,7 @@ class ARROW_DS_EXPORT RadosWrapper : public RadosInterface {
   librados::Rados* cluster;
 };
 
-ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
+ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<arrow::dataset::ScanOptions>& options,
                                             int& file_format, int64_t& file_size,
                                             ceph::bufferlist& bl);
 

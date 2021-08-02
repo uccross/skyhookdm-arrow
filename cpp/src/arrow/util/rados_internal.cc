@@ -24,7 +24,7 @@
 #include <vector>
 
 namespace arrow {
-namespace dataset {
+namespace util {
 
 int IoCtxWrapper::write_full(const std::string& oid, ceph::bufferlist& bl) {
   return this->ioCtx->write_full(oid, bl);
@@ -74,7 +74,7 @@ int RadosWrapper::connect() { return this->cluster->connect(); }
 
 void RadosWrapper::shutdown() { return this->cluster->shutdown(); }
 
-Status SerializeScanRequest(std::shared_ptr<dataset::ScanOptions>& options, int& file_format,
+Status SerializeScanRequest(std::shared_ptr<arrow::dataset::ScanOptions>& options, int& file_format,
                             int64_t& file_size, ceph::bufferlist& bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter, compute::Serialize(options->filter));
   ARROW_ASSIGN_OR_RAISE(auto partition,
@@ -177,5 +177,5 @@ Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
   return Status::OK();
 }
 
-}  // namespace dataset
+}  // namespace util
 }  // namespace arrow
