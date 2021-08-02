@@ -17,9 +17,6 @@
 #include <iostream>
 #include <random>
 
-#include <rados/objclass.h>
-#include <rados/librados.hpp>
-
 #include "arrow/api.h"
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset.h"
