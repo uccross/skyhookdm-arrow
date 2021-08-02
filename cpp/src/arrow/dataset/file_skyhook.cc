@@ -61,7 +61,7 @@ class ARROW_DS_EXPORT CephConn {
           ceph_cls_name(ceph_cls_name) {}
     };
 
-  explicit CephConn(const CephConnCtx& ctx)
+  explicit CephConn(const CephConnCtx& ctx): 
         ctx(ctx),
         rados(new RadosWrapper()),
         ioCtx(new IoCtxWrapper()),
