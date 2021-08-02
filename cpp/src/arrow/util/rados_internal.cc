@@ -19,6 +19,8 @@
 #include "arrow/util/rados_internal.h"
 
 #include <rados/librados.hpp>
+#include <flatbuffers/flatbuffers.h>
+#include "generated/ScanRequest_generated.h"
 
 #include <iostream>
 #include <vector>

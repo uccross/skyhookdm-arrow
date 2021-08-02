@@ -35,10 +35,6 @@
 #include "parquet/arrow/reader.h"
 #include "parquet/file_reader.h"
 
-#include <flatbuffers/flatbuffers.h>
-
-#include "generated/ScanRequest_generated.h"
-
 namespace arrow {
 
 namespace flatbuf = org::apache::arrow::flatbuf;
