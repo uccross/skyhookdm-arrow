@@ -41,9 +41,7 @@ CLS_NAME(arrow)
 cls_handle_t h_class;
 cls_method_handle_t h_scan_op;
 
-void LogArrowError(const std::string& msg) {
-  CLS_LOG(0, "error: %s", msg.c_str());
-}
+void LogArrowError(const std::string& msg) { CLS_LOG(0, "error: %s", msg.c_str()); }
 
 /// \class RandomAccessObject
 /// \brief An interface to provide a file-like view over RADOS objects.
@@ -76,7 +74,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
   arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) {
     return arrow::Status::NotImplemented(
-      "ReadAt has not been implemented in RandomAccessObject");
+        "ReadAt has not been implemented in RandomAccessObject");
   }
 
   /// Read a specified number of bytes from a specified position.
@@ -152,14 +150,13 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   std::vector<ceph::bufferlist*> chunks_;
 };
 
-arrow::Result<std::shared_ptr<arrow::Table>> GetResultTableFromScanner(arrow::dataset::FileSource source,
-                                               arrow::compute::Expression filter,
-                                               arrow::compute::Expression partition_expression,
-                                               std::shared_ptr<arrow::Schema> projection_schema,
-                                               std::shared_ptr<arrow::Schema> dataset_schema,
-                                               std::shared_ptr<arrow::dataset::FileFormat> format,
-                                               std::shared_ptr<arrow::dataset::FragmentScanOptions> fragment_scan_options
-                                              ) {
+arrow::Result<std::shared_ptr<arrow::Table>> GetResultTableFromScanner(
+    arrow::dataset::FileSource source, arrow::compute::Expression filter,
+    arrow::compute::Expression partition_expression,
+    std::shared_ptr<arrow::Schema> projection_schema,
+    std::shared_ptr<arrow::Schema> dataset_schema,
+    std::shared_ptr<arrow::dataset::FileFormat> format,
+    std::shared_ptr<arrow::dataset::FragmentScanOptions> fragment_scan_options) {
   ARROW_ASSIGN_OR_RAISE(auto fragment,
                         format->MakeFragment(source, partition_expression));
   auto options = std::make_shared<arrow::dataset::ScanOptions>();
@@ -194,16 +191,18 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx,
                                    std::shared_ptr<arrow::Table>* result_table,
                                    int64_t object_size) {
   auto file = std::make_shared<RandomAccessObject>(hctx, object_size);
-  auto source = std::make_shared<arrow::dataset::FileSource>(file, arrow::Compression::LZ4_FRAME);
+  auto source =
+      std::make_shared<arrow::dataset::FileSource>(file, arrow::Compression::LZ4_FRAME);
 
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
-  auto fragment_scan_options =
-      std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
-  
-  ARROW_ASSIGN_OR_RAISE(*result_table, GetResultTableFromScanner(
-    *source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
+  auto fragment_scan_options = std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
 
-  ARROW_RETURN_NOT_OK(file->Close());  
+  ARROW_ASSIGN_OR_RAISE(
+      *result_table,
+      GetResultTableFromScanner(*source, filter, partition_expression, projection_schema,
+                                dataset_schema, format, fragment_scan_options));
+
+  ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
 }
 
@@ -229,10 +228,12 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
-  
-  ARROW_ASSIGN_OR_RAISE(*result_table, GetResultTableFromScanner(
-    *source, filter, partition_expression, projection_schema, dataset_schema, format, fragment_scan_options));
-  
+
+  ARROW_ASSIGN_OR_RAISE(
+      *result_table,
+      GetResultTableFromScanner(*source, filter, partition_expression, projection_schema,
+                                dataset_schema, format, fragment_scan_options));
+
   ARROW_RETURN_NOT_OK(file->Close());
   return arrow::Status::OK();
 }
