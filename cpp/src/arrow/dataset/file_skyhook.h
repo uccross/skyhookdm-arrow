@@ -67,115 +67,6 @@ enum SkyhookFileType { PARQUET, IPC };
 ///
 /// @{
 
-namespace connection {
-/// \brief An interface for general connections.
-class ARROW_DS_EXPORT Connection {
- public:
-  virtual Status Connect() = 0;
-
-  Connection() = default;
-  virtual ~Connection() = default;
-};
-
-/// \class RadosConnection
-/// \brief An interface to connect to a Rados cluster and hold the connection
-/// information for usage in later stages.
-class ARROW_DS_EXPORT RadosConnection : public Connection {
- public:
-  struct RadosConnectionCtx {
-    std::string ceph_config_path;
-    std::string data_pool;
-    std::string user_name;
-    std::string cluster_name;
-    std::string cls_name;
-
-    RadosConnectionCtx(const std::string& ceph_config_path, const std::string& data_pool,
-                       const std::string& user_name, const std::string& cluster_name,
-                       const std::string& cls_name)
-        : ceph_config_path(ceph_config_path),
-          data_pool(data_pool),
-          user_name(user_name),
-          cluster_name(cluster_name),
-          cls_name(cls_name) {}
-  };
-  explicit RadosConnection(const RadosConnectionCtx& ctx)
-      : Connection(),
-        ctx(ctx),
-        rados(new RadosWrapper()),
-        ioCtx(new IoCtxWrapper()),
-        connected(false) {}
-
-  ~RadosConnection();
-
-  /// \brief Connect to the Rados cluster.
-  /// \return Status.
-  Status Connect();
-
-  /// \brief Shutdown the connection to the Rados cluster.
-  /// \return Status.
-  Status Shutdown();
-
-  RadosConnectionCtx ctx;
-  RadosInterface* rados;
-  IoCtxInterface* ioCtx;
-  bool connected;
-};
-
-}  // namespace connection
-
-/// \class SkyhookDirectObjectAccess
-/// \brief Interface for translating the name of a file in CephFS to its
-/// corresponding object ID in RADOS assuming 1:1 mapping between a file
-/// and its underlying object.
-class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
- public:
-  explicit SkyhookDirectObjectAccess(
-      const std::shared_ptr<connection::RadosConnection>& connection)
-      : connection_(std::move(connection)) {}
-
-  /// \brief Executes the POSIX stat call on a file.
-  /// \param[in] path Path of the file.
-  /// \param[out] st Refernce to the struct object to store the result.
-  /// \return Status.
-  Status Stat(const std::string& path, struct stat& st) {
-    struct stat file_st;
-    if (stat(path.c_str(), &file_st) < 0)
-      return Status::Invalid("stat returned non-zero exit code.");
-    st = file_st;
-    return Status::OK();
-  }
-
-  // Helper function to convert Inode to ObjectID because Rados calls work with
-  // ObjectIDs.
-  std::string ConvertFileInodeToObjectID(uint64_t inode) {
-    std::stringstream ss;
-    ss << std::hex << inode;
-    std::string oid(ss.str() + ".00000000");
-    return oid;
-  }
-
-  /// \brief Executes query on the librados node. It uses the librados::exec API to
-  /// perform queries on the storage node and stores the result in the output bufferlist.
-  /// \param[in] inode inode of the file.
-  /// \param[in] fn The function to be executed by the librados::exec call.
-  /// \param[in] in The input bufferlist.
-  /// \param[out] out The output bufferlist.
-  /// \return Status.
-  Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
-              ceph::bufferlist& out) {
-    std::string oid = ConvertFileInodeToObjectID(inode);
-    int e = connection_->ioCtx->exec(oid.c_str(), connection_->ctx.cls_name.c_str(),
-                                     fn.c_str(), in, out);
-    if (e == SCAN_ERR_CODE) return Status::Invalid(SCAN_ERR_MSG);
-    if (e == SCAN_REQ_DESER_ERR_CODE) return Status::Invalid(SCAN_REQ_DESER_ERR_MSG);
-    if (e == SCAN_RES_SER_ERR_CODE) return Status::Invalid(SCAN_RES_SER_ERR_MSG);
-    return Status::OK();
-  }
-
- protected:
-  std::shared_ptr<connection::RadosConnection> connection_;
-};
-
 /// \class SkyhookFileFormat
 /// \brief A ParquetFileFormat implementation that offloads the fragment
 /// scan operations to the Ceph OSDs
@@ -184,11 +75,6 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
   SkyhookFileFormat(const std::string& format, const std::string& ceph_config_path,
                     const std::string& data_pool, const std::string& user_name,
                     const std::string& cluster_name, const std::string& cls_name);
-
-  explicit SkyhookFileFormat(const std::shared_ptr<connection::RadosConnection>& conn);
-
-  explicit SkyhookFileFormat(std::shared_ptr<SkyhookDirectObjectAccess>& doa)
-      : doa_(std::move(doa)) {}
 
   std::string type_name() const override { return "skyhook"; }
 
@@ -222,7 +108,6 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
   std::shared_ptr<FileWriteOptions> DefaultWriteOptions() override { return NULLPTR; }
 
  protected:
-  std::shared_ptr<SkyhookDirectObjectAccess> doa_;
   std::string fragment_format_;
 };
 

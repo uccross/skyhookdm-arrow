@@ -45,46 +45,116 @@ namespace flatbuf = org::apache::arrow::flatbuf;
 
 namespace dataset {
 
-namespace connection {
+/// \class CephConn
+/// \brief An interface to connect to a Rados cluster and hold the connection
+/// information for usage in later stages.
+class ARROW_DS_EXPORT CephConn {
+ public:
+  struct CephConnCtx {
+    std::string ceph_config_path;
+    std::string ceph_data_pool;
+    std::string ceph_user_name;
+    std::string ceph_cluster_name;
+    std::string ceph_cls_name;
 
-std::mutex connection_mutex;
+    CephConnCtx(const std::string& ceph_config_path, const std::string& ceph_data_pool,
+                       const std::string& ceph_user_name, const std::string& ceph_cluster_name,
+                       const std::string& ceph_cls_name)
+        : ceph_config_path(ceph_config_path),
+          ceph_data_pool(ceph_data_pool),
+          ceph_user_name(ceph_user_name),
+          ceph_cluster_name(ceph_cluster_name),
+          ceph_cls_name(ceph_cls_name) {}
+  };
+  explicit CephConn(const CephConnCtx& ctx)
+        ctx(ctx),
+        rados(new RadosWrapper()),
+        ioCtx(new IoCtxWrapper()),
+        connected(false) {}
 
-RadosConnection::~RadosConnection() { Shutdown(); }
+  ~CephConn() {
+    Shutdown();
+  }
 
-Status RadosConnection::Connect() {
-  if (connected) {
+  /// \brief Connect to the Rados cluster.
+  /// \return Status.
+  Status Connect() {
+    if (connected) {
+      return Status::OK();
+    }
+
+    // Locks the mutex. Only one thread can pass here at a time.
+    // Another thread handled the connection already.
+    std::unique_lock<std::mutex> lock(mutex);
+    if (connected) {
+      return Status::OK();
+    }
+    connected = true;
+
+    if (rados->init2(ctx.ceph_user_name.c_str(), ctx.ceph_cluster_name.c_str(), 0))
+      return Status::Invalid("librados::init2 returned non-zero exit code.");
+
+    if (rados->conf_read_file(ctx.ceph_config_path.c_str()))
+      return Status::Invalid("librados::conf_read_file returned non-zero exit code.");
+
+    if (rados->connect())
+      return Status::Invalid("librados::connect returned non-zero exit code.");
+
+    if (rados->ioctx_create(ctx.ceph_data_pool.c_str(), ioCtx))
+      return Status::Invalid("librados::ioctx_create returned non-zero exit code.");
+
     return Status::OK();
   }
 
-  // Locks the mutex. Only one thread can pass here at a time.
-  // Another thread handled the connection already.
-  std::unique_lock<std::mutex> lock(connection_mutex);
-  if (connected) {
+  /// \brief Shutdown the connection to the Rados cluster.
+  /// \return Status.
+  Status Shutdown() {
+    rados->shutdown();
     return Status::OK();
   }
-  connected = true;
 
-  if (rados->init2(ctx.user_name.c_str(), ctx.cluster_name.c_str(), 0))
-    return Status::Invalid("librados::init2 returned non-zero exit code.");
+  CephConnCtx ctx;
+  RadosInterface* rados;
+  IoCtxInterface* io_ctx;
+  bool connected;
+  std::mutex mutex;
+};
 
-  if (rados->conf_read_file(ctx.ceph_config_path.c_str()))
-    return Status::Invalid("librados::conf_read_file returned non-zero exit code.");
+class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
+ public:
+  explicit SkyhookDirectObjectAccess(
+      const std::shared_ptr<CephConn>& connection)
+      : connection_(std::move(connection)) {}
 
-  if (rados->connect())
-    return Status::Invalid("librados::connect returned non-zero exit code.");
+  Status Stat(const std::string& path, struct stat& st) {
+    struct stat file_st;
+    if (stat(path.c_str(), &file_st) < 0)
+      return Status::Invalid("stat returned non-zero exit code.");
+    st = file_st;
+    return Status::OK();
+  }
 
-  if (rados->ioctx_create(ctx.data_pool.c_str(), ioCtx))
-    return Status::Invalid("librados::ioctx_create returned non-zero exit code.");
+  std::string ConvertInodeToOID(uint64_t inode) {
+    std::stringstream ss;
+    ss << std::hex << inode;
+    std::string oid(ss.str() + ".00000000");
+    return oid;
+  }
 
-  return Status::OK();
-}
+  Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
+              ceph::bufferlist& out) {
+    std::string oid = ConvertInodeToOID(inode);
+    int e = connection_->ioCtx->exec(oid.c_str(), connection_->ctx.cls_name.c_str(),
+                                     fn.c_str(), in, out);
+    if (e == SCAN_ERR_CODE) return Status::Invalid(SCAN_ERR_MSG);
+    if (e == SCAN_REQ_DESER_ERR_CODE) return Status::Invalid(SCAN_REQ_DESER_ERR_MSG);
+    if (e == SCAN_RES_SER_ERR_CODE) return Status::Invalid(SCAN_RES_SER_ERR_MSG);
+    return Status::OK();
+  }
 
-Status RadosConnection::Shutdown() {
-  rados->shutdown();
-  return Status::OK();
-}
-
-}  // namespace connection
+ protected:
+  std::shared_ptr<CephConnection> connection_;
+};
 
 /// \brief A ScanTask to scan a file fragment in Skyhook format.
 class SkyhookScanTask : public ScanTask {
@@ -121,21 +191,13 @@ class SkyhookScanTask : public ScanTask {
 
 SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
                                      const std::string& ceph_config_path,
-                                     const std::string& data_pool,
-                                     const std::string& user_name,
-                                     const std::string& cluster_name,
-                                     const std::string& cls_name)
-    : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
-          connection::RadosConnection::RadosConnectionCtx(
-              ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {
+                                     const std::string& ceph_data_pool,
+                                     const std::string& ceph_user_name,
+                                     const std::string& ceph_cluster_name,
+                                     const std::string& ceph_cls_name) {
+  CephConnCtx ctx(ceph_config_path, ceph_data_pool, ceph_user_name, ceph_cluster_name, ceph_cls_name);
+  ctx_ = ctx;
   fragment_format_ = fragment_format;
-}
-
-SkyhookFileFormat::SkyhookFileFormat(
-    const std::shared_ptr<connection::RadosConnection>& connection) {
-  connection->Connect();
-  auto doa = std::make_shared<arrow::dataset::SkyhookDirectObjectAccess>(connection);
-  doa_ = doa;
 }
 
 Result<std::shared_ptr<Schema>> SkyhookFileFormat::Inspect(
@@ -168,8 +230,11 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
   else
     return Status::Invalid("Unsupported file format");
 
+  auto connection = std::make_shared<CephConn>(ctx_);
+  auto doa = std::make_shared<SkyhookDirectObjectAccess>(connection);
+
   ScanTaskVector v{std::make_shared<SkyhookScanTask>(std::move(options_), std::move(file),
-                                                     file->source(), std::move(doa_),
+                                                     file->source(), std::move(doa),
                                                      fragment_format)};
   return MakeVectorIterator(v);
 }
