@@ -20,6 +20,9 @@
 #include <rados/librados.hpp>
 #include <flatbuffers/flatbuffers.h>
 
+#include "arrow/schema.h"
+#include "arrow/table.h"
+#include "arrow/record_batch.h"
 #include "arrow/ipc/api.h"
 #include "arrow/io/api.h"
 #include "arrow/compute/exec/expression.h"
