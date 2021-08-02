@@ -24,6 +24,7 @@
 #include "arrow/dataset/file_ipc.h"
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/file_skyhook.h"
+#include "arrow/util/rados_internal.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/compression.h"
@@ -257,7 +258,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   int file_format = 0;  // 0 = Parquet, 1 = Ipc
 
   // Deserialize the scan request
-  if (!(s = arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
+  if (!(s = arrow::util::DeserializeScanRequest(&filter, &partition_expression,
                                                    &projection_schema, &dataset_schema,
                                                    file_size, file_format, *in))
            .ok()) {

@@ -24,7 +24,7 @@
 #include "arrow/util/macros.h"
 
 namespace arrow {
-namespace dataset {
+namespace util {
 
 class ARROW_DS_EXPORT IoCtxInterface {
  public:
@@ -128,5 +128,22 @@ class ARROW_DS_EXPORT RadosWrapper : public RadosInterface {
   librados::Rados* cluster;
 };
 
-}  // namespace dataset
+ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
+                                            int& file_format, int64_t& file_size,
+                                            ceph::bufferlist& bl);
+
+ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
+                                              compute::Expression* partition,
+                                              std::shared_ptr<Schema>* projected_schema,
+                                              std::shared_ptr<Schema>* dataset_schema,
+                                              int64_t& file_size, int& file_format,
+                                              ceph::bufferlist& bl);
+
+ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
+                                      bool aggressive = false);
+
+ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
+                                        bool use_threads);
+
+}  // namespace util
 }  // namespace arrow

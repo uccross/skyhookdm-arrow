@@ -111,48 +111,6 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
   std::string fragment_format_;
 };
 
-/// \brief Serialize scan request to a bufferlist.
-/// \param[in] options The scan options to use to build a ScanRequest.
-/// \param[in] file_format The underlying file format to use.
-/// \param[in] file_size The size of the file fragment.
-/// \param[out] bl Output bufferlist.
-/// \return Status.
-ARROW_DS_EXPORT Status SerializeScanRequest(std::shared_ptr<ScanOptions>& options,
-                                            int& file_format, int64_t& file_size,
-                                            ceph::bufferlist& bl);
-
-/// \brief Deserialize scan request from bufferlist.
-/// \param[out] filter The filter expression to apply.
-/// \param[out] partition The partition expression to use.
-/// \param[out] projected_schema The schema to project the filtered record batches.
-/// \param[out] dataset_schema The dataset schema to use.
-/// \param[out] file_size The size of the file fragment.
-/// \param[out] file_format The underlying file format to use.
-/// \param[in] bl Input Ceph bufferlist.
-/// \return Status.
-ARROW_DS_EXPORT Status DeserializeScanRequest(compute::Expression* filter,
-                                              compute::Expression* partition,
-                                              std::shared_ptr<Schema>* projected_schema,
-                                              std::shared_ptr<Schema>* dataset_schema,
-                                              int64_t& file_size, int& file_format,
-                                              ceph::bufferlist& bl);
-
-/// \brief Serialize the result Table to a bufferlist.
-/// \param[in] table The table to serialize.
-/// \param[in] aggressive If true, use ZSTD compression instead of LZ4.
-/// \param[out] bl Output bufferlist.
-/// \return Status.
-ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table, ceph::bufferlist& bl,
-                                      bool aggressive = false);
-
-/// \brief Deserialize the result table from bufferlist.
-/// \param[out] batches Output record batches.
-/// \param[in] bl Input bufferlist.
-/// \param[in] use_threads If true, use threads to deserialize a table from a bufferlist.
-/// \return Status.
-ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
-                                        bool use_threads);
-
 /// @}
 
 }  // namespace dataset
