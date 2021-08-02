@@ -88,7 +88,7 @@ struct CephConnCtx {
 /// scan operations to the Ceph OSDs
 class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
  public:
-  SkyhookFileFormat(const std::string& format, const std::string& ceph_config_path,
+  SkyhookFileFormat(const std::string& file_format, const std::string& ceph_config_path,
                     const std::string& data_pool, const std::string& user_name,
                     const std::string& cluster_name, const std::string& cls_name);
 
@@ -124,7 +124,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
   std::shared_ptr<FileWriteOptions> DefaultWriteOptions() override { return NULLPTR; }
 
  protected:
-  std::string fragment_format_;
+  std::string file_format_;
   std::shared_ptr<CephConnCtx> ctx_;
 };
 
