@@ -139,7 +139,7 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
   Status Exec(uint64_t inode, const std::string& fn, ceph::bufferlist& in,
               ceph::bufferlist& out) {
     std::string oid = ConvertInodeToOID(inode);
-    int e = connection_->io_ctx->exec(oid.c_str(), connection_->ctx.cls_name.c_str(),
+    int e = connection_->io_ctx->exec(oid.c_str(), connection_->ctx.ceph_cls_name.c_str(),
                                      fn.c_str(), in, out);
     if (e == SCAN_ERR_CODE) return Status::Invalid(SCAN_ERR_MSG);
     if (e == SCAN_REQ_DESER_ERR_CODE) return Status::Invalid(SCAN_REQ_DESER_ERR_MSG);
