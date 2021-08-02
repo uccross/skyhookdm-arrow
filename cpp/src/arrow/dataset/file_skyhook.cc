@@ -37,8 +37,6 @@
 
 namespace arrow {
 
-namespace flatbuf = org::apache::arrow::flatbuf;
-
 namespace dataset {
 
 /// \class CephConn
