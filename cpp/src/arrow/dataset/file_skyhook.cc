@@ -209,7 +209,6 @@ Result<ScanTaskIterator> SkyhookFileFormat::ScanFile(
     const std::shared_ptr<FileFragment>& file) const {
   std::shared_ptr<ScanOptions> options_ = std::make_shared<ScanOptions>(*options);
   options_->partition_expression = file->partition_expression();
-  options_->dataset_schema = file->dataset_schema();
 
   int file_format = -1;
   if (file_format_ == "parquet")
