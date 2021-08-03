@@ -113,10 +113,16 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
     return Status::OK();
   }
 
-  /// Convert file inode to RADOS object ID.
+  /// Convert a file inode to RADOS object ID.
   std::string ConvertInodeToOID(uint64_t inode) {
     std::stringstream ss;
+    /// In Ceph, the underlying stripes that make up a file are 
+    /// named in the format [hex(inode)].[8-bit-binary(stripe_index)].
     ss << std::hex << inode;
+
+    /// Since in Skyhook, we ensure a single stripe per file,  
+    /// we can assume the stripe index to be always 0 and hence 
+    /// hardcode it's 8-bit binary form.
     std::string oid(ss.str() + ".00000000");
     return oid;
   }
