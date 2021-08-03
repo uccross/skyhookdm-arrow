@@ -84,8 +84,8 @@ struct CephConnCtx {
 };
 
 /// \class SkyhookFileFormat
-/// \brief A ParquetFileFormat implementation that offloads the fragment
-/// scan operations to the Ceph OSDs
+/// \brief A FileFormat implementation that offloads fragment
+/// scan operations to the Ceph OSDs.
 class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
  public:
   SkyhookFileFormat(const std::string& file_format, const std::string& ceph_config_path,
@@ -115,6 +115,12 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
       const std::shared_ptr<ScanOptions>& options,
       const std::shared_ptr<FileFragment>& file) const override;
 
+  Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
+    FileSource source, compute::Expression partition_expression,
+    std::shared_ptr<Schema> dataset_schema) {
+      return std::make_shared<SkyhookFileFragment>(source, partition_expression, dataset_schema);
+    }
+
   Result<std::shared_ptr<FileWriter>> MakeWriter(
       std::shared_ptr<io::OutputStream> destination, std::shared_ptr<Schema> schema,
       std::shared_ptr<FileWriteOptions> options) const {
@@ -126,6 +132,18 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
  protected:
   std::string file_format_;
   std::shared_ptr<CephConnCtx> ctx_;
+};
+
+class ARROW_DS_EXPORT SkyhookFileFragment : public FileFragment {
+ public:
+    const std::shared_ptr<Schema>& dataset_schema() const { return dataset_schema_; }
+ private:
+  SkyhookFileFragment(FileSource source, std::shared_ptr<FileFormat> format,
+                      compute::Expression partition_expression,
+                      std::shared_ptr<Schema> dataset_schema);
+
+  friend class SkyhookFileFormat;
+  std::shared_ptr<Schema> dataset_schema_;
 };
 
 /// @}
