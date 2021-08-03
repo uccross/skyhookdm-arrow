@@ -284,7 +284,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 
   // Serialize the resultant table to send back to the client
   ceph::bufferlist bl;
-  if (!(s = arrow::dataset::SerializeTable(table, bl)).ok()) {
+  if (!(s = arrow::util::SerializeTable(table, bl)).ok()) {
     LogArrowError(s.message());
     return SCAN_RES_SER_ERR_CODE;
   }
