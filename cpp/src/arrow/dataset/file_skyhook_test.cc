@@ -85,7 +85,7 @@ TEST(TestSkyhookFileFormat, SerializeDeserializeTable) {
   SerializeTable(table, bl);
 
   RecordBatchVector batches;
-  DeserializeTable(batches, bl, false);
+  DeserializeTable(batches, bl);
   ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(batches));
 
   ASSERT_EQ(table->Equals(*materialized_table), 1);
