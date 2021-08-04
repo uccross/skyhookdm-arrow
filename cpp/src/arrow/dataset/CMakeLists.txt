@@ -120,10 +120,6 @@ if(ARROW_PARQUET)
   add_arrow_dataset_test(file_parquet_test)
 endif()
 
-if(ARROW_SKYHOOK)
-  add_arrow_dataset_test(file_skyhook_test)
-endif()
-
 if(ARROW_BUILD_BENCHMARKS)
   add_arrow_benchmark(file_benchmark PREFIX "arrow-dataset")
 
