@@ -71,3 +71,8 @@ add_arrow_lib(cls_skyhook
 
 add_dependencies(arrow_skyhook_client ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
 add_dependencies(cls_skyhook ${ARROW_SKYHOOK_CLS_LIBRARIES})
+
+
+add_arrow_test(cls_skyhook_test
+               SOURCES
+               cls/cls_skyhook_test.cc)
