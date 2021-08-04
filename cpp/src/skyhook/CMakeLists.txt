@@ -16,3 +16,5 @@
 # under the License.
 
 add_subdirectory(client)
+
+arrow_install_all_headers("skyhook")
