@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "arrow/filesystem/rados_internal.h"
+#include "skyhook/protocol/rados_internal.h"
 
 #include <iostream>
 #include <vector>
