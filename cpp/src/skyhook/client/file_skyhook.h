@@ -63,7 +63,6 @@ namespace dataset {
 /// \addtogroup dataset-file-formats
 ///
 /// @{
-enum SkyhookFileType { PARQUET, IPC };
 
 struct CephConnCtx {
   std::string ceph_config_path;

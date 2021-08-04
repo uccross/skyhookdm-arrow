@@ -35,6 +35,8 @@
 namespace arrow {
 namespace skyhook {
 
+enum SkyhookFileType { PARQUET, IPC };
+
 class ARROW_DS_EXPORT IoCtxInterface {
  public:
   IoCtxInterface() {}
