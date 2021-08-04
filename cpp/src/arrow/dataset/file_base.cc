@@ -98,18 +98,6 @@ Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
 }
 
 Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
-    FileSource source, compute::Expression partition_expression, bool is_dataset_schema,
-    std::shared_ptr<Schema> schema) {
-  if (is_dataset_schema) {
-    return std::shared_ptr<FileFragment>(
-        new FileFragment(std::move(source), shared_from_this(),
-                         std::move(partition_expression), nullptr, std::move(schema)));
-  } else {
-    return MakeFragment(std::move(source), std::move(partition_expression), schema);
-  }
-}
-
-Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
     FileSource source, compute::Expression partition_expression) {
   return MakeFragment(std::move(source), std::move(partition_expression), nullptr);
 }
@@ -117,9 +105,9 @@ Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
 Result<std::shared_ptr<FileFragment>> FileFormat::MakeFragment(
     FileSource source, compute::Expression partition_expression,
     std::shared_ptr<Schema> physical_schema) {
-  return std::shared_ptr<FileFragment>(new FileFragment(
-      std::move(source), shared_from_this(), std::move(partition_expression),
-      std::move(physical_schema), nullptr));
+  return std::shared_ptr<FileFragment>(
+      new FileFragment(std::move(source), shared_from_this(),
+                       std::move(partition_expression), std::move(physical_schema)));
 }
 
 // TODO(ARROW-12355[CSV], ARROW-11772[IPC], ARROW-11843[Parquet]) The following
