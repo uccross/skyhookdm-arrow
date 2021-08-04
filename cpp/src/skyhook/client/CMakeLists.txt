@@ -21,24 +21,27 @@
 
 project(arrow_skyhook_client)
 
+arrow_install_all_headers("src/skyhook")
+
 cmake_minimum_required(VERSION 3.11)
+
+find_package(librados REQUIRED)
+include_directories(${LIBRADOS_INCLUDE_DIR})
 
 add_custom_target(arrow_skyhook_client)
 
 set(ARROW_BUILD_STATIC OFF)
-
-find_package(librados REQUIRED)
-include_directories(${LIBRADOS_INCLUDE_DIR})
 
 set(ARROW_DATASET_LINK_STATIC arrow_dataset_static)
 set(ARROW_DATASET_LINK_SHARED arrow_dataset_static)
 set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${LIBRADOS_LIBRARIES})
 set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${LIBRADOS_LIBRARIES})
 
-set(ARROW_SKYHOOK_SOURCES file_skyhook.cc)
+set(ARROW_SKYHOOK_SOURCES file_skyhook.cc rados.cc)
 
 add_arrow_lib(arrow_skyhook_client
               BUILD_SHARED
+              ON
               SOURCES
               ${ARROW_SKYHOOK_SOURCES}
               OUTPUTS
