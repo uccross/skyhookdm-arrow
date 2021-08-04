@@ -20,6 +20,7 @@
 #include <iostream>
 #include <vector>
 
+namespace arrow {
 namespace skyhook {
 
 namespace flatbuf = org::apache::arrow::flatbuf;
@@ -176,3 +177,4 @@ Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
 }
 
 }  // namespace skyhook
+}  // namespace arrow

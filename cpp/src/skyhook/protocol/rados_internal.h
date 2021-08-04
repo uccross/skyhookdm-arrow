@@ -32,6 +32,7 @@
 #include "arrow/dataset/scanner.h"
 #include "ScanRequest_generated.h"
 
+namespace arrow {
 namespace skyhook {
 
 class ARROW_DS_EXPORT IoCtxInterface {
@@ -154,3 +155,4 @@ ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::buffer
                                         bool use_threads);
 
 }  // namespace skyhook
+}  // namespace arrow
