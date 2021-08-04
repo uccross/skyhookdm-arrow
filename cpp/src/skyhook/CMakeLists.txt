@@ -15,6 +15,9 @@
 # specific language governing permissions and limitationsn
 # under the License.
 
+#
+# arrow_skyhook
+#
 add_subdirectory(client)
 
 arrow_install_all_headers("skyhook")

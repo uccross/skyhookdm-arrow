@@ -18,7 +18,6 @@
 #
 # arrow_skyhook_client
 #
-
 project(arrow_skyhook_client)
 
 cmake_minimum_required(VERSION 3.11)
