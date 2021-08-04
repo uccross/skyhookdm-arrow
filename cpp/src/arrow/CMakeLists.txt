@@ -486,6 +486,7 @@ endif()
 if(ARROW_SKYHOOK)
   add_subdirectory(adapters/arrow-rados-cls)
   list(APPEND ARROW_SRCS util/rados_internal.cc)
+  list(APPEND ARROW_TESTING_SRCS util/rados_internal.cc)
 endif()
 
 if(NOT APPLE AND NOT MSVC_TOOLCHAIN)
