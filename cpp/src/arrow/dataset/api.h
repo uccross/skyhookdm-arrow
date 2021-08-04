@@ -27,7 +27,3 @@
 #include "arrow/dataset/file_ipc.h"
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/scanner.h"
-
-#ifdef ARROW_SKYHOOK
-#include "arrow/dataset/file_skyhook.h"
-#endif
