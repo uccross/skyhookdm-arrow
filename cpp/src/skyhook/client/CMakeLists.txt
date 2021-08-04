@@ -21,7 +21,7 @@
 
 project(arrow_skyhook_client)
 
-arrow_install_all_headers("skyhook")
+arrow_install_all_headers("skyhook/client")
 
 cmake_minimum_required(VERSION 3.11)
 
