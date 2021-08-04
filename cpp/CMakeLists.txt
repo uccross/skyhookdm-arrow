@@ -355,7 +355,7 @@ if(ARROW_SKYHOOK)
   set(ARROW_PARQUET ON)
   set(ARROW_WITH_LZ4 ON)
   set(ARROW_WITH_SNAPPY ON)
-  add_subdirectory(src/jni)
+  add_subdirectory(src/skyhook)
 endif()
 
 if(ARROW_DATASET)
