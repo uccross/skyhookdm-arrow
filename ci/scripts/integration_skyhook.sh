@@ -122,8 +122,8 @@ pushd ${ARROW_BUILD_DIR}
     sleep 10
 
     # run the end-to-end C++ tests
-    TESTS=debug/arrow-cls-cls-arrow-test
+    TESTS=debug/arrow-cls-cls-skyhook-test
     if [ -f "$TESTS" ]; then
-        debug/arrow-cls-cls-arrow-test
+        debug/arrow-cls-cls-skyhook-test
     fi
 popd
