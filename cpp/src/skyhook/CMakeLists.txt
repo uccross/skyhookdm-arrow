@@ -18,14 +18,14 @@
 #
 # arrow_skyhook
 #
+# define project properties
 project(arrow_skyhook)
 cmake_minimum_required(VERSION 3.11)
+set(ARROW_BUILD_STATIC OFF)
 
 # define the targets to build
 add_custom_target(arrow_skyhook_client)
 add_custom_target(arrow_skyhook_server)
-
-set(ARROW_BUILD_STATIC OFF)
 
 # define the dependencies
 find_package(librados REQUIRED)
@@ -44,7 +44,7 @@ add_arrow_lib(arrow_skyhook_client
               BUILD_SHARED
               ON
               SOURCES
-              ${ARROW_SKYHOOK_SOURCES}
+              ${ARROW_SKYHOOK_CLIENT_SOURCES}
               OUTPUTS
               ARROW_SKYHOOK_CLIENT_LIBRARIES
               SHARED_LINK_LIBS
