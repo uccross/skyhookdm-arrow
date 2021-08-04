@@ -107,7 +107,7 @@ apt install -y ceph-fuse attr
 pushd ${ARROW_BUILD_DIR}
     # create the rados-classes, if not there already
     mkdir -p /usr/lib/x86_64-linux-gnu/rados-classes/
-    cp debug/libcls_arrow* /usr/lib/x86_64-linux-gnu/rados-classes/
+    cp debug/libcls_skyhook* /usr/lib/x86_64-linux-gnu/rados-classes/
 
     # mount a ceph filesystem to /mnt/cephfs in the user-space using ceph-fuse
     mkdir -p /mnt/cephfs
