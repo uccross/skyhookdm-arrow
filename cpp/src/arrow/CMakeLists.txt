@@ -437,6 +437,9 @@ if(ARROW_FILESYSTEM)
        filesystem/path_util.cc
        filesystem/util_internal.cc)
 
+  if (ARROW_SKYHOOK)
+    list(APPEND ARROW_SRCS filesystem/rados_internal.cc) 
+  endif()
   if(ARROW_HDFS)
     list(APPEND ARROW_SRCS filesystem/hdfs.cc)
   endif()
@@ -485,8 +488,6 @@ endif()
 
 if(ARROW_SKYHOOK)
   add_subdirectory(adapters/arrow-rados-cls)
-  list(APPEND ARROW_SRCS util/rados_internal.cc)
-  list(APPEND ARROW_TESTING_SRCS util/rados_internal.cc)
 endif()
 
 if(NOT APPLE AND NOT MSVC_TOOLCHAIN)

@@ -24,7 +24,7 @@
 #include "arrow/dataset/file_ipc.h"
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/dataset/file_skyhook.h"
-#include "arrow/util/rados_internal.h"
+#include "arrow/filesystem/rados_internal.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/util/compression.h"

@@ -27,7 +27,7 @@
 #include "arrow/filesystem/filesystem.h"
 #include "arrow/filesystem/path_util.h"
 #include "arrow/filesystem/util_internal.h"
-#include "arrow/util/rados_internal.h"
+#include "arrow/filesystem/rados_internal.h"
 #include "arrow/util/checked_cast.h"
 #include "arrow/util/compression.h"
 #include "arrow/util/iterator.h"
