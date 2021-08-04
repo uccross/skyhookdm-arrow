@@ -30,6 +30,7 @@
 #include "parquet/api/reader.h"
 #include "parquet/arrow/reader.h"
 #include "parquet/file_reader.h"
+#include "skyhook/protocol/rados_internal.h"
 
 #define SCAN_ERR_CODE 25
 #define SCAN_REQ_DESER_ERR_CODE 26
