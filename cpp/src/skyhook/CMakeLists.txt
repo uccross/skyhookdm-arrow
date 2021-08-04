@@ -25,7 +25,7 @@ set(ARROW_BUILD_STATIC OFF)
 
 # define the targets to build
 add_custom_target(arrow_skyhook_client)
-add_custom_target(arrow_skyhook_server)
+add_custom_target(cls_skyhook)
 
 # define the dependencies
 find_package(librados REQUIRED)
@@ -35,9 +35,9 @@ set(ARROW_DATASET_LINK_SHARED arrow_dataset_static)
 set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${LIBRADOS_LIBRARIES})
 set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${LIBRADOS_LIBRARIES})
 
-# define the client and server sources
+# define the client and cls sources
 set(ARROW_SKYHOOK_CLIENT_SOURCES client/file_skyhook.cc protocol/rados_internal.cc)
-set(ARROW_SKYHOOK_SERVER_SOURCES storage/cls_skyhook.cc protocol/rados_internal.cc)
+set(ARROW_SKYHOOK_CLS_SOURCES cls/cls_skyhook.cc protocol/rados_internal.cc)
 
 # define the client library
 add_arrow_lib(arrow_skyhook_client
@@ -54,14 +54,14 @@ add_arrow_lib(arrow_skyhook_client
               DEPENDENCIES
               arrow_dataset_static)
 
-#  define the server library
-add_arrow_lib(arrow_skyhook_server
+#  define the cls library
+add_arrow_lib(cls_skyhook
               BUILD_SHARED
               ON
               SOURCES
-              ${ARROW_SKYHOOK_SERVER_SOURCES}
+              ${ARROW_SKYHOOK_CLS_SOURCES}
               OUTPUTS
-              ARROW_SKYHOOK_SERVER_LIBRARIES
+              ARROW_SKYHOOK_CLS_LIBRARIES
               SHARED_LINK_LIBS
               ${ARROW_DATASET_LINK_SHARED}
               STATIC_LINK_LIBS
@@ -70,4 +70,4 @@ add_arrow_lib(arrow_skyhook_server
               arrow_dataset_static)
 
 add_dependencies(arrow_skyhook_client ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
-add_dependencies(arrow_skyhook_server ${ARROW_SKYHOOK_SERVER_LIBRARIES})
+add_dependencies(cls_skyhook ${ARROW_SKYHOOK_CLS_LIBRARIES})
