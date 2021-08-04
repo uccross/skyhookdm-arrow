@@ -84,4 +84,4 @@ add_arrow_test(cls_skyhook_test
                EXTRA_LINK_LIBS
                ${ARROW_DATASET_TEST_LINK_LIBS}
                PREFIX
-               "arrow-cls"))
+               "arrow-cls")
