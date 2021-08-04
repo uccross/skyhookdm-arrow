@@ -257,7 +257,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   int file_format = 0;  // 0 = Parquet, 1 = Ipc
 
   // Deserialize the scan request
-  if (!(s = arrow::dataset::DeserializeScanRequest(&filter, &partition_expression,
+  if (!(s = arrow::skyhook::DeserializeScanRequest(&filter, &partition_expression,
                                                    &projection_schema, &dataset_schema,
                                                    file_size, file_format, *in))
            .ok()) {
@@ -283,7 +283,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 
   // Serialize the resultant table to send back to the client
   ceph::bufferlist bl;
-  if (!(s = arrow::dataset::SerializeTable(table, bl)).ok()) {
+  if (!(s = arrow::skyhook::SerializeTable(table, bl)).ok()) {
     LogArrowError(s.message());
     return SCAN_RES_SER_ERR_CODE;
   }
