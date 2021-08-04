@@ -30,10 +30,9 @@
 #include "arrow/dataset/visibility.h"
 #include "arrow/util/macros.h"
 #include "arrow/dataset/scanner.h"
-#include "generated/ScanRequest_generated.h"
+#include "ScanRequest_generated.h"
 
-namespace arrow {
-namespace util {
+namespace skyhook {
 
 class ARROW_DS_EXPORT IoCtxInterface {
  public:
@@ -154,5 +153,4 @@ ARROW_DS_EXPORT Status SerializeTable(std::shared_ptr<Table>& table, ceph::buffe
 ARROW_DS_EXPORT Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
                                         bool use_threads);
 
-}  // namespace util
-}  // namespace arrow
+}  // namespace skyhook

@@ -15,16 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "skyhook/protocol/rados_internal.h"
+#include "rados_internal.h"
 
 #include <iostream>
 #include <vector>
 
-namespace arrow {
+namespace skyhook {
 
 namespace flatbuf = org::apache::arrow::flatbuf;
-
-namespace util {
 
 int IoCtxWrapper::write_full(const std::string& oid, ceph::bufferlist& bl) {
   return this->ioCtx->write_full(oid, bl);
@@ -177,5 +175,4 @@ Status DeserializeTable(RecordBatchVector& batches, ceph::bufferlist& bl,
   return Status::OK();
 }
 
-}  // namespace util
-}  // namespace arrow
+}  // namespace skyhook

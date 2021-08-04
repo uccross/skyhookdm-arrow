@@ -27,7 +27,7 @@
 #include "arrow/filesystem/filesystem.h"
 #include "arrow/filesystem/path_util.h"
 #include "arrow/filesystem/util_internal.h"
-#include "skyhook/client/rados.h"
+#include "skyhook/protocol/rados_internal.h"
 #include "arrow/util/checked_cast.h"
 #include "arrow/util/compression.h"
 #include "arrow/util/iterator.h"
@@ -45,8 +45,8 @@ class ARROW_DS_EXPORT CephConn {
  public:
   explicit CephConn(const CephConnCtx& ctx): 
         ctx(ctx),
-        rados(new util::RadosWrapper()),
-        io_ctx(new util::IoCtxWrapper()),
+        rados(new skyhook::RadosWrapper()),
+        io_ctx(new skyhook::IoCtxWrapper()),
         connected(false) {}
 
   ~CephConn() {
@@ -89,8 +89,8 @@ class ARROW_DS_EXPORT CephConn {
   }
 
   CephConnCtx ctx;
-  util::RadosInterface* rados;
-  util::IoCtxInterface* io_ctx;
+  skyhook::RadosInterface* rados;
+  skyhook::IoCtxInterface* io_ctx;
   bool connected;
   std::mutex mutex;
 };
@@ -162,13 +162,13 @@ class SkyhookScanTask : public ScanTask {
 
     ceph::bufferlist request;
     ARROW_RETURN_NOT_OK(
-        util::SerializeScanRequest(options_, file_format_, st.st_size, request));
+        skyhook::SerializeScanRequest(options_, file_format_, st.st_size, request));
 
     ceph::bufferlist result;
     ARROW_RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
 
     RecordBatchVector batches;
-    ARROW_RETURN_NOT_OK(util::DeserializeTable(batches, result, !options_->use_threads));
+    ARROW_RETURN_NOT_OK(skyhook::DeserializeTable(batches, result, !options_->use_threads));
     return MakeVectorIterator(batches);
   }
 
