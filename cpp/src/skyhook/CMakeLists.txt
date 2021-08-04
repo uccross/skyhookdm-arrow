@@ -72,7 +72,16 @@ add_arrow_lib(cls_skyhook
 add_dependencies(arrow_skyhook_client ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
 add_dependencies(cls_skyhook ${ARROW_SKYHOOK_CLS_LIBRARIES})
 
+if(ARROW_TEST_LINKAGE STREQUAL "static")
+  set(ARROW_DATASET_TEST_LINK_LIBS arrow_dataset_static ${ARROW_TEST_STATIC_LINK_LIBS})
+else()
+  set(ARROW_DATASET_TEST_LINK_LIBS arrow_dataset_shared ${ARROW_TEST_SHARED_LINK_LIBS})
+endif()
 
 add_arrow_test(cls_skyhook_test
                SOURCES
-               cls/cls_skyhook_test.cc)
+               cls/cls_skyhook_test.cc
+               EXTRA_LINK_LIBS
+               ${ARROW_DATASET_TEST_LINK_LIBS}
+               PREFIX
+               "arrow-cls"))
