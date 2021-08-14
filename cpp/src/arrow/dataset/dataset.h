@@ -90,6 +90,8 @@ class ARROW_DS_EXPORT Fragment : public std::enable_shared_from_this<Fragment> {
 
   virtual ~Fragment() = default;
 
+  bool handles_compute = true;
+
  protected:
   Fragment() = default;
   explicit Fragment(compute::Expression partition_expression,
