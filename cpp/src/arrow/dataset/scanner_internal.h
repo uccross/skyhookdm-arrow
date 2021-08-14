@@ -185,7 +185,7 @@ inline Result<ScanTaskIterator> GetScanTaskIterator(
   auto fn = [options](std::shared_ptr<Fragment> fragment) -> Result<ScanTaskIterator> {
     ARROW_ASSIGN_OR_RAISE(auto scan_task_it, fragment->Scan(options));
 
-    if (options->skip_compute) {
+    if (fragment->handles_compute) {
       return std::move(scan_task_it);
     }
 

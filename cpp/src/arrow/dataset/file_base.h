@@ -199,6 +199,8 @@ class ARROW_DS_EXPORT FileFragment : public Fragment {
   const FileSource& source() const { return source_; }
   const std::shared_ptr<FileFormat>& format() const { return format_; }
 
+  bool handles_compute = true;
+
  protected:
   FileFragment(FileSource source, std::shared_ptr<FileFormat> format,
                compute::Expression partition_expression,
