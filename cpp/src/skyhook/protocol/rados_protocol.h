@@ -28,9 +28,9 @@ namespace rados {
 /// Wrap Arrow Status with a custom return code.
 class RadosStatus {
  public:
-  RadosStatus(arrow::Status s, int code) : s_(s), code_(code) {}
+  RadosStatus(arrow::Status s, int code) : s_(std::move(s)), code_(code) {}
   arrow::Status status() { return s_; }
-  int code() { return code_; }
+  int code() const { return code_; }
 
  private:
   arrow::Status s_;
@@ -144,7 +144,7 @@ class RadosWrapper : public RadosInterface {
 class RadosConn {
  public:
   explicit RadosConn(std::shared_ptr<skyhook::RadosConnCtx> ctx)
-      : ctx(ctx),
+      : ctx(std::move(ctx)),
         rados(new RadosWrapper()),
         io_ctx(new IoCtxWrapper()),
         connected(false) {}

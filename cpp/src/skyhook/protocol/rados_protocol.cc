@@ -100,12 +100,11 @@ arrow::Status RadosConn::Connect() {
   return arrow::Status::OK();
 }
 
-arrow::Status RadosConn::Shutdown() {
+void RadosConn::Shutdown() {
   if (connected) {
     rados->shutdown();
     connected = false;
   }
-  return arrow::Status::OK();
 }
 
 }  // namespace rados

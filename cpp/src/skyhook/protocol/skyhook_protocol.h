@@ -72,7 +72,7 @@ arrow::Status ExecuteObjectClassFn(std::shared_ptr<rados::RadosConn> connection_
 class SkyhookDirectObjectAccess {
  public:
   explicit SkyhookDirectObjectAccess(const std::shared_ptr<rados::RadosConn>& connection)
-      : connection_(std::move(connection)) {}
+      : connection_(connection) {}
 
   ~SkyhookDirectObjectAccess() {}
 
