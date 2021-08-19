@@ -125,7 +125,7 @@ class SkyhookFileFormat::Impl {
     } else if (file_format_ == "ipc") {
       file_format = std::make_shared<arrow::dataset::IpcFileFormat>();
     } else {
-      return arrow::Status::Invalid("Unsupported file format.");
+      return arrow::Status::Invalid("Unsupported file format ", file_format_);
     }
     std::shared_ptr<arrow::Schema> schema;
     ARROW_ASSIGN_OR_RAISE(schema, file_format->Inspect(source));
