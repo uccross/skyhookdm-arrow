@@ -27,11 +27,6 @@ RadosStatus GetStatusFromReturnCode(int code, std::string msg) {
   return RadosStatus(arrow::Status::OK(), code);
 }
 
-RadosStatus IoCtxWrapper::write_full(const std::string& oid, ceph::bufferlist& bl) {
-  return GetStatusFromReturnCode(this->ioCtx->write_full(oid, bl),
-                                 "ioctx->write_full failed.");
-}
-
 RadosStatus IoCtxWrapper::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                                uint64_t offset) {
   return GetStatusFromReturnCode(this->ioCtx->read(oid, bl, len, offset),
