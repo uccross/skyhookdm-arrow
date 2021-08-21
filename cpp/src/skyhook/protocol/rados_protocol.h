@@ -60,8 +60,6 @@ class IoCtxInterface {
   virtual RadosStatus exec(const std::string& oid, const char* cls, const char* method,
                            ceph::bufferlist& in, ceph::bufferlist& out) = 0;
 
-  virtual std::vector<std::string> list() = 0;
-
   virtual RadosStatus stat(const std::string& oid, uint64_t* psize) = 0;
 
  private:
@@ -78,8 +76,6 @@ class IoCtxWrapper : public IoCtxInterface {
                    uint64_t offset) override;
   RadosStatus exec(const std::string& oid, const char* cls, const char* method,
                    ceph::bufferlist& in, ceph::bufferlist& out) override;
-  std::vector<std::string> list() override;
-
   RadosStatus stat(const std::string& oid, uint64_t* psize) override;
 
  private:

@@ -15,10 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-/// EXPERIMENTAL: Metadata for n-dimensional arrays, aka "tensors" or
-/// "ndarrays". Arrow implementations in general are not required to implement
-/// this type
-
 namespace org.apache.arrow.flatbuf;
 
 table ScanRequest {

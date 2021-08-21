@@ -45,16 +45,6 @@ RadosStatus IoCtxWrapper::stat(const std::string& oid, uint64_t* psize) {
                                  "ioctx->stat failed.");
 }
 
-std::vector<std::string> IoCtxWrapper::list() {
-  std::vector<std::string> oids;
-  librados::NObjectIterator begin = ioCtx->nobjects_begin();
-  librados::NObjectIterator end = ioCtx->nobjects_end();
-  for (; begin != end; begin++) {
-    oids.push_back(begin->get_oid());
-  }
-  return oids;
-}
-
 RadosStatus RadosWrapper::init2(const char* const name, const char* const clustername,
                                 uint64_t flags) {
   return GetStatusFromReturnCode(cluster->init2(name, clustername, flags),
