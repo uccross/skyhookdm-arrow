@@ -150,7 +150,8 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 /// \param[in] req The scan request received from the client.
 /// \param[in] format The file format instance to use in the scan.
 /// \param[in] fragment_scan_options The fragment scan options to use to customize the
-/// scan. \return Table.
+/// scan.
+/// \return Table.
 arrow::Result<std::shared_ptr<arrow::Table>> DoScan(
     cls_method_context_t hctx, skyhook::ScanRequest req,
     std::shared_ptr<arrow::dataset::FileFormat> format,
