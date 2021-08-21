@@ -47,8 +47,6 @@ set(ARROW_SKYHOOK_CLS_SOURCES cls/cls_skyhook.cc protocol/rados_protocol.cc
 
 # define the client library
 add_arrow_lib(arrow_skyhook_client
-              BUILD_SHARED
-              ON
               SOURCES
               ${ARROW_SKYHOOK_CLIENT_SOURCES}
               OUTPUTS
@@ -62,8 +60,6 @@ add_arrow_lib(arrow_skyhook_client
 
 #  define the cls library
 add_arrow_lib(cls_skyhook
-              BUILD_SHARED
-              ON
               SOURCES
               ${ARROW_SKYHOOK_CLS_SOURCES}
               OUTPUTS
