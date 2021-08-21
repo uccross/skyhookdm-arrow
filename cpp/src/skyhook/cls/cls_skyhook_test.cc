@@ -61,8 +61,8 @@ std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromDirectory(
   options.partitioning = std::make_shared<arrow::dataset::HivePartitioning>(
       arrow::schema({arrow::field("payment_type", arrow::int32()),
                      arrow::field("VendorID", arrow::int32())}));
-  auto factory =
-      arrow::dataset::FileSystemDatasetFactory::Make(fs, s, format, options).ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto factory,
+      arrow::dataset::FileSystemDatasetFactory::Make(fs, s, format, options));
 
   arrow::dataset::InspectOptions inspect_options;
   arrow::dataset::FinishOptions finish_options;
