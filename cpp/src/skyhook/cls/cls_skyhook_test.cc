@@ -66,14 +66,9 @@ std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromDirectory(
 
   arrow::dataset::InspectOptions inspect_options;
   arrow::dataset::FinishOptions finish_options;
-  auto schema = factory->Inspect(inspect_options).ValueOrDie();
-  auto child = factory->Finish(finish_options).ValueOrDie();
-
-  arrow::dataset::DatasetVector children{1, child};
-  auto dataset =
-      arrow::dataset::UnionDataset::Make(std::move(schema), std::move(children));
-
-  return dataset.ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto schema, factory->Inspect(inspect_options));
+  EXPECT_OK_AND_ASSIGN(auto dataset, factory->Finish(finish_options));
+  return dataset;
 }
 
 std::shared_ptr<arrow::fs::FileSystem> GetFileSystemFromUri(const std::string& uri,
