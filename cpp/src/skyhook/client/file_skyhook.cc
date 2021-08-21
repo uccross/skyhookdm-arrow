@@ -108,7 +108,7 @@ class SkyhookFileFormat::Impl {
     } else if (file_format_ == "ipc") {
       file_format = skyhook::SkyhookFileType::type::IPC;
     } else {
-      return arrow::Status::Invalid("Unsupported file format.");
+      return arrow::Status::Invalid("Unsupported file format ", file_format_);
     }
 
     arrow::dataset::ScanTaskVector v{std::make_shared<SkyhookScanTask>(

@@ -161,7 +161,7 @@ arrow::Result<std::shared_ptr<arrow::Table>> DoScan(
                         format->MakeFragment(*source, req.partition_expression));
   auto options = std::make_shared<arrow::dataset::ScanOptions>();
   auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(req.dataset_schema,
-                                                                  fragment, options);
+                                                                  std::move(fragment), std::move(options));
 
   ARROW_RETURN_NOT_OK(builder->Filter(req.filter_expression));
   ARROW_RETURN_NOT_OK(builder->Project(req.projection_schema->field_names()));
@@ -183,7 +183,7 @@ static arrow::Status ScanIpcObject(cls_method_context_t hctx, skyhook::ScanReque
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
   auto fragment_scan_options = std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
 
-  ARROW_ASSIGN_OR_RAISE(*result_table, DoScan(hctx, req, format, fragment_scan_options));
+  ARROW_ASSIGN_OR_RAISE(*result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
 
   return arrow::Status::OK();
 }
@@ -200,7 +200,7 @@ static arrow::Status ScanParquetObject(cls_method_context_t hctx,
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
 
-  ARROW_ASSIGN_OR_RAISE(*result_table, DoScan(hctx, req, format, fragment_scan_options));
+  ARROW_ASSIGN_OR_RAISE(*result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
 
   return arrow::Status::OK();
 }

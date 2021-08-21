@@ -42,7 +42,7 @@ std::shared_ptr<skyhook::SkyhookFileFormat> GetSkyhookFormat() {
                                               ceph_user_name, ceph_cluster_name,
                                               ceph_cls_name);
   auto format = std::make_shared<skyhook::SkyhookFileFormat>(rados_ctx, "parquet");
-  format->Init();
+  ARROW_EXPECT_OK(format->Init());
   return format;
 }
 
@@ -84,22 +84,23 @@ std::shared_ptr<arrow::fs::FileSystem> GetFileSystemFromUri(const std::string& u
 std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromPath(
     std::shared_ptr<arrow::fs::FileSystem> fs,
     std::shared_ptr<arrow::dataset::FileFormat> format, std::string path) {
-  auto info = fs->GetFileInfo(path).ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto info, fs->GetFileInfo(path));
   return GetDatasetFromDirectory(fs, format, path);
 }
 
 std::shared_ptr<arrow::dataset::Scanner> GetScannerFromDataset(
     std::shared_ptr<arrow::dataset::Dataset> dataset, std::vector<std::string> columns,
     arrow::compute::Expression filter, bool use_threads) {
-  auto scanner_builder = dataset->NewScan().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto scanner_builder, dataset->NewScan());
 
   if (!columns.empty()) {
-    scanner_builder->Project(columns);
+    ARROW_EXPECT_OK(scanner_builder->Project(columns));
   }
 
-  scanner_builder->Filter(filter);
-  scanner_builder->UseThreads(use_threads);
-  return scanner_builder->Finish().ValueOrDie();
+  ARROW_EXPECT_OK(scanner_builder->Filter(filter));
+  ARROW_EXPECT_OK(scanner_builder->UseThreads(use_threads));
+  EXPECT_OK_AND_ASSIGN(auto scanner, scanner_builder->Finish());
+  return scanner;
 }
 
 TEST(TestSkyhookCLS, SelectEntireDataset) {
