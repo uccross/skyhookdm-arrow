@@ -52,11 +52,9 @@ add_arrow_lib(arrow_skyhook_client
               SHARED_LINK_LIBS
               ${ARROW_DATASET_LINK_SHARED}
               STATIC_LINK_LIBS
-              ${ARROW_DATASET_LINK_STATIC}
-              DEPENDENCIES
-              arrow_dataset_static)
+              ${ARROW_DATASET_LINK_STATIC})
 
-#  define the cls library
+              #  define the cls library
 add_arrow_lib(cls_skyhook
               SOURCES
               ${ARROW_SKYHOOK_CLS_SOURCES}
@@ -65,9 +63,7 @@ add_arrow_lib(cls_skyhook
               SHARED_LINK_LIBS
               ${ARROW_DATASET_LINK_SHARED}
               STATIC_LINK_LIBS
-              ${ARROW_DATASET_LINK_STATIC}
-              DEPENDENCIES
-              arrow_dataset_static)
+              ${ARROW_DATASET_LINK_STATIC})
 
 # finish building the project
 add_dependencies(arrow_skyhook_client ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
