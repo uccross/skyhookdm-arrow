@@ -54,7 +54,8 @@ struct RadosConnCtx {
 /// Skyhook paper, https://arxiv.org/pdf/2105.09894.pdf.
 class SkyhookFileFormat : public arrow::dataset::ParquetFileFormat {
  public:
-  SkyhookFileFormat(std::shared_ptr<RadosConnCtx> ctx, std::string file_format);
+  static arrow::Result<SkyhookFileFormat> Make(std::shared_ptr<RadosConnCtx> ctx, std::string file_format);
+
   ~SkyhookFileFormat();
 
   std::string type_name() const override { return "skyhook"; }
@@ -88,6 +89,7 @@ class SkyhookFileFormat : public arrow::dataset::ParquetFileFormat {
       const std::shared_ptr<arrow::dataset::FileFragment>& file) const override;
 
  private:
+  SkyhookFileFormat(std::shared_ptr<RadosConnCtx> ctx, std::string file_format);
   class Impl;
   std::unique_ptr<Impl> impl_;
 };

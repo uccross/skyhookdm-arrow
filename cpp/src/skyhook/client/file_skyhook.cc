@@ -138,6 +138,12 @@ class SkyhookFileFormat::Impl {
   std::string file_format_;
 };
 
+arrow::Result<SkyhookFileFormat> SkyhookFileFormat::Make(std::shared_ptr<RadosConnCtx> ctx, std::string file_format) {
+  auto format = std::make_shared<SkyhookFileFormat>(std::move(ctx), file_format);
+  format->Init();
+  return format;
+}
+
 SkyhookFileFormat::SkyhookFileFormat(std::shared_ptr<RadosConnCtx> ctx,
                                      std::string file_format)
     : impl_(new Impl(std::move(ctx), file_format)) {}
