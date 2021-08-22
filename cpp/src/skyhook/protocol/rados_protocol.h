@@ -142,7 +142,7 @@ class RadosConn {
   arrow::Status Connect();
   /// Shutdown the connection to the Ceph
   /// cluster if already connected.
-  arrow::Status Shutdown();
+  void Shutdown();
 
   std::shared_ptr<skyhook::RadosConnCtx> ctx;
   RadosInterface* rados;
