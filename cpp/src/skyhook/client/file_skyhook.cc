@@ -112,7 +112,7 @@ class SkyhookFileFormat::Impl {
     }
 
     arrow::dataset::ScanTaskVector v{std::make_shared<SkyhookScanTask>(
-        std::move(options), std::move(file), file->source(), std::move(doa_), file_format,
+        std::move(options), std::move(file), file->source(), doa_, file_format,
         file->partition_expression())};
     return arrow::MakeVectorIterator(v);
   }
@@ -137,6 +137,12 @@ class SkyhookFileFormat::Impl {
   std::shared_ptr<RadosConnCtx> ctx_;
   std::string file_format_;
 };
+
+arrow::Result<std::shared_ptr<SkyhookFileFormat>> SkyhookFileFormat::Make(std::shared_ptr<RadosConnCtx> ctx, std::string file_format) {
+  auto format = std::make_shared<SkyhookFileFormat>(std::move(ctx), file_format);
+  RETURN_NOT_OK(format->Init());
+  return format;
+}
 
 SkyhookFileFormat::SkyhookFileFormat(std::shared_ptr<RadosConnCtx> ctx,
                                      std::string file_format)
