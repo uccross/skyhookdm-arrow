@@ -157,9 +157,9 @@ arrow::Result<std::shared_ptr<arrow::Table>> DoScan(
     std::shared_ptr<arrow::dataset::FileFormat> format,
     std::shared_ptr<arrow::dataset::FragmentScanOptions> fragment_scan_options) {
   auto file = std::make_shared<RandomAccessObject>(hctx, req.file_size);
-  auto source = std::make_shared<arrow::dataset::FileSource>(file);
+  arrow::dataset::FileSource source(file);
   ARROW_ASSIGN_OR_RAISE(auto fragment,
-                        format->MakeFragment(*source, req.partition_expression));
+                        format->MakeFragment(std::move(source), req.partition_expression));
   auto options = std::make_shared<arrow::dataset::ScanOptions>();
   auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(req.dataset_schema,
                                                                   std::move(fragment), std::move(options));

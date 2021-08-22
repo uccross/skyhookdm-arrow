@@ -95,8 +95,8 @@ arrow::Status SerializeTable(std::shared_ptr<arrow::Table> table, ceph::bufferli
   auto options = arrow::ipc::IpcWriteOptions::Defaults();
   auto codec = arrow::Compression::LZ4_FRAME;
 
-  options.codec =
-      arrow::util::Codec::Create(codec, std::numeric_limits<int>::min()).ValueOrDie();
+  ARROW_ASSIGN_OR_RAISE(options.codec,
+    arrow::util::Codec::Create(codec));
   auto writer =
       arrow::ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options)
           .ValueOrDie();
