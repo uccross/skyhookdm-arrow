@@ -117,8 +117,6 @@ struct ARROW_DS_EXPORT ScanOptions {
   /// makes extensive use of threading and is still considered experimental
   bool use_async = false;
 
-  bool skip_compute = false;
-
   /// Fragment-specific scan options.
   std::shared_ptr<FragmentScanOptions> fragment_scan_options;
 

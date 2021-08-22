@@ -41,12 +41,6 @@ class IoCtxInterface {
  public:
   IoCtxInterface() {}
 
-  /// \brief Write data to an object.
-  ///
-  /// \param[in] oid the ID of the object to write.
-  /// \param[in] bl a bufferlist containing the data to write to the object.
-  virtual RadosStatus write_full(const std::string& oid, ceph::bufferlist& bl) = 0;
-
   /// \brief Read a RADOS object.
   ///
   /// \param[in] oid the object ID which to read.
@@ -66,8 +60,6 @@ class IoCtxInterface {
   virtual RadosStatus exec(const std::string& oid, const char* cls, const char* method,
                            ceph::bufferlist& in, ceph::bufferlist& out) = 0;
 
-  virtual std::vector<std::string> list() = 0;
-
   virtual RadosStatus stat(const std::string& oid, uint64_t* psize) = 0;
 
  private:
@@ -80,13 +72,10 @@ class IoCtxWrapper : public IoCtxInterface {
  public:
   IoCtxWrapper() { ioCtx = new librados::IoCtx(); }
   ~IoCtxWrapper() { delete ioCtx; }
-  RadosStatus write_full(const std::string& oid, ceph::bufferlist& bl) override;
   RadosStatus read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                    uint64_t offset) override;
   RadosStatus exec(const std::string& oid, const char* cls, const char* method,
                    ceph::bufferlist& in, ceph::bufferlist& out) override;
-  std::vector<std::string> list() override;
-
   RadosStatus stat(const std::string& oid, uint64_t* psize) override;
 
  private:
@@ -153,7 +142,7 @@ class RadosConn {
   arrow::Status Connect();
   /// Shutdown the connection to the Ceph
   /// cluster if already connected.
-  arrow::Status Shutdown();
+  void Shutdown();
 
   std::shared_ptr<skyhook::RadosConnCtx> ctx;
   RadosInterface* rados;
