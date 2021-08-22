@@ -50,7 +50,8 @@ struct RadosConnCtx {
 
 /// \class SkyhookFileFormat
 /// \brief A FileFormat implementation that offloads fragment
-/// scan operations to the Ceph OSDs.
+/// scan operations to the Ceph OSDs. For more details, see the
+/// Skyhook paper, https://arxiv.org/pdf/2105.09894.pdf.
 class SkyhookFileFormat : public arrow::dataset::ParquetFileFormat {
  public:
   SkyhookFileFormat(std::shared_ptr<RadosConnCtx> ctx, std::string file_format);
