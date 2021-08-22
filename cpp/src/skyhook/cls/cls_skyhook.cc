@@ -49,7 +49,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   ~RandomAccessObject() { Close(); }
 
   /// Check if the file stream is closed.
-  arrow::Status CheckClosed() const override {
+  arrow::Status CheckClosed() const {
     if (closed_) {
       return arrow::Status::Invalid("Operation on closed stream");
     }
