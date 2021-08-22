@@ -20,8 +20,6 @@
 #
 # define project properties
 project(arrow_skyhook)
-cmake_minimum_required(VERSION 3.11)
-set(ARROW_BUILD_STATIC OFF)
 
 # install skyhook headers
 install(FILES client/file_skyhook.h
