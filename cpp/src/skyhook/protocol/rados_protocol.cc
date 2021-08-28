@@ -16,54 +16,56 @@
 // under the License.
 #include "skyhook/protocol/rados_protocol.h"
 
+#include "arrow/util/io_util.h"
+
 #include <iostream>
 #include <vector>
 
 namespace skyhook {
 namespace rados {
 
-RadosStatus GetStatusFromReturnCode(int code, std::string msg) {
-  if (code) return RadosStatus(arrow::Status::Invalid(msg), code);
-  return RadosStatus(arrow::Status::OK(), code);
+arrow::Status GetStatusFromReturnCode(int code, std::string msg) {
+  if (code) return arrow::io::StatusFromErrno(code, arrow::StatusCode::Invalid, msg);
+  return arrow::io::StatusFromErrno(code, arrow::StatusCode::OK);
 }
 
-RadosStatus IoCtxWrapper::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
+arrow::Status IoCtxWrapper::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                                uint64_t offset) {
   return GetStatusFromReturnCode(ioCtx->read(oid, bl, len, offset),
                                  "ioctx->read failed.");
 }
 
-RadosStatus IoCtxWrapper::exec(const std::string& oid, const char* cls,
+arrow::Status IoCtxWrapper::exec(const std::string& oid, const char* cls,
                                const char* method, ceph::bufferlist& in,
                                ceph::bufferlist& out) {
   return GetStatusFromReturnCode(ioCtx->exec(oid, cls, method, in, out),
                                  "ioctx->exec failed.");
 }
 
-RadosStatus IoCtxWrapper::stat(const std::string& oid, uint64_t* psize) {
+arrow::Status IoCtxWrapper::stat(const std::string& oid, uint64_t* psize) {
   return GetStatusFromReturnCode(ioCtx->stat(oid, psize, NULL),
                                  "ioctx->stat failed.");
 }
 
-RadosStatus RadosWrapper::init2(const char* const name, const char* const clustername,
+arrow::Status RadosWrapper::init2(const char* const name, const char* const clustername,
                                 uint64_t flags) {
   return GetStatusFromReturnCode(cluster->init2(name, clustername, flags),
                                  "rados->init failed.");
 }
 
-RadosStatus RadosWrapper::ioctx_create(const char* name, IoCtxInterface* pioctx) {
+arrow::Status RadosWrapper::ioctx_create(const char* name, IoCtxInterface* pioctx) {
   librados::IoCtx ioCtx;
   int ret = cluster->ioctx_create(name, ioCtx);
   pioctx->setIoCtx(&ioCtx);
   return GetStatusFromReturnCode(ret, "rados->ioctx_create failed.");
 }
 
-RadosStatus RadosWrapper::conf_read_file(const char* const path) {
+arrow::Status RadosWrapper::conf_read_file(const char* const path) {
   return GetStatusFromReturnCode(cluster->conf_read_file(path),
                                  "rados->conf_read_file failed.");
 }
 
-RadosStatus RadosWrapper::connect() {
+arrow::Status RadosWrapper::connect() {
   return GetStatusFromReturnCode(cluster->connect(), "rados->connect failed.");
 }
 
@@ -77,11 +79,10 @@ arrow::Status RadosConn::Connect() {
   }
 
   ARROW_RETURN_NOT_OK(
-      rados->init2(ctx->ceph_user_name.c_str(), ctx->ceph_cluster_name.c_str(), 0)
-          .status());
-  ARROW_RETURN_NOT_OK(rados->conf_read_file(ctx->ceph_config_path.c_str()).status());
-  ARROW_RETURN_NOT_OK(rados->connect().status());
-  ARROW_RETURN_NOT_OK(rados->ioctx_create(ctx->ceph_data_pool.c_str(), io_ctx).status());
+      rados->init2(ctx->ceph_user_name.c_str(), ctx->ceph_cluster_name.c_str(), 0));
+  ARROW_RETURN_NOT_OK(rados->conf_read_file(ctx->ceph_config_path.c_str()));
+  ARROW_RETURN_NOT_OK(rados->connect());
+  ARROW_RETURN_NOT_OK(rados->ioctx_create(ctx->ceph_data_pool.c_str(), io_ctx));
   return arrow::Status::OK();
 }
 

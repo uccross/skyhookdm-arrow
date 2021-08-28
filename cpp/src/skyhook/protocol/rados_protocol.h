@@ -25,18 +25,6 @@
 namespace skyhook {
 namespace rados {
 
-/// Wrap Arrow Status with a custom return code.
-class RadosStatus {
- public:
-  RadosStatus(arrow::Status s, int code) : s_(std::move(s)), code_(code) {}
-  arrow::Status status() { return s_; }
-  int code() const { return code_; }
-
- private:
-  arrow::Status s_;
-  int code_;
-};
-
 class IoCtxInterface {
  public:
   IoCtxInterface() {}
@@ -47,7 +35,7 @@ class IoCtxInterface {
   /// \param[in] bl a bufferlist to hold the contents of the read object.
   /// \param[in] len the length of data to read from an object.
   /// \param[in] offset the offset of the object to read from.
-  virtual RadosStatus read(const std::string& oid, ceph::bufferlist& bl, size_t len,
+  virtual arrow::Status read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                            uint64_t offset) = 0;
 
   /// \brief Executes a CLS function.
@@ -57,10 +45,10 @@ class IoCtxInterface {
   /// \param[in] method the name of the CLS function.
   /// \param[in] in a bufferlist to send data to the CLS function.
   /// \param[in] out a bufferlist to recieve data from the CLS function.
-  virtual RadosStatus exec(const std::string& oid, const char* cls, const char* method,
+  virtual arrow::Status exec(const std::string& oid, const char* cls, const char* method,
                            ceph::bufferlist& in, ceph::bufferlist& out) = 0;
 
-  virtual RadosStatus stat(const std::string& oid, uint64_t* psize) = 0;
+  virtual arrow::Status stat(const std::string& oid, uint64_t* psize) = 0;
 
  private:
   friend class RadosWrapper;
@@ -72,11 +60,11 @@ class IoCtxWrapper : public IoCtxInterface {
  public:
   IoCtxWrapper() { ioCtx = new librados::IoCtx(); }
   ~IoCtxWrapper() { delete ioCtx; }
-  RadosStatus read(const std::string& oid, ceph::bufferlist& bl, size_t len,
+  arrow::Status read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                    uint64_t offset) override;
-  RadosStatus exec(const std::string& oid, const char* cls, const char* method,
+  arrow::Status exec(const std::string& oid, const char* cls, const char* method,
                    ceph::bufferlist& in, ceph::bufferlist& out) override;
-  RadosStatus stat(const std::string& oid, uint64_t* psize) override;
+  arrow::Status stat(const std::string& oid, uint64_t* psize) override;
 
  private:
   void setIoCtx(librados::IoCtx* ioCtx_) override { *ioCtx = *ioCtx_; }
@@ -92,22 +80,22 @@ class RadosInterface {
   /// \param[in] name the username of the client.
   /// \param[in] clustername the name of the Ceph cluster.
   /// \param[in] flags some extra flags to pass.
-  virtual RadosStatus init2(const char* const name, const char* const clustername,
+  virtual arrow::Status init2(const char* const name, const char* const clustername,
                             uint64_t flags) = 0;
 
   /// \brief Create an I/O context
   ///
   /// \param[in] name the RADOS pool to connect to.
   /// \param[in] pioctx an instance of IoCtxInterface.
-  virtual RadosStatus ioctx_create(const char* name, IoCtxInterface* pioctx) = 0;
+  virtual arrow::Status ioctx_create(const char* name, IoCtxInterface* pioctx) = 0;
 
   /// \brief Read the Ceph config file.
   ///
   /// \param[in] path the path to the config file.
-  virtual RadosStatus conf_read_file(const char* const path) = 0;
+  virtual arrow::Status conf_read_file(const char* const path) = 0;
 
   /// \brief Connect to the Ceph cluster.
-  virtual RadosStatus connect() = 0;
+  virtual arrow::Status connect() = 0;
 
   /// \brief Close connection to the Ceph cluster.
   virtual void shutdown() = 0;
@@ -117,11 +105,11 @@ class RadosWrapper : public RadosInterface {
  public:
   RadosWrapper() { cluster = new librados::Rados(); }
   ~RadosWrapper() { delete cluster; }
-  RadosStatus init2(const char* const name, const char* const clustername,
+  arrow::Status init2(const char* const name, const char* const clustername,
                     uint64_t flags) override;
-  RadosStatus ioctx_create(const char* name, IoCtxInterface* pioctx) override;
-  RadosStatus conf_read_file(const char* const path) override;
-  RadosStatus connect() override;
+  arrow::Status ioctx_create(const char* name, IoCtxInterface* pioctx) override;
+  arrow::Status conf_read_file(const char* const path) override;
+  arrow::Status connect() override;
   void shutdown() override;
 
  private:
