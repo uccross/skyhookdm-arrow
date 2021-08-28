@@ -24,7 +24,7 @@
 namespace skyhook {
 namespace rados {
 
-arrow::Status GetStatusFromReturnCode(int code, std::string msg) {
+arrow::Status GetStatusFromReturnCode(int code, char* msg) {
   if (code) return arrow::internal::StatusFromErrno(code, arrow::StatusCode::Invalid, msg);
   return arrow::internal::StatusFromErrno(code, arrow::StatusCode::OK);
 }
