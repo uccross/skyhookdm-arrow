@@ -177,33 +177,26 @@ arrow::Result<std::shared_ptr<arrow::Table>> DoScan(
 /// \brief Scan RADOS objects containing Arrow IPC data.
 /// \param[in] hctx The RADOS object context.
 /// \param[in] req The scan request received from the client.
-/// \param[out] result_table A table to store the resultant data.
-/// \return Status.
-static arrow::Status ScanIpcObject(cls_method_context_t hctx, skyhook::ScanRequest req,
-                                   std::shared_ptr<arrow::Table>* result_table) {
+/// \return Table.
+static arrow::Result<std::shared_ptr<arrow::Table>> ScanIpcObject(cls_method_context_t hctx, skyhook::ScanRequest req) {
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
   auto fragment_scan_options = std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
 
-  ARROW_ASSIGN_OR_RAISE(*result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
-
-  return arrow::Status::OK();
+  ARROW_ASSIGN_OR_RAISE(auto result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
+  return result_table;
 }
 
 /// \brief Scan RADOS objects containing Parquet binary data.
 /// \param[in] hctx The RADOS object context.
 /// \param[in] req The scan request received from the client.
-/// \param[out] result_table A table to store the resultant data.
-/// \return Status.
-static arrow::Status ScanParquetObject(cls_method_context_t hctx,
-                                       skyhook::ScanRequest req,
-                                       std::shared_ptr<arrow::Table>* result_table) {
+/// \return Table.
+static arrow::Result<std::shared_ptr<arrow::Table>> ScanParquetObject(cls_method_context_t hctx, skyhook::ScanRequest req) {
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
 
-  ARROW_ASSIGN_OR_RAISE(*result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
-
-  return arrow::Status::OK();
+  ARROW_ASSIGN_OR_RAISE(auto result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
+  return result_table;
 }
 
 /// \brief The scan operation to execute on the Ceph OSD nodes. The scan request is
@@ -229,16 +222,16 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   std::shared_ptr<arrow::Table> table;
   switch (req.file_format) {
     case skyhook::SkyhookFileType::type::PARQUET:
-      s = ScanParquetObject(hctx, req, &table);
+      table = ScanParquetObject(hctx, req).ValueOrDie();
       break;
     case skyhook::SkyhookFileType::type::IPC:
-      s = ScanIpcObject(hctx, req, &table);
+      table = ScanIpcObject(hctx, req).ValueOrDie();
       break;
     default:
-      s = arrow::Status::Invalid("Unsupported file format");
+      table = nullptr;
   }
-  if (!s.ok()) {
-    LogSkyhookError(s.message());
+  if (!table) {
+    LogSkyhookError("Unsupported file format");
     return SCAN_ERR_CODE;
   }
 

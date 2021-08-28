@@ -32,10 +32,10 @@ add_custom_target(cls_skyhook)
 # define the dependencies
 find_package(librados REQUIRED)
 include_directories(${LIBRADOS_INCLUDE_DIR})
-set(ARROW_DATASET_LINK_STATIC arrow_dataset_static)
-set(ARROW_DATASET_LINK_SHARED arrow_dataset_shared)
-set(ARROW_DATASET_LINK_STATIC ${ARROW_DATASET_LINK_STATIC} ${LIBRADOS_LIBRARIES})
-set(ARROW_DATASET_LINK_SHARED ${ARROW_DATASET_LINK_SHARED} ${LIBRADOS_LIBRARIES})
+set(ARROW_SKYHOOK_LINK_STATIC arrow_dataset_static)
+set(ARROW_SKYHOOK_LINK_SHARED arrow_dataset_shared)
+set(ARROW_SKYHOOK_LINK_STATIC ${ARROW_SKYHOOK_LINK_STATIC} ${LIBRADOS_LIBRARIES})
+set(ARROW_SKYHOOK_LINK_SHARED ${ARROW_SKYHOOK_LINK_SHARED} ${LIBRADOS_LIBRARIES})
 
 # define the client and cls sources
 set(ARROW_SKYHOOK_CLIENT_SOURCES client/file_skyhook.cc protocol/rados_protocol.cc
@@ -50,9 +50,9 @@ add_arrow_lib(arrow_skyhook_client
               OUTPUTS
               ARROW_SKYHOOK_CLIENT_LIBRARIES
               SHARED_LINK_LIBS
-              ${ARROW_DATASET_LINK_SHARED}
+              ${ARROW_SKYHOOK_LINK_SHARED}
               STATIC_LINK_LIBS
-              ${ARROW_DATASET_LINK_STATIC})
+              ${ARROW_SKYHOOK_LINK_STATIC})
 
               #  define the cls library
 add_arrow_lib(cls_skyhook
@@ -61,9 +61,9 @@ add_arrow_lib(cls_skyhook
               OUTPUTS
               ARROW_SKYHOOK_CLS_LIBRARIES
               SHARED_LINK_LIBS
-              ${ARROW_DATASET_LINK_SHARED}
+              ${ARROW_SKYHOOK_LINK_SHARED}
               STATIC_LINK_LIBS
-              ${ARROW_DATASET_LINK_STATIC})
+              ${ARROW_SKYHOOK_LINK_STATIC})
 
 # finish building the project
 add_dependencies(arrow_skyhook_client ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
@@ -71,12 +71,12 @@ add_dependencies(cls_skyhook ${ARROW_SKYHOOK_CLS_LIBRARIES})
 
 # define the test builds
 if(ARROW_TEST_LINKAGE STREQUAL "static")
-  set(ARROW_DATASET_TEST_LINK_LIBS arrow_dataset_static ${ARROW_TEST_STATIC_LINK_LIBS})
-  set(ARROW_DATASET_TEST_LINK_LIBS ${ARROW_DATASET_TEST_LINK_LIBS}
+  set(ARROW_SKYHOOK_TEST_LINK_LIBS arrow_dataset_static ${ARROW_TEST_STATIC_LINK_LIBS})
+  set(ARROW_SKYHOOK_TEST_LINK_LIBS ${ARROW_SKYHOOK_TEST_LINK_LIBS}
                                    ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
 else()
-  set(ARROW_DATASET_TEST_LINK_LIBS arrow_dataset_shared ${ARROW_TEST_SHARED_LINK_LIBS})
-  set(ARROW_DATASET_TEST_LINK_LIBS ${ARROW_DATASET_TEST_LINK_LIBS}
+  set(ARROW_SKYHOOK_TEST_LINK_LIBS arrow_dataset_shared ${ARROW_TEST_SHARED_LINK_LIBS})
+  set(ARROW_SKYHOOK_TEST_LINK_LIBS ${ARROW_SKYHOOK_TEST_LINK_LIBS}
                                    ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
 endif()
 
@@ -85,7 +85,7 @@ add_arrow_test(cls_test
                SOURCES
                cls/cls_skyhook_test.cc
                EXTRA_LINK_LIBS
-               ${ARROW_DATASET_TEST_LINK_LIBS}
+               ${ARROW_SKYHOOK_TEST_LINK_LIBS}
                PREFIX
                "skyhook")
 
@@ -93,6 +93,6 @@ add_arrow_test(protocol_test
                SOURCES
                protocol/skyhook_protocol_test.cc
                EXTRA_LINK_LIBS
-               ${ARROW_DATASET_TEST_LINK_LIBS}
+               ${ARROW_SKYHOOK_TEST_LINK_LIBS}
                PREFIX
                "skyhook")
