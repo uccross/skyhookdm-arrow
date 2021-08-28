@@ -106,12 +106,12 @@ TEST(TestSkyhookCLS, SelectEntireDataset) {
   auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner =
       GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
-  auto table_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
   format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
-  auto table_skyhook_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
   ASSERT_EQ(table_parquet->Equals(*table_skyhook_parquet), 1);
   ASSERT_EQ(table_parquet->num_rows(), table_skyhook_parquet->num_rows());
@@ -126,12 +126,12 @@ TEST(TestSkyhookCLS, SelectFewRows) {
   auto format = GetParquetFormat();
   auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
-  auto table_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
   format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
-  auto table_skyhook_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
   ASSERT_EQ(table_parquet->Equals(*table_skyhook_parquet), 1);
   ASSERT_EQ(table_parquet->num_rows(), table_skyhook_parquet->num_rows());
@@ -146,12 +146,12 @@ TEST(TestSkyhookCLS, SelectFewColumns) {
   auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner =
       GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
-  auto table_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
   format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
-  auto table_skyhook_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
   ASSERT_EQ(table_parquet->Equals(*table_skyhook_parquet), 1);
   ASSERT_EQ(table_parquet->num_rows(), table_skyhook_parquet->num_rows());
@@ -167,12 +167,12 @@ TEST(TestSkyhookCLS, SelectRowsAndColumnsOnPartitionKey) {
   auto format = GetParquetFormat();
   auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
-  auto table_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
   format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
-  auto table_skyhook_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
   ASSERT_EQ(table_parquet->Equals(*table_skyhook_parquet), 1);
   ASSERT_EQ(table_parquet->num_rows(), table_skyhook_parquet->num_rows());
@@ -191,12 +191,12 @@ TEST(TestSkyhookCLS, SelectRowsAndColumnsOnlyOnPartitionKey) {
   auto format = GetParquetFormat();
   auto dataset = GetDatasetFromPath(fs, format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
-  auto table_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
   format = GetSkyhookFormat();
   dataset = GetDatasetFromPath(fs, format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
-  auto table_skyhook_parquet = scanner->ToTable().ValueOrDie();
+  EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
   ASSERT_EQ(table_parquet->Equals(*table_skyhook_parquet), 1);
   ASSERT_EQ(table_parquet->num_rows(), table_skyhook_parquet->num_rows());
