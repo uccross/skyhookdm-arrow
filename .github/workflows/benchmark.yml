@@ -21,7 +21,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  trigger:
     runs-on: ubuntu-latest
     steps:
     - name: Trigger Benchmark Image Builder
