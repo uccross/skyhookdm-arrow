@@ -18,23 +18,24 @@
 
 #include <flatbuffers/flatbuffers.h>
 
+#include "ScanRequest_generated.h"
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/result.h"
-
-#include "ScanRequest_generated.h"
 
 namespace skyhook {
 
 namespace flatbuf = org::apache::arrow::flatbuf;
 
 arrow::Status SerializeScanRequest(ScanRequest req, ceph::bufferlist& bl) {
-  auto filter_expression = arrow::compute::Serialize(req.filter_expression).ValueOrDie();
-  auto partition_expression =
-      arrow::compute::Serialize(req.partition_expression).ValueOrDie();
-  auto projection_schema =
-      arrow::ipc::SerializeSchema(*req.projection_schema).ValueOrDie();
-  auto dataset_schema = arrow::ipc::SerializeSchema(*req.dataset_schema).ValueOrDie();
+  ARROW_ASSIGN_OR_RAISE(auto filter_expression,
+                        arrow::compute::Serialize(req.filter_expression));
+  ARROW_ASSIGN_OR_RAISE(auto partition_expression,
+                        arrow::compute::Serialize(req.partition_expression));
+  ARROW_ASSIGN_OR_RAISE(auto projection_schema,
+                        arrow::ipc::SerializeSchema(*req.projection_schema));
+  ARROW_ASSIGN_OR_RAISE(auto dataset_schema,
+                        arrow::ipc::SerializeSchema(*req.dataset_schema));
 
   flatbuffers::FlatBufferBuilder builder(1024);
   auto filter_expression_vector =
@@ -60,18 +61,15 @@ arrow::Status SerializeScanRequest(ScanRequest req, ceph::bufferlist& bl) {
 arrow::Status DeserializeScanRequest(ScanRequest& req, ceph::bufferlist bl) {
   auto request = flatbuf::GetScanRequest((uint8_t*)bl.c_str());
 
-  auto filter_expression_ = arrow::compute::Deserialize(
-                                std::make_shared<arrow::Buffer>(
-                                    request->filter()->data(), request->filter()->size()))
-                                .ValueOrDie();
-  req.filter_expression = filter_expression_;
+  ARROW_ASSIGN_OR_RAISE(auto filter_expression,
+                        arrow::compute::Deserialize(std::make_shared<arrow::Buffer>(
+                            request->filter()->data(), request->filter()->size())));
+  req.filter_expression = filter_expression;
 
-  auto partition_expression_ =
-      arrow::compute::Deserialize(
-          std::make_shared<arrow::Buffer>(request->partition()->data(),
-                                          request->partition()->size()))
-          .ValueOrDie();
-  req.partition_expression = partition_expression_;
+  ARROW_ASSIGN_OR_RAISE(auto partition_expression,
+                        arrow::compute::Deserialize(std::make_shared<arrow::Buffer>(
+                            request->partition()->data(), request->partition()->size())));
+  req.partition_expression = partition_expression;
 
   arrow::ipc::DictionaryMemo empty_memo;
   arrow::io::BufferReader projection_schema_reader(request->projection_schema()->data(),
@@ -79,27 +77,27 @@ arrow::Status DeserializeScanRequest(ScanRequest& req, ceph::bufferlist bl) {
   arrow::io::BufferReader dataset_schema_reader(request->dataset_schema()->data(),
                                                 request->dataset_schema()->size());
 
-  req.projection_schema =
-      arrow::ipc::ReadSchema(&projection_schema_reader, &empty_memo).ValueOrDie();
-  req.dataset_schema =
-      arrow::ipc::ReadSchema(&dataset_schema_reader, &empty_memo).ValueOrDie();
+  ARROW_ASSIGN_OR_RAISE(req.projection_schema,
+                        arrow::ipc::ReadSchema(&projection_schema_reader, &empty_memo));
+  ARROW_ASSIGN_OR_RAISE(req.dataset_schema,
+                        arrow::ipc::ReadSchema(&dataset_schema_reader, &empty_memo));
 
   req.file_size = request->file_size();
   req.file_format = (SkyhookFileType::type)request->file_format();
   return arrow::Status::OK();
 }
 
-arrow::Status SerializeTable(std::shared_ptr<arrow::Table> table, ceph::bufferlist& bl) {
-  auto buffer_output_stream = arrow::io::BufferOutputStream::Create().ValueOrDie();
+arrow::Status SerializeTable(const std::shared_ptr<arrow::Table>& table,
+                             ceph::bufferlist& bl) {
+  ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream,
+                        arrow::io::BufferOutputStream::Create());
 
   auto options = arrow::ipc::IpcWriteOptions::Defaults();
   auto codec = arrow::Compression::LZ4_FRAME;
 
-  ARROW_ASSIGN_OR_RAISE(options.codec,
-    arrow::util::Codec::Create(codec));
-  auto writer =
-      arrow::ipc::MakeStreamWriter(buffer_output_stream, table->schema(), options)
-          .ValueOrDie();
+  ARROW_ASSIGN_OR_RAISE(options.codec, arrow::util::Codec::Create(codec));
+  ARROW_ASSIGN_OR_RAISE(auto writer, arrow::ipc::MakeStreamWriter(
+                                         buffer_output_stream, table->schema(), options));
 
   ARROW_RETURN_NOT_OK(writer->WriteTable(*table));
   ARROW_RETURN_NOT_OK(writer->Close());
@@ -115,19 +113,19 @@ arrow::Status DeserializeTable(arrow::RecordBatchVector& batches, ceph::bufferli
   auto buffer_reader = std::make_shared<arrow::io::BufferReader>(buffer);
   auto options = arrow::ipc::IpcReadOptions::Defaults();
   options.use_threads = use_threads;
-  auto reader =
-      arrow::ipc::RecordBatchStreamReader::Open(buffer_reader, options).ValueOrDie();
+  ARROW_ASSIGN_OR_RAISE(
+      auto reader, arrow::ipc::RecordBatchStreamReader::Open(buffer_reader, options));
   ARROW_RETURN_NOT_OK(reader->ReadAll(&batches));
   return arrow::Status::OK();
 }
 
-arrow::Status ExecuteObjectClassFn(std::shared_ptr<rados::RadosConn> connection_,
+arrow::Status ExecuteObjectClassFn(const std::shared_ptr<rados::RadosConn>& connection,
                                    const std::string& oid, const std::string& fn,
                                    ceph::bufferlist& in, ceph::bufferlist& out) {
-  int e = connection_->io_ctx
-              ->exec(oid.c_str(), connection_->ctx->ceph_cls_name.c_str(), fn.c_str(), in,
-                     out)
-              .code();
+  int e =
+      connection->io_ctx
+          ->exec(oid.c_str(), connection->ctx->ceph_cls_name.c_str(), fn.c_str(), in, out)
+          .code();
 
   if (e == SCAN_ERR_CODE) return arrow::Status::Invalid(SCAN_ERR_MSG);
   if (e == SCAN_REQ_DESER_ERR_CODE) return arrow::Status::Invalid(SCAN_REQ_DESER_ERR_MSG);
