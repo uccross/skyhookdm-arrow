@@ -39,90 +39,38 @@ class RadosStatus {
 
 class IoCtxInterface {
  public:
-  IoCtxInterface() {}
-
-  /// \brief Read a RADOS object.
-  ///
-  /// \param[in] oid the object ID which to read.
-  /// \param[in] bl a bufferlist to hold the contents of the read object.
-  /// \param[in] len the length of data to read from an object.
-  /// \param[in] offset the offset of the object to read from.
-  virtual RadosStatus read(const std::string& oid, ceph::bufferlist& bl, size_t len,
-                           uint64_t offset) = 0;
-
-  /// \brief Executes a CLS function.
-  ///
-  /// \param[in] oid the object ID on which to execute the CLS function.
-  /// \param[in] cls the name of the CLS.
-  /// \param[in] method the name of the CLS function.
-  /// \param[in] in a bufferlist to send data to the CLS function.
-  /// \param[in] out a bufferlist to recieve data from the CLS function.
-  virtual RadosStatus exec(const std::string& oid, const char* cls, const char* method,
-                           ceph::bufferlist& in, ceph::bufferlist& out) = 0;
-
-  virtual RadosStatus stat(const std::string& oid, uint64_t* psize) = 0;
-
- private:
-  friend class RadosWrapper;
-  /// \brief Set the `librados::IoCtx` instance inside a IoCtxInterface instance.
-  virtual void setIoCtx(librados::IoCtx* ioCtx_) = 0;
-};
-
-class IoCtxWrapper : public IoCtxInterface {
- public:
-  IoCtxWrapper() { ioCtx = new librados::IoCtx(); }
-  ~IoCtxWrapper() { delete ioCtx; }
+  IoCtxInterface() { ioCtx = new librados::IoCtx(); }
+  ~IoCtxInterface() { delete ioCtx; }
+  /// Read a RADOS object.
   RadosStatus read(const std::string& oid, ceph::bufferlist& bl, size_t len,
-                   uint64_t offset) override;
+                   uint64_t offset);
+  /// Executes a CLS function.
   RadosStatus exec(const std::string& oid, const char* cls, const char* method,
-                   ceph::bufferlist& in, ceph::bufferlist& out) override;
-  RadosStatus stat(const std::string& oid, uint64_t* psize) override;
+                   ceph::bufferlist& in, ceph::bufferlist& out);
+  /// Execute POSIX stat on a RADOS object.
+  RadosStatus stat(const std::string& oid, uint64_t* psize);
 
  private:
-  void setIoCtx(librados::IoCtx* ioCtx_) override { *ioCtx = *ioCtx_; }
+  /// Set the `librados::IoCtx` instance inside a IoCtxInterface instance.
+  void setIoCtx(librados::IoCtx* ioCtx_) { *ioCtx = *ioCtx_; }
   librados::IoCtx* ioCtx;
 };
 
 class RadosInterface {
  public:
-  RadosInterface() {}
-
-  /// \brief Initializes a cluster handle.
-  ///
-  /// \param[in] name the username of the client.
-  /// \param[in] clustername the name of the Ceph cluster.
-  /// \param[in] flags some extra flags to pass.
-  virtual RadosStatus init2(const char* const name, const char* const clustername,
-                            uint64_t flags) = 0;
-
-  /// \brief Create an I/O context
-  ///
-  /// \param[in] name the RADOS pool to connect to.
-  /// \param[in] pioctx an instance of IoCtxInterface.
-  virtual RadosStatus ioctx_create(const char* name, IoCtxInterface* pioctx) = 0;
-
-  /// \brief Read the Ceph config file.
-  ///
-  /// \param[in] path the path to the config file.
-  virtual RadosStatus conf_read_file(const char* const path) = 0;
-
-  /// \brief Connect to the Ceph cluster.
-  virtual RadosStatus connect() = 0;
-
-  /// \brief Close connection to the Ceph cluster.
-  virtual void shutdown() = 0;
-};
-
-class RadosWrapper : public RadosInterface {
- public:
-  RadosWrapper() { cluster = new librados::Rados(); }
-  ~RadosWrapper() { delete cluster; }
+  RadosInterface() { cluster = new librados::Rados(); }
+  ~RadosInterface() { delete cluster; }
+  /// Initializes a cluster handle.
   RadosStatus init2(const char* const name, const char* const clustername,
-                    uint64_t flags) override;
-  RadosStatus ioctx_create(const char* name, IoCtxInterface* pioctx) override;
-  RadosStatus conf_read_file(const char* const path) override;
-  RadosStatus connect() override;
-  void shutdown() override;
+                    uint64_t flags);
+  /// Create an I/O context
+  RadosStatus ioctx_create(const char* name, IoCtxInterface* pioctx);
+  /// Read the Ceph config file.
+  RadosStatus conf_read_file(const char* const path);
+  /// Connect to the Ceph cluster.
+  RadosStatus connect();
+  /// Close connection to the Ceph cluster.
+  void shutdown();
 
  private:
   librados::Rados* cluster;
@@ -134,8 +82,8 @@ class RadosConn {
  public:
   explicit RadosConn(std::shared_ptr<skyhook::RadosConnCtx> ctx)
       : ctx(std::move(ctx)),
-        rados(new RadosWrapper()),
-        io_ctx(new IoCtxWrapper()),
+        rados(new RadosInterface()),
+        io_ctx(new IoCtxInterface()),
         connected(false) {}
   ~RadosConn();
   /// Connect to the Ceph cluster.
