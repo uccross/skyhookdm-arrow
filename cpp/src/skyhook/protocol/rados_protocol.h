@@ -49,10 +49,9 @@ class IoCtxInterface {
                    ceph::bufferlist& in, ceph::bufferlist& out);
   /// Execute POSIX stat on a RADOS object.
   RadosStatus stat(const std::string& oid, uint64_t* psize);
-
- private:
   /// Set the `librados::IoCtx` instance inside a IoCtxInterface instance.
   void setIoCtx(librados::IoCtx* ioCtx_) { *ioCtx = *ioCtx_; }
+ private:
   librados::IoCtx* ioCtx;
 };
 
