@@ -22,7 +22,7 @@
 project(arrow_skyhook)
 
 # install skyhook headers
-arrow_install_all_headers("skyhook/client")
+arrow_install_all_headers("skyhook")
 
 # define the targets to build
 add_custom_target(arrow_skyhook_client)
