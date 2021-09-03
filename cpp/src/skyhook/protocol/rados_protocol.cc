@@ -27,47 +27,47 @@ RadosStatus GetStatusFromReturnCode(int code, std::string msg) {
   return RadosStatus(arrow::Status::OK(), code);
 }
 
-RadosStatus IoCtxWrapper::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
+RadosStatus IoCtxInterface::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                                uint64_t offset) {
   return GetStatusFromReturnCode(ioCtx->read(oid, bl, len, offset),
                                  "ioctx->read failed.");
 }
 
-RadosStatus IoCtxWrapper::exec(const std::string& oid, const char* cls,
+RadosStatus IoCtxInterface::exec(const std::string& oid, const char* cls,
                                const char* method, ceph::bufferlist& in,
                                ceph::bufferlist& out) {
   return GetStatusFromReturnCode(ioCtx->exec(oid, cls, method, in, out),
                                  "ioctx->exec failed.");
 }
 
-RadosStatus IoCtxWrapper::stat(const std::string& oid, uint64_t* psize) {
+RadosStatus IoCtxInterface::stat(const std::string& oid, uint64_t* psize) {
   return GetStatusFromReturnCode(ioCtx->stat(oid, psize, NULL),
                                  "ioctx->stat failed.");
 }
 
-RadosStatus RadosWrapper::init2(const char* const name, const char* const clustername,
+RadosStatus RadosInterface::init2(const char* const name, const char* const clustername,
                                 uint64_t flags) {
   return GetStatusFromReturnCode(cluster->init2(name, clustername, flags),
                                  "rados->init failed.");
 }
 
-RadosStatus RadosWrapper::ioctx_create(const char* name, IoCtxInterface* pioctx) {
+RadosStatus RadosInterface::ioctx_create(const char* name, IoCtxInterface* pioctx) {
   librados::IoCtx ioCtx;
   int ret = cluster->ioctx_create(name, ioCtx);
   pioctx->setIoCtx(&ioCtx);
   return GetStatusFromReturnCode(ret, "rados->ioctx_create failed.");
 }
 
-RadosStatus RadosWrapper::conf_read_file(const char* const path) {
+RadosStatus RadosInterface::conf_read_file(const char* const path) {
   return GetStatusFromReturnCode(cluster->conf_read_file(path),
                                  "rados->conf_read_file failed.");
 }
 
-RadosStatus RadosWrapper::connect() {
+RadosStatus RadosInterface::connect() {
   return GetStatusFromReturnCode(cluster->connect(), "rados->connect failed.");
 }
 
-void RadosWrapper::shutdown() { cluster->shutdown(); }
+void RadosInterface::shutdown() { cluster->shutdown(); }
 
 RadosConn::~RadosConn() { Shutdown(); }
 

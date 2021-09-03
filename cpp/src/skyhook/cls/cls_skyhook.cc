@@ -246,6 +246,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
         LogSkyhookError("Could not scan IPC object: " + maybe_table.status().ToString());
         return SCAN_ERR_CODE;
       }
+      table = *maybe_table;
       break;
     default:
       table = nullptr;
