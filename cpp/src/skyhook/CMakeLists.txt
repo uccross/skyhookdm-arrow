@@ -21,9 +21,6 @@
 # define project properties
 project(arrow_skyhook)
 
-# install skyhook headers
-arrow_install_all_headers("skyhook")
-
 # define the targets to build
 add_custom_target(arrow_skyhook_client)
 add_custom_target(cls_skyhook)
