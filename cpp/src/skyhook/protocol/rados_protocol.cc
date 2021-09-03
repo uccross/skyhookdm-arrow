@@ -27,7 +27,7 @@ namespace rados {
 template <typename... Args>
 arrow::Status GetStatusFromReturnCode(int code, Args&&... args) {
   if (code) return arrow::internal::StatusFromErrno(code, arrow::StatusCode::Invalid, std::forward<Args>(args)...);
-  return arrow::internal::StatusFromErrno(code, arrow::StatusCode::OK, std::forward<Args>(args)...);
+  return arrow::internal::StatusFromErrno(code, arrow::StatusCode::OK);
 }
 
 arrow::Status IoCtxInterface::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
