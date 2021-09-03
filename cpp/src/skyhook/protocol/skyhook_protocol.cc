@@ -125,7 +125,7 @@ arrow::Status ExecuteObjectClassFn(const std::shared_ptr<rados::RadosConn>& conn
   int e =
       connection->io_ctx
           ->exec(oid.c_str(), connection->ctx->ceph_cls_name.c_str(), fn.c_str(), in, out)
-          .code();
+          .detail().errnum();
 
   if (e == SCAN_ERR_CODE) return arrow::Status::Invalid(SCAN_ERR_MSG);
   if (e == SCAN_REQ_DESER_ERR_CODE) return arrow::Status::Invalid(SCAN_REQ_DESER_ERR_MSG);
