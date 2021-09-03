@@ -15,9 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 #include <rados/objclass.h>
-#include <memory>
 
-#include "skyhook/protocol/skyhook_protocol.h"
+#include <memory>
 
 #include "arrow/compute/exec/expression.h"
 #include "arrow/dataset/dataset.h"
@@ -26,6 +25,7 @@
 #include "arrow/io/interfaces.h"
 #include "arrow/result.h"
 #include "arrow/util/compression.h"
+#include "skyhook/protocol/skyhook_protocol.h"
 
 CLS_VER(1, 0)
 CLS_NAME(skyhook)
@@ -46,7 +46,12 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     chunks_ = std::vector<ceph::bufferlist*>();
   }
 
-  ~RandomAccessObject() { Close(); }
+  ~RandomAccessObject() {
+    arrow::Status close_st = Close();
+    if (!close_st.ok()) {
+      LogSkyhookError("Could not close RandomAccessObject: " + close_st.ToString());
+    }
+  }
 
   /// Check if the file stream is closed.
   arrow::Status CheckClosed() const {
@@ -158,11 +163,11 @@ arrow::Result<std::shared_ptr<arrow::Table>> DoScan(
     std::shared_ptr<arrow::dataset::FragmentScanOptions> fragment_scan_options) {
   auto file = std::make_shared<RandomAccessObject>(hctx, req.file_size);
   arrow::dataset::FileSource source(file);
-  ARROW_ASSIGN_OR_RAISE(auto fragment,
-                        format->MakeFragment(std::move(source), req.partition_expression));
+  ARROW_ASSIGN_OR_RAISE(
+      auto fragment, format->MakeFragment(std::move(source), req.partition_expression));
   auto options = std::make_shared<arrow::dataset::ScanOptions>();
-  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(req.dataset_schema,
-                                                                  std::move(fragment), std::move(options));
+  auto builder = std::make_shared<arrow::dataset::ScannerBuilder>(
+      req.dataset_schema, std::move(fragment), std::move(options));
 
   ARROW_RETURN_NOT_OK(builder->Filter(req.filter_expression));
   ARROW_RETURN_NOT_OK(builder->Project(req.projection_schema->field_names()));
@@ -178,11 +183,13 @@ arrow::Result<std::shared_ptr<arrow::Table>> DoScan(
 /// \param[in] hctx The RADOS object context.
 /// \param[in] req The scan request received from the client.
 /// \return Table.
-static arrow::Result<std::shared_ptr<arrow::Table>> ScanIpcObject(cls_method_context_t hctx, skyhook::ScanRequest req) {
+static arrow::Result<std::shared_ptr<arrow::Table>> ScanIpcObject(
+    cls_method_context_t hctx, skyhook::ScanRequest req) {
   auto format = std::make_shared<arrow::dataset::IpcFileFormat>();
   auto fragment_scan_options = std::make_shared<arrow::dataset::IpcFragmentScanOptions>();
 
-  ARROW_ASSIGN_OR_RAISE(auto result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
+  ARROW_ASSIGN_OR_RAISE(auto result_table, DoScan(hctx, req, std::move(format),
+                                                  std::move(fragment_scan_options)));
   return result_table;
 }
 
@@ -190,12 +197,14 @@ static arrow::Result<std::shared_ptr<arrow::Table>> ScanIpcObject(cls_method_con
 /// \param[in] hctx The RADOS object context.
 /// \param[in] req The scan request received from the client.
 /// \return Table.
-static arrow::Result<std::shared_ptr<arrow::Table>> ScanParquetObject(cls_method_context_t hctx, skyhook::ScanRequest req) {
+static arrow::Result<std::shared_ptr<arrow::Table>> ScanParquetObject(
+    cls_method_context_t hctx, skyhook::ScanRequest req) {
   auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
   auto fragment_scan_options =
       std::make_shared<arrow::dataset::ParquetFragmentScanOptions>();
 
-  ARROW_ASSIGN_OR_RAISE(auto result_table, DoScan(hctx, req, std::move(format), std::move(fragment_scan_options)));
+  ARROW_ASSIGN_OR_RAISE(auto result_table, DoScan(hctx, req, std::move(format),
+                                                  std::move(fragment_scan_options)));
   return result_table;
 }
 
@@ -220,12 +229,23 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 
   // Scan the object.
   std::shared_ptr<arrow::Table> table;
+  arrow::Result<std::shared_ptr<arrow::Table>> maybe_table;
   switch (req.file_format) {
     case skyhook::SkyhookFileType::type::PARQUET:
-      table = ScanParquetObject(hctx, req).ValueOrDie();
+      maybe_table = ScanParquetObject(hctx, req);
+      if (!maybe_table.ok()) {
+        LogSkyhookError("Could not scan parquet object: " +
+                        maybe_table.status().ToString());
+        return SCAN_ERR_CODE;
+      }
+      table = *maybe_table;
       break;
     case skyhook::SkyhookFileType::type::IPC:
-      table = ScanIpcObject(hctx, req).ValueOrDie();
+      maybe_table = ScanIpcObject(hctx, req);
+      if (!maybe_table.ok()) {
+        LogSkyhookError("Could not scan IPC object: " + maybe_table.status().ToString());
+        return SCAN_ERR_CODE;
+      }
       break;
     default:
       table = nullptr;
