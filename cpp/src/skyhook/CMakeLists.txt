@@ -22,8 +22,7 @@
 project(arrow_skyhook)
 
 # install skyhook headers
-install(FILES client/file_skyhook.h
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/skyhook/client")
+arrow_install_all_headers("skyhook/client")
 
 # define the targets to build
 add_custom_target(arrow_skyhook_client)
