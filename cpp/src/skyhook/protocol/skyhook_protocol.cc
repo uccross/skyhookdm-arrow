@@ -22,6 +22,7 @@
 #include "arrow/io/api.h"
 #include "arrow/ipc/api.h"
 #include "arrow/result.h"
+#include "arrow/util/io_util.h"
 
 namespace skyhook {
 
@@ -123,9 +124,8 @@ arrow::Status ExecuteObjectClassFn(const std::shared_ptr<rados::RadosConn>& conn
                                    const std::string& oid, const std::string& fn,
                                    ceph::bufferlist& in, ceph::bufferlist& out) {
   int e =
-      connection->io_ctx
-          ->exec(oid.c_str(), connection->ctx->ceph_cls_name.c_str(), fn.c_str(), in, out)
-          .code();
+      arrow::internal::ErrnoFromStatus(connection->io_ctx
+          ->exec(oid.c_str(), connection->ctx->ceph_cls_name.c_str(), fn.c_str(), in, out));
 
   if (e == SCAN_ERR_CODE) return arrow::Status::Invalid(SCAN_ERR_MSG);
   if (e == SCAN_REQ_DESER_ERR_CODE) return arrow::Status::Invalid(SCAN_REQ_DESER_ERR_MSG);
