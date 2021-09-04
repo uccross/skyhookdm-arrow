@@ -25,7 +25,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(librados DEFAULT_MSG LIBRADOS_LIBRARY
                                   LIBRADOS_INCLUDE_DIR)
 
-if(LIBRADOS_FOUND)
+if(librados_FOUND)
   add_library(librados::rados UNKNOWN IMPORTED)
   set_target_properties(librados::rados
                         PROPERTIES IMPORTED_LOCATION "${LIBRADOS_LIBRARY}"
