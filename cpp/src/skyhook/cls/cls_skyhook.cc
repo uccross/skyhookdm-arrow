@@ -40,7 +40,7 @@ void LogSkyhookError(const std::string& msg) { CLS_LOG(0, "error: %s", msg.c_str
 /// \brief An interface to provide a file-like view over RADOS objects.
 class RandomAccessObject : public arrow::io::RandomAccessFile {
  public:
-  class CephBuffer : public Buffer {
+  class CephBuffer : public arrow::Buffer {
     CephBuffer() {
       bl = new ceph::bufferlist();
     }
@@ -53,7 +53,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
       return bl->length();
     }
 
-    ceph::bufferlist* bl() {
+    ceph::bufferlist* mutable_bl() {
       return bl;
     }
 
@@ -110,7 +110,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
     if (nbytes > 0) {
       std::shared_ptr<CephBuffer> buffer = std::make_shared<CephBuffer>();
-      cls_cxx_read(hctx_, position, nbytes, buffer->bl());
+      cls_cxx_read(hctx_, position, nbytes, buffer->mutable_bl());
       return buffer;
     }
     return std::make_shared<arrow::Buffer>("");
