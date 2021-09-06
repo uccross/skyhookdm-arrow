@@ -67,9 +67,6 @@ class SkyhookFileFormat : public arrow::dataset::ParquetFileFormat {
     return type_name() == other.type_name();
   }
 
-  /// \brief Initialize the SkyhookFileFormat by connecting to RADOS.
-  arrow::Status Init();
-
   arrow::Result<bool> IsSupported(
       const arrow::dataset::FileSource& source) const override {
     return true;
@@ -92,6 +89,9 @@ class SkyhookFileFormat : public arrow::dataset::ParquetFileFormat {
  private:
   class Impl;
   std::unique_ptr<Impl> impl_;
+
+  /// \brief Initialize the SkyhookFileFormat by connecting to RADOS.
+  arrow::Status Init();
 };
 
 /// @}
