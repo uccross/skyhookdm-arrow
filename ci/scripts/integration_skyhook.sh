@@ -115,9 +115,7 @@ pushd ${ARROW_BUILD_DIR}
     sleep 5
 
     # download an example dataset and copy into the mounted dir
-    rm -rf nyc*
-    wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/nyc.zip
-    unzip nyc.zip
+    python3 generate_dataset.py
     cp -r nyc /mnt/cephfs/
     sleep 10
 
