@@ -41,7 +41,7 @@ void LogSkyhookError(const std::string& msg) { CLS_LOG(0, "error: %s", msg.c_str
 class RandomAccessObject : public arrow::io::RandomAccessFile {
  public:
   class CephBuffer : public arrow::Buffer {
-    CephBuffer() {
+    CephBuffer() : Buffer("") {
       bl = new ceph::bufferlist();
     }
 
@@ -67,13 +67,6 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
     hctx_ = hctx;
     content_length_ = file_size;
-  }
-
-  ~RandomAccessObject() {
-    arrow::Status close_st = Close();
-    if (!close_st.ok()) {
-      LogSkyhookError("Could not close RandomAccessObject: " + close_st.ToString());
-    }
   }
 
   /// Check if the file stream is closed.
