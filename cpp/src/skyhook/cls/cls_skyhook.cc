@@ -41,28 +41,29 @@ void LogSkyhookError(const std::string& msg) { CLS_LOG(0, "error: %s", msg.c_str
 class RandomAccessObject : public arrow::io::RandomAccessFile {
  public:
   class CephBuffer : public arrow::Buffer {
-    CephBuffer() : Buffer("") {
-      bl = new ceph::bufferlist();
-    }
+    public:
+      CephBuffer() : Buffer("") {
+        bl = new ceph::bufferlist();
+      }
 
-    const uint8_t* data() {
-      return (uint8_t*)bl->c_str();
-    }
+      const uint8_t* data() {
+        return (uint8_t*)bl->c_str();
+      }
 
-    int64_t size() {
-      return bl->length();
-    }
+      int64_t size() {
+        return bl->length();
+      }
 
-    ceph::bufferlist* mutable_bl() {
-      return bl;
-    }
+      ceph::bufferlist* mutable_bl() {
+        return bl;
+      }
 
-    ~CephBuffer() {
-      delete bl;
-    }
-  private:
-    ceph::bufferlist *bl;
-  }
+      ~CephBuffer() {
+        delete bl;
+      }
+    private:
+      ceph::bufferlist *bl;
+  };
 
   explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
     hctx_ = hctx;
