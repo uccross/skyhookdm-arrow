@@ -22,7 +22,7 @@ set -x
 set -u
 
 ARROW_BUILD_DIR=${1}/cpp
-DIR=/tmp/integration-skyhook
+DIR=/tmp/integration_skyhook
 
 # reset
 pkill ceph || true
@@ -115,7 +115,7 @@ pushd ${ARROW_BUILD_DIR}
     sleep 5
 
     # download an example dataset and copy into the mounted dir
-    python3 generate_dataset.py
+    python3 /arrow/ci/scripts/generate_dataset.py
     cp -r nyc /mnt/cephfs/
     sleep 10
 
