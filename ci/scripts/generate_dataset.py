@@ -5,7 +5,7 @@ import random
 import pandas as pd
 
 if __name__ == "__main__":
-    # generate the parquet file
+    # generate the test dataframe
     data = {
         "total_amount": list(),
         "fare_amount": list()
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # dump the dataframe to a parquet file
     df.to_parquet("skyhook_test_data.parquet")
 
-    # create the dataset
+    # create the dataset by copying the parquet files
     shutil.rmtree("nyc")
     payment_type = ["1", "2", "3", "4"]
     vendor_id = ["1", "2"]
