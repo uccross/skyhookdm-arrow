@@ -102,7 +102,7 @@ ceph --version
 ceph status
 
 apt update
-apt install -y ceph-fuse attr
+apt install -y ceph-fuse attr python3-pip
 
 pushd ${ARROW_BUILD_DIR}
     # create the rados-classes, if not there already
@@ -115,6 +115,7 @@ pushd ${ARROW_BUILD_DIR}
     sleep 5
 
     # download an example dataset and copy into the mounted dir
+    pip3 install pandas
     python3 /arrow/ci/scripts/generate_dataset.py
     cp -r nyc /mnt/cephfs/
     sleep 10
