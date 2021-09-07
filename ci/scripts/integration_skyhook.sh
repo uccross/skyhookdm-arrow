@@ -22,7 +22,7 @@ set -x
 set -u
 
 ARROW_BUILD_DIR=${1}/cpp
-DIR=/tmp/integration-skyhook
+DIR=/tmp/integration_skyhook
 
 # reset
 pkill ceph || true
@@ -102,7 +102,7 @@ ceph --version
 ceph status
 
 apt update
-apt install -y ceph-fuse attr
+apt install -y ceph-fuse attr python3-pip
 
 pushd ${ARROW_BUILD_DIR}
     # create the rados-classes, if not there already
@@ -115,9 +115,8 @@ pushd ${ARROW_BUILD_DIR}
     sleep 5
 
     # download an example dataset and copy into the mounted dir
-    rm -rf nyc*
-    wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/nyc.zip
-    unzip nyc.zip
+    pip3 install pyarrow pandas
+    python3 /arrow/ci/scripts/generate_dataset.py
     cp -r nyc /mnt/cephfs/
     sleep 10
 

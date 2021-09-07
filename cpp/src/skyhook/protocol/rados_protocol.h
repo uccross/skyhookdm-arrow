@@ -29,15 +29,29 @@ class IoCtxInterface {
  public:
   IoCtxInterface() { ioCtx = new librados::IoCtx(); }
   ~IoCtxInterface() { delete ioCtx; }
-  /// Read a RADOS object.
+  /// \brief Read from a RADOS object.
+  ///
+  /// \param[in] oid the ID of the object to read.
+  /// \param[in] bl a bufferlist to hold the contents of the read object.
+  /// \param[in] len the length of data to read from the object.
+  /// \param[in] offset the offset to read from in the object.
   arrow::Status read(const std::string& oid, ceph::bufferlist& bl, size_t len,
                    uint64_t offset);
-  /// Executes a CLS function.
+  /// \brief Executes a Ceph Object Class method.
+  ///
+  /// \param[in] oid the object ID on which to invoke the CLS function.
+  /// \param[in] cls the name of the object class.
+  /// \param[in] method the name of the object class method.
+  /// \param[in] in a bufferlist to send data to the object class method.
+  /// \param[in] out a bufferlist to recieve data from the object class method.  
   arrow::Status exec(const std::string& oid, const char* cls, const char* method,
                    ceph::bufferlist& in, ceph::bufferlist& out);
-  /// Execute POSIX stat on a RADOS object.
+  /// \brief Execute POSIX stat on a RADOS object.
+  ///
+  /// \param[in] oid the object ID on which to call stat.
+  /// \param[out] psize hold the size of the object.
   arrow::Status stat(const std::string& oid, uint64_t* psize);
-  /// Set the `librados::IoCtx` instance inside a IoCtxInterface instance.
+  /// \brief Set the `librados::IoCtx` instance inside a IoCtxInterface instance.
   void setIoCtx(librados::IoCtx* ioCtx_) { *ioCtx = *ioCtx_; }
  private:
   librados::IoCtx* ioCtx;
