@@ -26,4 +26,4 @@ if __name__ == "__main__":
         for v in vendor_id:
             path = f"nyc/payment_type={p}/VendorID={v}"
             os.makedirs(path, exist_ok=True)
-            shutil.copyfile("skyhook_test_data.parquet", path)
+            shutil.copyfile("skyhook_test_data.parquet", os.path.join(path, f"{p}.{v}.parquet"))
