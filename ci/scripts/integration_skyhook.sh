@@ -115,7 +115,7 @@ pushd ${ARROW_BUILD_DIR}
     sleep 5
 
     # download an example dataset and copy into the mounted dir
-    pip3 install pandas
+    pip3 install pyarrow pandas
     python3 /arrow/ci/scripts/generate_dataset.py
     cp -r nyc /mnt/cephfs/
     sleep 10
