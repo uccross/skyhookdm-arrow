@@ -45,22 +45,10 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
       CephBuffer() : Buffer("") {
         bl = new ceph::bufferlist();
       }
-
-      const uint8_t* data() {
-        return (uint8_t*)bl->c_str();
-      }
-
-      int64_t size() {
-        return bl->length();
-      }
-
-      ceph::bufferlist* mutable_bl() {
-        return bl;
-      }
-
-      ~CephBuffer() {
-        delete bl;
-      }
+      const uint8_t* data() { return (uint8_t*)bl->c_str(); }
+      int64_t size() { return bl->length(); }
+      ceph::bufferlist* mutable_bl() { return bl; }
+      ~CephBuffer() { delete bl; }
     private:
       ceph::bufferlist *bl;
   };
@@ -69,6 +57,8 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     hctx_ = hctx;
     content_length_ = file_size;
   }
+
+  ~RandomAccessObject() { Close(); }
 
   /// Check if the file stream is closed.
   arrow::Status CheckClosed() const {
@@ -105,6 +95,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     if (nbytes > 0) {
       std::shared_ptr<CephBuffer> buffer = std::make_shared<CephBuffer>();
       cls_cxx_read(hctx_, position, nbytes, buffer->mutable_bl());
+      buffers_.push_back(buffer);
       return buffer;
     }
     return std::make_shared<arrow::Buffer>("");
@@ -149,6 +140,9 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   /// Mark the file stream as closed.
   arrow::Status Close() {
     closed_ = true;
+    for (auto buffer : buffers_) {
+      buffer.reset();
+    }
     return arrow::Status::OK();
   }
 
@@ -159,6 +153,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   bool closed_ = false;
   int64_t pos_ = 0;
   int64_t content_length_ = -1;
+  std::vector<std::shared_ptr<CephBuffer>> buffers_;
 };
 
 /// \brief  Driver function to execute the Scan operations.
