@@ -19,11 +19,11 @@ if __name__ == "__main__":
     df.to_parquet("skyhook_test_data.parquet")
 
     # create the dataset by copying the parquet files
-    shutil.rmtree("nyc")
+    shutil.rmtree("nyc", ignore_errors=True)
     payment_type = ["1", "2", "3", "4"]
     vendor_id = ["1", "2"]
     for p in payment_type:
         for v in vendor_id:
             path = f"nyc/payment_type={p}/VendorID={v}"
-            os.makedirs(path)
+            os.makedirs(path, exist_ok=True)
             shutil.copyfile("skyhook_test_data.parquet", path)
