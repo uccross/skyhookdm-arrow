@@ -37,7 +37,7 @@ std::shared_ptr<arrow::Table> CreateTable() {
                                     ])"});
 }
 
-TEST(TestSkyhookProtocol, ScanRequestSerializeDeserialize) {
+TEST(TestSkyhookProtocol, SerDeserScanRequest) {
   ceph::bufferlist bl;
   skyhook::ScanRequest req;
   req.filter_expression = arrow::compute::literal(true);
@@ -58,7 +58,7 @@ TEST(TestSkyhookProtocol, ScanRequestSerializeDeserialize) {
   ASSERT_EQ(req.file_format, req_.file_format);
 }
 
-TEST(TestSkyhookProtocol, SerializeDeserializeTable) {
+TEST(TestSkyhookProtocol, SerDeserTable) {
   std::shared_ptr<arrow::Table> table = CreateTable();
   ceph::bufferlist bl;
   ASSERT_OK(skyhook::SerializeTable(table, bl));
