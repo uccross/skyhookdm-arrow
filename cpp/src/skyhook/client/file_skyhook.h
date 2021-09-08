@@ -79,9 +79,9 @@ class SkyhookFileFormat : public arrow::dataset::ParquetFileFormat {
       const arrow::dataset::FileSource& source) const override;
 
   /// \brief Scan a file fragment.
-  /// \param[in] options Options to pass.
-  /// \param[in] file The file fragment.
-  /// \return The scanned file fragment.
+  /// \param[in] options The ScanOptions to use.
+  /// \param[in] file The file fragment to scan.
+  /// \return An iterator of ScanTasks.
   arrow::Result<arrow::dataset::ScanTaskIterator> ScanFile(
       const std::shared_ptr<arrow::dataset::ScanOptions>& options,
       const std::shared_ptr<arrow::dataset::FileFragment>& file) const override;
