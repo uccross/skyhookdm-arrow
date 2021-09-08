@@ -120,6 +120,7 @@ class SkyhookFileFormat::Impl {
   arrow::Result<std::shared_ptr<arrow::Schema>> Inspect(
       const arrow::dataset::FileSource& source) const {
     std::shared_ptr<arrow::dataset::FileFormat> file_format;
+    /// Convert string file format name to Arrow FileFormat.
     if (file_format_ == "parquet") {
       file_format = std::make_shared<arrow::dataset::ParquetFileFormat>();
     } else if (file_format_ == "ipc") {
