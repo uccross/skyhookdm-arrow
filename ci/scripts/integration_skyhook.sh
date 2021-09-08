@@ -102,7 +102,7 @@ ceph --version
 ceph status
 
 apt update
-apt install -y ceph-fuse attr python3-pip
+apt install -y python3-pip
 
 pushd ${ARROW_BUILD_DIR}
     # create the rados-classes, if not there already
