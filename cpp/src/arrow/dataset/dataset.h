@@ -91,7 +91,7 @@ class ARROW_DS_EXPORT Fragment : public std::enable_shared_from_this<Fragment> {
   virtual ~Fragment() = default;
 
   /// \brief Decide whether to apply filters and projections to this Fragment.
-  bool handles_compute = true;
+  bool apply_compute = true;
 
  protected:
   Fragment() = default;
