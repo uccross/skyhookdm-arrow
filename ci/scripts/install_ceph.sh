@@ -20,4 +20,4 @@
 set -ex
 
 apt update
-apt install -y ceph-common ceph-osd ceph-mon ceph-mgr ceph-mds ceph-fuse attr
+apt install -y attr ceph-common ceph-fuse ceph-mds ceph-mgr ceph-mon ceph-osd
