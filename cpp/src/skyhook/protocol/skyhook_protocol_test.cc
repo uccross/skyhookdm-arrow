@@ -50,10 +50,10 @@ TEST(TestSkyhookProtocol, SerDeserScanRequest) {
 
   skyhook::ScanRequest req_;
   ASSERT_OK(skyhook::DeserializeScanRequest(req_, bl));
-  ASSERT_EQ(req.filter_expression.Equals(req_.filter_expression), 1);
-  ASSERT_EQ(req.partition_expression.Equals(req_.partition_expression), 1);
-  ASSERT_EQ(req.projection_schema->Equals(req_.projection_schema), 1);
-  ASSERT_EQ(req.dataset_schema->Equals(req_.dataset_schema), 1);
+  ASSERT_TRUE(req.filter_expression.Equals(req_.filter_expression));
+  ASSERT_TRUE(req.partition_expression.Equals(req_.partition_expression));
+  ASSERT_TRUE(req.projection_schema->Equals(req_.projection_schema));
+  ASSERT_TRUE(req.dataset_schema->Equals(req_.dataset_schema));
   ASSERT_EQ(req.file_size, req_.file_size);
   ASSERT_EQ(req.file_format, req_.file_format);
 }
@@ -67,5 +67,5 @@ TEST(TestSkyhookProtocol, SerDeserTable) {
   ASSERT_OK(skyhook::DeserializeTable(batches, bl, false));
   ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(batches));
 
-  ASSERT_EQ(table->Equals(*materialized_table), 1);
+  ASSERT_TRUE(table->Equals(*materialized_table));
 }
