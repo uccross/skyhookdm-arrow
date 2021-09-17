@@ -15,12 +15,6 @@
 # specific language governing permissions and limitationsn
 # under the License.
 
-#
-# arrow_skyhook
-#
-# define project properties
-project(arrow_skyhook)
-
 # add the client subdirectory
 add_subdirectory(client)
 
