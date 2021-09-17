@@ -78,11 +78,9 @@ RUN apt-get update -y -q && \
         liblz4-dev \
         libprotobuf-dev \
         libprotoc-dev \
+        libradospp-dev \
         libre2-dev \
         libsnappy-dev \
-        libradospp-dev \
-        rados-objclass-dev \
-        python3-rados \
         libssl-dev \
         libthrift-dev \
         libutf8proc-dev \
@@ -91,6 +89,8 @@ RUN apt-get update -y -q && \
         ninja-build \
         pkg-config \
         protobuf-compiler \
+        python3-rados \
+        rados-objclass-dev \
         rapidjson-dev \
         tzdata \
         wget && \
