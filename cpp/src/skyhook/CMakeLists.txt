@@ -53,7 +53,7 @@ add_arrow_lib(arrow_skyhook_client
               STATIC_LINK_LIBS
               ${ARROW_SKYHOOK_LINK_STATIC})
 
-              #  define the cls library
+#  define the cls library
 add_arrow_lib(cls_skyhook
               SOURCES
               ${ARROW_SKYHOOK_CLS_SOURCES}
