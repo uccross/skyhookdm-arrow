@@ -268,6 +268,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
 }
 
 void __cls_init() {
+  /// Register the skyhook object classes with the OSD.
   cls_register("skyhook", &h_class);
   cls_register_cxx_method(h_class, "scan_op", CLS_METHOD_RD, scan_op, &h_scan_op);
 }
