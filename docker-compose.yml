@@ -515,7 +515,7 @@ services:
     #   docker-compose run --rm ubuntu-cpp-skyhook
     # Parameters:
     #   ARCH: amd64, arm64v8, ...
-    #   UBUNTU: 16.04, 18.04, 20.04
+    #   UBUNTU: 18.04, 20.04
     image: ${REPO}:${ARCH}-ubuntu-${UBUNTU}-cpp
     build:
       context: .
