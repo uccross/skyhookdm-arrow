@@ -150,7 +150,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   std::vector<ceph::bufferlist*> chunks_;
 };
 
-/// \brief  Driver function to execute the Scan operations.
+/// \brief Driver function to execute the Scan operations.
 /// \param[in] hctx RADOS object context.
 /// \param[in] req The scan request received from the client.
 /// \param[in] format The file format instance to use in the scan.
