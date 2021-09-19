@@ -17,6 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# This script spawns a single-node Ceph cluster, creates a CephFS mount,
+# generates a Parquet dataset, and runs the SkyhookDM integration tests.
+# Taken from https://github.com/ceph/go-ceph/blob/master/micro-osd.sh
+
 set -e
 set -x
 set -u
@@ -24,7 +28,7 @@ set -u
 ARROW_BUILD_DIR=${1}/cpp
 DIR=/tmp/integration_skyhook
 
-# reset
+# set environment variables
 pkill ceph || true
 rm -rf ${DIR}/*
 LOG_DIR=${DIR}/log
