@@ -72,13 +72,13 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return arrow::Status::OK();
   }
 
-  arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) {
+  arrow::Result<int64_t> ReadAt(int64_t position, int64_t nbytes, void* out) override {
     return arrow::Status::NotImplemented(
         "ReadAt has not been implemented in RandomAccessObject");
   }
 
   /// Read a specified number of bytes from a specified position.
-  arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) {
+  arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) override {
     RETURN_NOT_OK(CheckClosed());
     RETURN_NOT_OK(CheckPosition(position, "read"));
 
@@ -95,21 +95,21 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   }
 
   /// Read a specified number of bytes from the current position.
-  arrow::Result<std::shared_ptr<arrow::Buffer>> Read(int64_t nbytes) {
+  arrow::Result<std::shared_ptr<arrow::Buffer>> Read(int64_t nbytes) override {
     ARROW_ASSIGN_OR_RAISE(auto buffer, ReadAt(pos_, nbytes));
     pos_ += buffer->size();
     return std::move(buffer);
   }
 
   /// Read a specified number of bytes from the current position into an output stream.
-  arrow::Result<int64_t> Read(int64_t nbytes, void* out) {
+  arrow::Result<int64_t> Read(int64_t nbytes, void* out) override {
     ARROW_ASSIGN_OR_RAISE(int64_t bytes_read, ReadAt(pos_, nbytes, out));
     pos_ += bytes_read;
     return bytes_read;
   }
 
   /// Return the size of the file.
-  arrow::Result<int64_t> GetSize() {
+  arrow::Result<int64_t> GetSize() override {
     RETURN_NOT_OK(CheckClosed());
     return content_length_;
   }
