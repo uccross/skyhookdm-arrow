@@ -23,7 +23,7 @@ add_custom_target(arrow_skyhook_client)
 add_custom_target(cls_skyhook)
 
 # define the dependencies
-find_package(librados::rados REQUIRED)
+find_package(librados REQUIRED)
 include_directories(${LIBRADOS_INCLUDE_DIR})
 set(ARROW_SKYHOOK_LINK_STATIC arrow_dataset_static)
 set(ARROW_SKYHOOK_LINK_SHARED arrow_dataset_shared)
