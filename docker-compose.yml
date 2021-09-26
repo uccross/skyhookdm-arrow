@@ -323,6 +323,7 @@ services:
         gcc_version: ${GCC_VERSION}
     shm_size: *shm-size
     ulimits: *ulimits
+    privileged: true
     environment:
       <<: *ccache
       ARROW_ENABLE_TIMING_TESTS:  # inherit
