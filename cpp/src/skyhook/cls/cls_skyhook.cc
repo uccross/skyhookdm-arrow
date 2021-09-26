@@ -43,15 +43,10 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
     hctx_ = hctx;
     content_length_ = file_size;
-    chunks_ = std::vector<ceph::bufferlist*>();
+    chunks_ = std::vector<std::unique_ptr<ceph::bufferlist>>();
   }
 
-  ~RandomAccessObject() {
-    arrow::Status close_st = Close();
-    if (!close_st.ok()) {
-      LogSkyhookError("Could not close RandomAccessObject: " + close_st.ToString());
-    }
-  }
+  ~RandomAccessObject() { closed_ = true; }
 
   /// Check if the file stream is closed.
   arrow::Status CheckClosed() const {
@@ -86,8 +81,8 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     nbytes = std::min(nbytes, content_length_ - position);
 
     if (nbytes > 0) {
-      ceph::bufferlist* bl = new ceph::bufferlist();
-      cls_cxx_read(hctx_, position, nbytes, bl);
+      std::unique_ptr<ceph::bufferlist> bl = std::make_unique<ceph::bufferlist>();
+      cls_cxx_read(hctx_, position, nbytes, bl.get());
       chunks_.push_back(bl);
       return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
     }
@@ -130,16 +125,6 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return pos_;
   }
 
-  /// Closes the file stream and deletes the chunks and releases the memory
-  /// used by the chunks.
-  arrow::Status Close() {
-    closed_ = true;
-    for (auto chunk : chunks_) {
-      delete chunk;
-    }
-    return arrow::Status::OK();
-  }
-
   bool closed() const { return closed_; }
 
  private:
@@ -147,7 +132,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   bool closed_ = false;
   int64_t pos_ = 0;
   int64_t content_length_ = -1;
-  std::vector<ceph::bufferlist*> chunks_;
+  std::vector<std::unique_ptr<ceph::bufferlist>> chunks_;
 };
 
 /// \brief Driver function to execute the Scan operations.
