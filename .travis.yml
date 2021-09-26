@@ -80,7 +80,7 @@ jobs:
       virt: vm
       env:
         <<: *global_env
-        ARCH: arm64v8
+        ARCH: amd64
         ARROW_CI_MODULES: "CPP"
         DOCKER_IMAGE_ID: ubuntu-cpp
         # ARROW_USE_GLOG=OFF is needed to avoid build error caused by
