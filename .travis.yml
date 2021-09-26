@@ -91,6 +91,7 @@ jobs:
           -e ARROW_ORC=OFF
           -e ARROW_USE_GLOG=OFF
           -e CMAKE_UNITY_BUILD=ON
+          --privileged
           "
         # The LLVM's APT repository doesn't provide arm64 binaries.
         # We should use LLVM provided by Ubuntu.
