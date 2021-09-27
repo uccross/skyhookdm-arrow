@@ -25,6 +25,7 @@
 #include "arrow/io/interfaces.h"
 #include "arrow/result.h"
 #include "arrow/util/compression.h"
+#include <arrow/util/make_unique.h>
 #include "skyhook/protocol/skyhook_protocol.h"
 
 CLS_VER(1, 0)
@@ -81,7 +82,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     nbytes = std::min(nbytes, content_length_ - position);
 
     if (nbytes > 0) {
-      std::unique_ptr<ceph::bufferlist> bl = std::make_unique<ceph::bufferlist>();
+      std::unique_ptr<ceph::bufferlist> bl = arrow::internal::make_unique<ceph::bufferlist>();
       cls_cxx_read(hctx_, position, nbytes, bl.get());
       chunks_.push_back(bl);
       return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
