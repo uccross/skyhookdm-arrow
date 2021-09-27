@@ -334,8 +334,8 @@ services:
 
   ubuntu-cpp-skyhook:
     # Usage:
-    #   docker-compose build ubuntu-cpp
-    #   docker-compose run --rm ubuntu-cpp
+    #   docker-compose build ubuntu-cpp-skyhook
+    #   docker-compose run --rm ubuntu-cpp-skyhook
     # Parameters:
     #   ARCH: amd64, arm64v8, s390x, ...
     #   UBUNTU: 18.04, 20.04
