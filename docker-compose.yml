@@ -358,7 +358,7 @@ services:
       ARROW_MIMALLOC: "ON"
       ARROW_SKYHOOK: "ON"
     volumes: *ubuntu-volumes
-    command: &cpp-command >
+    command: &cpp-command-skyhook >
       /bin/bash -c "
         /arrow/ci/scripts/cpp_build.sh /arrow /build &&
         /arrow/ci/scripts/integration_skyhook.sh /build &&
