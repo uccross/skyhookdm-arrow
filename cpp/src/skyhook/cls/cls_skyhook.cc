@@ -25,7 +25,7 @@
 #include "arrow/io/interfaces.h"
 #include "arrow/result.h"
 #include "arrow/util/compression.h"
-#include <arrow/util/make_unique.h>
+
 #include "skyhook/protocol/skyhook_protocol.h"
 
 CLS_VER(1, 0)
@@ -44,7 +44,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   explicit RandomAccessObject(cls_method_context_t hctx, int64_t file_size) {
     hctx_ = hctx;
     content_length_ = file_size;
-    chunks_ = std::vector<std::unique_ptr<ceph::bufferlist>>();
+    chunks_ = std::vector<std::shared_ptr<ceph::bufferlist>>();
   }
 
   ~RandomAccessObject() { closed_ = true; }
@@ -82,7 +82,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     nbytes = std::min(nbytes, content_length_ - position);
 
     if (nbytes > 0) {
-      std::unique_ptr<ceph::bufferlist> bl = arrow::internal::make_unique<ceph::bufferlist>();
+      std::shared_ptr<ceph::bufferlist> bl = std::make_shared<ceph::bufferlist>();
       cls_cxx_read(hctx_, position, nbytes, bl.get());
       chunks_.push_back(bl);
       return std::make_shared<arrow::Buffer>((uint8_t*)bl->c_str(), bl->length());
@@ -133,7 +133,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   bool closed_ = false;
   int64_t pos_ = 0;
   int64_t content_length_ = -1;
-  std::vector<std::unique_ptr<ceph::bufferlist>> chunks_;
+  std::vector<std::shared_ptr<ceph::bufferlist>> chunks_;
 };
 
 /// \brief Driver function to execute the Scan operations.
