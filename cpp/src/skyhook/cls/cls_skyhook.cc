@@ -47,7 +47,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     chunks_ = std::vector<std::shared_ptr<ceph::bufferlist>>();
   }
 
-  ~RandomAccessObject() { closed_ = true; }
+  ~RandomAccessObject() { Close(); }
 
   /// Check if the file stream is closed.
   arrow::Status CheckClosed() const {
@@ -112,7 +112,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 
   /// Sets the file-pointer offset, measured from the beginning of the
   /// file, at which the next read or write occurs.
-  arrow::Status Seek(int64_t position) {
+  arrow::Status Seek(int64_t position) override {
     RETURN_NOT_OK(CheckClosed());
     RETURN_NOT_OK(CheckPosition(position, "seek"));
 
@@ -121,12 +121,17 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   }
 
   /// Returns the file-pointer offset.
-  arrow::Result<int64_t> Tell() const {
+  arrow::Result<int64_t> Tell() const override {
     RETURN_NOT_OK(CheckClosed());
     return pos_;
   }
 
-  bool closed() const { return closed_; }
+  arrow::Status Close() override {
+    closed_ = true;
+    return arrow::Status::OK();
+  }
+
+  bool closed() const override { return closed_; }
 
  private:
   cls_method_context_t hctx_;
