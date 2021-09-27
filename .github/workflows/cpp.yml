@@ -60,11 +60,14 @@ jobs:
         image:
           - conda-cpp
           - ubuntu-cpp-sanitizer
+          - ubuntu-cpp-skyhook
         include:
           - image: conda-cpp
             title: AMD64 Conda C++
           - image: ubuntu-cpp-sanitizer
             title: AMD64 Ubuntu 20.04 C++ ASAN UBSAN
+          - image: ubuntu-cpp-skyhook
+            title: AMD64 Ubuntu 20.04 C++ Skyhook
     steps:
       - name: Checkout Arrow
         uses: actions/checkout@v2
