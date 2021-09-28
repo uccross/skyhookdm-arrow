@@ -69,7 +69,7 @@ class SkyhookScanTask : public arrow::dataset::ScanTask {
     /// scenarios when scan tasks are executed in parallel by the CpuThreadPool.
     arrow::RecordBatchVector* batches = new arrow::RecordBatchVector();;
     RETURN_NOT_OK(skyhook::DeserializeTable(result, !options_->use_threads, batches));
-    return arrow::MakeVectorIterator(batches);
+    return arrow::MakeVectorIterator(*batches);
   }
 
  protected:
