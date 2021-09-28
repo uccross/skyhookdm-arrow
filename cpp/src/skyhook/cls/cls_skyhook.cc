@@ -126,6 +126,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     return pos_;
   }
 
+  /// Mark the file as closed.
   arrow::Status Close() override {
     closed_ = true;
     return arrow::Status::OK();
