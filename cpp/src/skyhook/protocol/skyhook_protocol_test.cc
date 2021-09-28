@@ -65,7 +65,7 @@ TEST(TestSkyhookProtocol, SerDeserTable) {
 
   arrow::RecordBatchVector* batches = new arrow::RecordBatchVector();
   ASSERT_OK(skyhook::DeserializeTable(*bl, false, batches));
-  ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(batches));
+  ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(*batches));
 
   ASSERT_TRUE(table->Equals(*materialized_table));
 }
