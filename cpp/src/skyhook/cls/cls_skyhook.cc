@@ -255,7 +255,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
     return SCAN_RES_SER_ERR_CODE;
   }
 
-  *out = bl;
+  *out = *bl;
   return 0;
 }
 
