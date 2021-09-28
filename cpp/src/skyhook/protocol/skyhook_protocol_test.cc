@@ -50,12 +50,12 @@ TEST(TestSkyhookProtocol, SerDeserScanRequest) {
 
   skyhook::ScanRequest *req_ = new skyhook::ScanRequest();
   ASSERT_OK(skyhook::DeserializeScanRequest(*bl, req_));
-  ASSERT_TRUE(req.filter_expression.Equals(req_.filter_expression));
-  ASSERT_TRUE(req.partition_expression.Equals(req_.partition_expression));
-  ASSERT_TRUE(req.projection_schema->Equals(req_.projection_schema));
-  ASSERT_TRUE(req.dataset_schema->Equals(req_.dataset_schema));
-  ASSERT_EQ(req.file_size, req_.file_size);
-  ASSERT_EQ(req.file_format, req_.file_format);
+  ASSERT_TRUE(req.filter_expression.Equals(req_->filter_expression));
+  ASSERT_TRUE(req.partition_expression.Equals(req_->partition_expression));
+  ASSERT_TRUE(req.projection_schema->Equals(req_->projection_schema));
+  ASSERT_TRUE(req.dataset_schema->Equals(req_->dataset_schema));
+  ASSERT_EQ(req.file_size, req_->file_size);
+  ASSERT_EQ(req.file_format, req_->file_format);
 }
 
 TEST(TestSkyhookProtocol, SerDeserTable) {
