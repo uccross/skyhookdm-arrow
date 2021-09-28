@@ -60,11 +60,11 @@ TEST(TestSkyhookProtocol, SerDeserScanRequest) {
 
 TEST(TestSkyhookProtocol, SerDeserTable) {
   std::shared_ptr<arrow::Table> table = CreateTable();
-  ceph::bufferlist bl;
+  ceph::bufferlist* bl = new ceph::bufferlist();
   ASSERT_OK(skyhook::SerializeTable(table, bl));
 
-  arrow::RecordBatchVector batches;
-  ASSERT_OK(skyhook::DeserializeTable(batches, bl, false));
+  arrow::RecordBatchVector* batches = new arrow::RecordBatchVector();
+  ASSERT_OK(skyhook::DeserializeTable(bl, false, batches));
   ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(batches));
 
   ASSERT_TRUE(table->Equals(*materialized_table));

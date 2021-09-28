@@ -67,8 +67,8 @@ class SkyhookScanTask : public arrow::dataset::ScanTask {
     /// threads for decompressing compressed batches, to avoid running into
     /// [ARROW-12597], we switch off threaded decompression to avoid nested threading
     /// scenarios when scan tasks are executed in parallel by the CpuThreadPool.
-    arrow::RecordBatchVector batches;
-    RETURN_NOT_OK(skyhook::DeserializeTable(batches, result, !options_->use_threads));
+    arrow::RecordBatchVector* batches = new arrow::RecordBatchVector();;
+    RETURN_NOT_OK(skyhook::DeserializeTable(result, !options_->use_threads, batches));
     return arrow::MakeVectorIterator(batches);
   }
 

@@ -249,7 +249,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   }
 
   // Serialize the resultant table to send back to the client.
-  ceph::bufferlist bl;
+  ceph::bufferlist* bl = new ceph::bufferlist();
   if (!(s = skyhook::SerializeTable(table, bl)).ok()) {
     LogSkyhookError(s.message());
     return SCAN_RES_SER_ERR_CODE;

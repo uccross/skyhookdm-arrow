@@ -89,7 +89,7 @@ arrow::Status DeserializeScanRequest(ceph::bufferlist& bl, ScanRequest* req) {
 }
 
 arrow::Status SerializeTable(const std::shared_ptr<arrow::Table>& table,
-                             ceph::bufferlist& bl) {
+                             ceph::bufferlist* bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream,
                         arrow::io::BufferOutputStream::Create());
 
@@ -104,19 +104,19 @@ arrow::Status SerializeTable(const std::shared_ptr<arrow::Table>& table,
   ARROW_RETURN_NOT_OK(writer->Close());
 
   ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
-  bl.append(reinterpret_cast<const char*>(buffer->data()), buffer->size());
+  bl->append(reinterpret_cast<const char*>(buffer->data()), buffer->size());
   return arrow::Status::OK();
 }
 
-arrow::Status DeserializeTable(arrow::RecordBatchVector& batches, ceph::bufferlist bl,
-                               bool use_threads) {
+arrow::Status DeserializeTable(ceph::bufferlist& bl,
+                               bool use_threads, arrow::RecordBatchVector* batches) {
   auto buffer = std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
   auto buffer_reader = std::make_shared<arrow::io::BufferReader>(buffer);
   auto options = arrow::ipc::IpcReadOptions::Defaults();
   options.use_threads = use_threads;
   ARROW_ASSIGN_OR_RAISE(
       auto reader, arrow::ipc::RecordBatchStreamReader::Open(buffer_reader, options));
-  ARROW_RETURN_NOT_OK(reader->ReadAll(&batches));
+  ARROW_RETURN_NOT_OK(reader->ReadAll(batches));
   return arrow::Status::OK();
 }
 
