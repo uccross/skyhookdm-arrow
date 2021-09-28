@@ -56,12 +56,12 @@ class SkyhookScanTask : public arrow::dataset::ScanTask {
     req.file_format = file_format_;
 
     /// Serialize the ScanRequest into a ceph bufferlist.
-    ceph::bufferlist request;
+    ceph::bufferlist *request = new ceph::bufferlist();
     RETURN_NOT_OK(skyhook::SerializeScanRequest(req, request));
 
     /// Execute the Ceph object class method `scan_op`.
     ceph::bufferlist result;
-    RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", request, result));
+    RETURN_NOT_OK(doa_->Exec(st.st_ino, "scan_op", *request, result));
 
     /// Read RecordBatches from the result bufferlist. Since, this step might use
     /// threads for decompressing compressed batches, to avoid running into
