@@ -357,10 +357,8 @@ services:
       ARROW_ENABLE_TIMING_TESTS:  # inherit
       ARROW_MIMALLOC: "ON"
       ARROW_SKYHOOK: "ON"
-    volumes: &ubuntu-volumes
-      - .:/arrow:delegated
-      - ${DOCKER_VOLUME_PREFIX}ubuntu-ccache:/ccache:delegated
-    command: &cpp-command >
+    volumes: *ubuntu-volumes
+    command: &cpp-command-skyhook >
       /bin/bash -c "
         /arrow/ci/scripts/cpp_build.sh /arrow /build &&
         /arrow/ci/scripts/integration_skyhook.sh /build &&
