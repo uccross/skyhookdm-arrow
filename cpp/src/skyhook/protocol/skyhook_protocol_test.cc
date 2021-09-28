@@ -38,7 +38,7 @@ std::shared_ptr<arrow::Table> CreateTable() {
 }
 
 TEST(TestSkyhookProtocol, SerDeserScanRequest) {
-  ceph::bufferlist bl;
+  ceph::bufferlist *bl = new ceph::bufferlist();
   skyhook::ScanRequest req;
   req.filter_expression = arrow::compute::literal(true);
   req.partition_expression = arrow::compute::literal(false);
@@ -48,8 +48,8 @@ TEST(TestSkyhookProtocol, SerDeserScanRequest) {
   req.file_format = skyhook::SkyhookFileType::type::IPC;
   ASSERT_OK(skyhook::SerializeScanRequest(req, bl));
 
-  skyhook::ScanRequest req_;
-  ASSERT_OK(skyhook::DeserializeScanRequest(req_, bl));
+  skyhook::ScanRequest *req_ = new skyhook::ScanRequest();
+  ASSERT_OK(skyhook::DeserializeScanRequest(*bl, req_));
   ASSERT_TRUE(req.filter_expression.Equals(req_.filter_expression));
   ASSERT_TRUE(req.partition_expression.Equals(req_.partition_expression));
   ASSERT_TRUE(req.projection_schema->Equals(req_.projection_schema));
