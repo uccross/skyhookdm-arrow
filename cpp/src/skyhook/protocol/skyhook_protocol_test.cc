@@ -38,7 +38,7 @@ std::shared_ptr<arrow::Table> CreateTable() {
 }
 
 TEST(TestSkyhookProtocol, SerDeserScanRequest) {
-  ceph::bufferlist bl;
+  ceph::bufferlist *bl = new ceph::bufferlist();
   skyhook::ScanRequest req;
   req.filter_expression = arrow::compute::literal(true);
   req.partition_expression = arrow::compute::literal(false);
@@ -48,24 +48,24 @@ TEST(TestSkyhookProtocol, SerDeserScanRequest) {
   req.file_format = skyhook::SkyhookFileType::type::IPC;
   ASSERT_OK(skyhook::SerializeScanRequest(req, bl));
 
-  skyhook::ScanRequest req_;
-  ASSERT_OK(skyhook::DeserializeScanRequest(req_, bl));
-  ASSERT_TRUE(req.filter_expression.Equals(req_.filter_expression));
-  ASSERT_TRUE(req.partition_expression.Equals(req_.partition_expression));
-  ASSERT_TRUE(req.projection_schema->Equals(req_.projection_schema));
-  ASSERT_TRUE(req.dataset_schema->Equals(req_.dataset_schema));
-  ASSERT_EQ(req.file_size, req_.file_size);
-  ASSERT_EQ(req.file_format, req_.file_format);
+  skyhook::ScanRequest *req_ = new skyhook::ScanRequest();
+  ASSERT_OK(skyhook::DeserializeScanRequest(*bl, req_));
+  ASSERT_TRUE(req.filter_expression.Equals(req_->filter_expression));
+  ASSERT_TRUE(req.partition_expression.Equals(req_->partition_expression));
+  ASSERT_TRUE(req.projection_schema->Equals(req_->projection_schema));
+  ASSERT_TRUE(req.dataset_schema->Equals(req_->dataset_schema));
+  ASSERT_EQ(req.file_size, req_->file_size);
+  ASSERT_EQ(req.file_format, req_->file_format);
 }
 
 TEST(TestSkyhookProtocol, SerDeserTable) {
   std::shared_ptr<arrow::Table> table = CreateTable();
-  ceph::bufferlist bl;
+  ceph::bufferlist* bl = new ceph::bufferlist();
   ASSERT_OK(skyhook::SerializeTable(table, bl));
 
-  arrow::RecordBatchVector batches;
-  ASSERT_OK(skyhook::DeserializeTable(batches, bl, false));
-  ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(batches));
+  arrow::RecordBatchVector* batches = new arrow::RecordBatchVector();
+  ASSERT_OK(skyhook::DeserializeTable(*bl, false, batches));
+  ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(*batches));
 
   ASSERT_TRUE(table->Equals(*materialized_table));
 }

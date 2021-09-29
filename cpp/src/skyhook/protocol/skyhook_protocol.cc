@@ -28,7 +28,7 @@ namespace skyhook {
 
 namespace flatbuf = org::apache::arrow::flatbuf;
 
-arrow::Status SerializeScanRequest(ScanRequest req, ceph::bufferlist& bl) {
+arrow::Status SerializeScanRequest(ScanRequest& req, ceph::bufferlist* bl) {
   ARROW_ASSIGN_OR_RAISE(auto filter_expression,
                         arrow::compute::Serialize(req.filter_expression));
   ARROW_ASSIGN_OR_RAISE(auto partition_expression,
@@ -55,22 +55,22 @@ arrow::Status SerializeScanRequest(ScanRequest req, ceph::bufferlist& bl) {
   uint8_t* buf = builder.GetBufferPointer();
   int size = builder.GetSize();
 
-  bl.append(reinterpret_cast<const char*>(buf), size);
+  bl->append(reinterpret_cast<const char*>(buf), size);
   return arrow::Status::OK();
 }
 
-arrow::Status DeserializeScanRequest(ScanRequest& req, ceph::bufferlist bl) {
+arrow::Status DeserializeScanRequest(ceph::bufferlist& bl, ScanRequest* req) {
   auto request = flatbuf::GetScanRequest((uint8_t*)bl.c_str());
 
   ARROW_ASSIGN_OR_RAISE(auto filter_expression,
                         arrow::compute::Deserialize(std::make_shared<arrow::Buffer>(
                             request->filter()->data(), request->filter()->size())));
-  req.filter_expression = filter_expression;
+  req->filter_expression = filter_expression;
 
   ARROW_ASSIGN_OR_RAISE(auto partition_expression,
                         arrow::compute::Deserialize(std::make_shared<arrow::Buffer>(
                             request->partition()->data(), request->partition()->size())));
-  req.partition_expression = partition_expression;
+  req->partition_expression = partition_expression;
 
   arrow::ipc::DictionaryMemo empty_memo;
   arrow::io::BufferReader projection_schema_reader(request->projection_schema()->data(),
@@ -78,18 +78,18 @@ arrow::Status DeserializeScanRequest(ScanRequest& req, ceph::bufferlist bl) {
   arrow::io::BufferReader dataset_schema_reader(request->dataset_schema()->data(),
                                                 request->dataset_schema()->size());
 
-  ARROW_ASSIGN_OR_RAISE(req.projection_schema,
+  ARROW_ASSIGN_OR_RAISE(req->projection_schema,
                         arrow::ipc::ReadSchema(&projection_schema_reader, &empty_memo));
-  ARROW_ASSIGN_OR_RAISE(req.dataset_schema,
+  ARROW_ASSIGN_OR_RAISE(req->dataset_schema,
                         arrow::ipc::ReadSchema(&dataset_schema_reader, &empty_memo));
 
-  req.file_size = request->file_size();
-  req.file_format = (SkyhookFileType::type)request->file_format();
+  req->file_size = request->file_size();
+  req->file_format = (SkyhookFileType::type)request->file_format();
   return arrow::Status::OK();
 }
 
 arrow::Status SerializeTable(const std::shared_ptr<arrow::Table>& table,
-                             ceph::bufferlist& bl) {
+                             ceph::bufferlist* bl) {
   ARROW_ASSIGN_OR_RAISE(auto buffer_output_stream,
                         arrow::io::BufferOutputStream::Create());
 
@@ -104,19 +104,19 @@ arrow::Status SerializeTable(const std::shared_ptr<arrow::Table>& table,
   ARROW_RETURN_NOT_OK(writer->Close());
 
   ARROW_ASSIGN_OR_RAISE(auto buffer, buffer_output_stream->Finish());
-  bl.append(reinterpret_cast<const char*>(buffer->data()), buffer->size());
+  bl->append(reinterpret_cast<const char*>(buffer->data()), buffer->size());
   return arrow::Status::OK();
 }
 
-arrow::Status DeserializeTable(arrow::RecordBatchVector& batches, ceph::bufferlist bl,
-                               bool use_threads) {
+arrow::Status DeserializeTable(ceph::bufferlist& bl,
+                               bool use_threads, arrow::RecordBatchVector* batches) {
   auto buffer = std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
   auto buffer_reader = std::make_shared<arrow::io::BufferReader>(buffer);
   auto options = arrow::ipc::IpcReadOptions::Defaults();
   options.use_threads = use_threads;
   ARROW_ASSIGN_OR_RAISE(
       auto reader, arrow::ipc::RecordBatchStreamReader::Open(buffer_reader, options));
-  ARROW_RETURN_NOT_OK(reader->ReadAll(&batches));
+  ARROW_RETURN_NOT_OK(reader->ReadAll(batches));
   return arrow::Status::OK();
 }
 

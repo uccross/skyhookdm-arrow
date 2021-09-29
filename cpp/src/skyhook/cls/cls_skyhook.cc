@@ -211,10 +211,10 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
   // Components required to construct a File fragment.
   arrow::Status s;
-  skyhook::ScanRequest req;
+  skyhook::ScanRequest *req = new skyhook::ScanRequest();
 
   // Deserialize the scan request.
-  if (!(s = skyhook::DeserializeScanRequest(req, *in)).ok()) {
+  if (!(s = skyhook::DeserializeScanRequest(*in, req)).ok()) {
     LogSkyhookError(s.message());
     return SCAN_REQ_DESER_ERR_CODE;
   }
@@ -222,9 +222,9 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   // Scan the object.
   std::shared_ptr<arrow::Table> table;
   arrow::Result<std::shared_ptr<arrow::Table>> maybe_table;
-  switch (req.file_format) {
+  switch (req->file_format) {
     case skyhook::SkyhookFileType::type::PARQUET:
-      maybe_table = ScanParquetObject(hctx, req);
+      maybe_table = ScanParquetObject(hctx, *req);
       if (!maybe_table.ok()) {
         LogSkyhookError("Could not scan parquet object: " +
                         maybe_table.status().ToString());
@@ -233,7 +233,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
       table = *maybe_table;
       break;
     case skyhook::SkyhookFileType::type::IPC:
-      maybe_table = ScanIpcObject(hctx, req);
+      maybe_table = ScanIpcObject(hctx, *req);
       if (!maybe_table.ok()) {
         LogSkyhookError("Could not scan IPC object: " + maybe_table.status().ToString());
         return SCAN_ERR_CODE;
@@ -249,13 +249,13 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   }
 
   // Serialize the resultant table to send back to the client.
-  ceph::bufferlist bl;
+  ceph::bufferlist* bl = new ceph::bufferlist();
   if (!(s = skyhook::SerializeTable(table, bl)).ok()) {
     LogSkyhookError(s.message());
     return SCAN_RES_SER_ERR_CODE;
   }
 
-  *out = bl;
+  *out = *bl;
   return 0;
 }
 
