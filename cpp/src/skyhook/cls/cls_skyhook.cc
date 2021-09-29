@@ -74,7 +74,8 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
   }
 
   /// Read a specified number of bytes from a specified position.
-  arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position, int64_t nbytes) override {
+  arrow::Result<std::shared_ptr<arrow::Buffer>> ReadAt(int64_t position,
+                                                       int64_t nbytes) override {
     RETURN_NOT_OK(CheckClosed());
     RETURN_NOT_OK(CheckPosition(position, "read"));
 
@@ -211,7 +212,7 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
   // Components required to construct a File fragment.
   arrow::Status s;
-  skyhook::ScanRequest *req = new skyhook::ScanRequest();
+  skyhook::ScanRequest* req = new skyhook::ScanRequest();
 
   // Deserialize the scan request.
   if (!(s = skyhook::DeserializeScanRequest(*in, req)).ok()) {

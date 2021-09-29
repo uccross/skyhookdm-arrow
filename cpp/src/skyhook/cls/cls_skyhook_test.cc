@@ -41,7 +41,8 @@ std::shared_ptr<skyhook::SkyhookFileFormat> GetSkyhookFormat() {
       std::make_shared<skyhook::RadosConnCtx>(ceph_config_path, ceph_data_pool,
                                               ceph_user_name, ceph_cluster_name,
                                               ceph_cls_name);
-  EXPECT_OK_AND_ASSIGN(auto format, skyhook::SkyhookFileFormat::Make(rados_ctx, "parquet"));
+  EXPECT_OK_AND_ASSIGN(auto format,
+                       skyhook::SkyhookFileFormat::Make(rados_ctx, "parquet"));
   return format;
 }
 
@@ -60,8 +61,8 @@ std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromDirectory(
   options.partitioning = std::make_shared<arrow::dataset::HivePartitioning>(
       arrow::schema({arrow::field("payment_type", arrow::int32()),
                      arrow::field("VendorID", arrow::int32())}));
-  EXPECT_OK_AND_ASSIGN(auto factory,
-      arrow::dataset::FileSystemDatasetFactory::Make(fs, s, format, options));
+  EXPECT_OK_AND_ASSIGN(auto factory, arrow::dataset::FileSystemDatasetFactory::Make(
+                                         fs, s, format, options));
 
   arrow::dataset::InspectOptions inspect_options;
   arrow::dataset::FinishOptions finish_options;

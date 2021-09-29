@@ -108,8 +108,8 @@ arrow::Status SerializeTable(const std::shared_ptr<arrow::Table>& table,
   return arrow::Status::OK();
 }
 
-arrow::Status DeserializeTable(ceph::bufferlist& bl,
-                               bool use_threads, arrow::RecordBatchVector* batches) {
+arrow::Status DeserializeTable(ceph::bufferlist& bl, bool use_threads,
+                               arrow::RecordBatchVector* batches) {
   auto buffer = std::make_shared<arrow::Buffer>((uint8_t*)bl.c_str(), bl.length());
   auto buffer_reader = std::make_shared<arrow::io::BufferReader>(buffer);
   auto options = arrow::ipc::IpcReadOptions::Defaults();
@@ -123,9 +123,8 @@ arrow::Status DeserializeTable(ceph::bufferlist& bl,
 arrow::Status ExecuteObjectClassFn(const std::shared_ptr<rados::RadosConn>& connection,
                                    const std::string& oid, const std::string& fn,
                                    ceph::bufferlist& in, ceph::bufferlist& out) {
-  int e =
-      arrow::internal::ErrnoFromStatus(connection->io_ctx
-          ->exec(oid.c_str(), connection->ctx->ceph_cls_name.c_str(), fn.c_str(), in, out));
+  int e = arrow::internal::ErrnoFromStatus(connection->io_ctx->exec(
+      oid.c_str(), connection->ctx->ceph_cls_name.c_str(), fn.c_str(), in, out));
 
   if (e == SCAN_ERR_CODE) return arrow::Status::Invalid(SCAN_ERR_MSG);
   if (e == SCAN_REQ_DESER_ERR_CODE) return arrow::Status::Invalid(SCAN_REQ_DESER_ERR_MSG);

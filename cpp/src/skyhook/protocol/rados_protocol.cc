@@ -26,30 +26,31 @@ namespace rados {
 
 template <typename... Args>
 arrow::Status GetStatusFromReturnCode(int code, Args&&... args) {
-  if (code) return arrow::internal::StatusFromErrno(code, arrow::StatusCode::Invalid, std::forward<Args>(args)...);
+  if (code)
+    return arrow::internal::StatusFromErrno(code, arrow::StatusCode::Invalid,
+                                            std::forward<Args>(args)...);
   return arrow::Status::OK();
 }
 
-arrow::Status IoCtxInterface::read(const std::string& oid, ceph::bufferlist& bl, size_t len,
-                               uint64_t offset) {
+arrow::Status IoCtxInterface::read(const std::string& oid, ceph::bufferlist& bl,
+                                   size_t len, uint64_t offset) {
   return GetStatusFromReturnCode(ioCtx->read(oid, bl, len, offset),
                                  "ioctx->read failed.");
 }
 
 arrow::Status IoCtxInterface::exec(const std::string& oid, const char* cls,
-                               const char* method, ceph::bufferlist& in,
-                               ceph::bufferlist& out) {
+                                   const char* method, ceph::bufferlist& in,
+                                   ceph::bufferlist& out) {
   return GetStatusFromReturnCode(ioCtx->exec(oid, cls, method, in, out),
                                  "ioctx->exec failed.");
 }
 
 arrow::Status IoCtxInterface::stat(const std::string& oid, uint64_t* psize) {
-  return GetStatusFromReturnCode(ioCtx->stat(oid, psize, NULL),
-                                 "ioctx->stat failed.");
+  return GetStatusFromReturnCode(ioCtx->stat(oid, psize, NULL), "ioctx->stat failed.");
 }
 
 arrow::Status RadosInterface::init2(const char* const name, const char* const clustername,
-                                uint64_t flags) {
+                                    uint64_t flags) {
   return GetStatusFromReturnCode(cluster->init2(name, clustername, flags),
                                  "rados->init failed.");
 }

@@ -29,5 +29,6 @@ if(librados_FOUND)
   add_library(librados::rados UNKNOWN IMPORTED)
   set_target_properties(librados::rados
                         PROPERTIES IMPORTED_LOCATION "${LIBRADOS_LIBRARY}"
-                                   INTERFACE_INCLUDE_DIRECTORIES "${LIBRADOS_INCLUDE_DIR}")
+                                   INTERFACE_INCLUDE_DIRECTORIES
+                                   "${LIBRADOS_INCLUDE_DIR}")
 endif()

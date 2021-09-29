@@ -38,7 +38,7 @@ std::shared_ptr<arrow::Table> CreateTable() {
 }
 
 TEST(TestSkyhookProtocol, SerDeserScanRequest) {
-  ceph::bufferlist *bl = new ceph::bufferlist();
+  ceph::bufferlist* bl = new ceph::bufferlist();
   skyhook::ScanRequest req;
   req.filter_expression = arrow::compute::literal(true);
   req.partition_expression = arrow::compute::literal(false);
@@ -48,7 +48,7 @@ TEST(TestSkyhookProtocol, SerDeserScanRequest) {
   req.file_format = skyhook::SkyhookFileType::type::IPC;
   ASSERT_OK(skyhook::SerializeScanRequest(req, bl));
 
-  skyhook::ScanRequest *req_ = new skyhook::ScanRequest();
+  skyhook::ScanRequest* req_ = new skyhook::ScanRequest();
   ASSERT_OK(skyhook::DeserializeScanRequest(*bl, req_));
   ASSERT_TRUE(req.filter_expression.Equals(req_->filter_expression));
   ASSERT_TRUE(req.partition_expression.Equals(req_->partition_expression));
@@ -65,7 +65,8 @@ TEST(TestSkyhookProtocol, SerDeserTable) {
 
   arrow::RecordBatchVector* batches = new arrow::RecordBatchVector();
   ASSERT_OK(skyhook::DeserializeTable(*bl, false, batches));
-  ASSERT_OK_AND_ASSIGN(auto materialized_table, arrow::Table::FromRecordBatches(*batches));
+  ASSERT_OK_AND_ASSIGN(auto materialized_table,
+                       arrow::Table::FromRecordBatches(*batches));
 
   ASSERT_TRUE(table->Equals(*materialized_table));
 }

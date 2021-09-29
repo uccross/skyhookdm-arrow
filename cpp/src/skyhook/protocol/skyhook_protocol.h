@@ -59,8 +59,8 @@ arrow::Status SerializeScanRequest(ScanRequest& req, ceph::bufferlist* bl);
 arrow::Status DeserializeScanRequest(ceph::bufferlist& bl, ScanRequest* req);
 arrow::Status SerializeTable(const std::shared_ptr<arrow::Table>& table,
                              ceph::bufferlist* bl);
-arrow::Status DeserializeTable(ceph::bufferlist& bl,
-                               bool use_threads, arrow::RecordBatchVector* batches);
+arrow::Status DeserializeTable(ceph::bufferlist& bl, bool use_threads,
+                               arrow::RecordBatchVector* batches);
 
 /// Utility function to invoke a RADOS object class function on an RADOS object.
 arrow::Status ExecuteObjectClassFn(const std::shared_ptr<rados::RadosConn>& connection,

@@ -56,7 +56,7 @@ class SkyhookScanTask : public arrow::dataset::ScanTask {
     req.file_format = file_format_;
 
     /// Serialize the ScanRequest into a ceph bufferlist.
-    ceph::bufferlist *request = new ceph::bufferlist();
+    ceph::bufferlist* request = new ceph::bufferlist();
     RETURN_NOT_OK(skyhook::SerializeScanRequest(req, request));
 
     /// Execute the Ceph object class method `scan_op`.
@@ -139,7 +139,8 @@ class SkyhookFileFormat::Impl {
   std::string file_format_;
 };
 
-arrow::Result<std::shared_ptr<SkyhookFileFormat>> SkyhookFileFormat::Make(std::shared_ptr<RadosConnCtx> ctx, std::string file_format) {
+arrow::Result<std::shared_ptr<SkyhookFileFormat>> SkyhookFileFormat::Make(
+    std::shared_ptr<RadosConnCtx> ctx, std::string file_format) {
   auto format = std::make_shared<SkyhookFileFormat>(std::move(ctx), file_format);
   RETURN_NOT_OK(format->Init());
   return format;
