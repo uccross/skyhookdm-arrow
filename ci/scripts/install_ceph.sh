@@ -20,7 +20,9 @@
 set -ex
 
 ARCH=$(uname -m)
-echo ${ARCH}
+if [ "$ARCH" = "arm64v8" ]; then
+  exit 0
+fi
 
 apt update
 apt install -y attr ceph-common ceph-fuse ceph-mds ceph-mgr ceph-mon ceph-osd
