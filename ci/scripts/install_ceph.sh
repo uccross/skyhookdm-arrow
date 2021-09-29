@@ -19,5 +19,8 @@
 
 set -ex
 
+ARCH=$(uname -m)
+echo ${ARCH}
+
 apt update
 apt install -y attr ceph-common ceph-fuse ceph-mds ceph-mgr ceph-mon ceph-osd
