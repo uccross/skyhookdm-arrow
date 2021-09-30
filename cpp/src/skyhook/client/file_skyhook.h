@@ -91,10 +91,10 @@ class SkyhookFileFormat : public arrow::dataset::FileFormat {
   arrow::Result<std::shared_ptr<arrow::dataset::FileWriter>> MakeWriter(
       std::shared_ptr<arrow::io::OutputStream> destination, std::shared_ptr<arrow::Schema> schema,
       std::shared_ptr<arrow::dataset::FileWriteOptions> options,
-      arrow::filesystem::FileLocator destination_locator) const override;
+      arrow::filesystem::FileLocator destination_locator) const;
 
   /// \brief Get default write options for this format.
-  std::shared_ptr<arrow::dataset::FileWriteOptions> DefaultWriteOptions() override;
+  std::shared_ptr<arrow::dataset::FileWriteOptions> DefaultWriteOptions();
 
  private:
   class Impl;
