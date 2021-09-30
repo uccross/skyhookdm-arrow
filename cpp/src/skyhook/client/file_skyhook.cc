@@ -142,6 +142,7 @@ class SkyhookFileFormat::Impl {
 arrow::Result<std::shared_ptr<SkyhookFileFormat>> SkyhookFileFormat::Make(
     std::shared_ptr<RadosConnCtx> ctx, std::string file_format) {
   auto format = std::make_shared<SkyhookFileFormat>(std::move(ctx), file_format);
+  /// Establish connection to the Ceph cluster.
   RETURN_NOT_OK(format->Init());
   return format;
 }
