@@ -25,7 +25,7 @@ ARG prefix=/opt/conda
 # install build essentials
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update -y -q && \
-    apt-get install -y -q wget tzdata libc6-dbg gdb \
+    apt-get install -y -q wget tzdata libc6-dbg librados-dev gdb python3-rados rados-objclass-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -33,9 +33,11 @@ ENV PATH=${prefix}/bin:$PATH
 # install conda and minio
 COPY ci/scripts/install_conda.sh \
      ci/scripts/install_minio.sh \
+     ci/scripts/install_ceph.sh \
      /arrow/ci/scripts/
 RUN /arrow/ci/scripts/install_conda.sh ${arch} linux latest ${prefix}
 RUN /arrow/ci/scripts/install_minio.sh ${arch} linux latest ${prefix}
+RUN /arrow/ci/scripts/install_ceph.sh
 
 # create a conda environment
 ADD ci/conda_env_unix.txt /arrow/ci/
