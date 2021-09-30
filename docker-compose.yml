@@ -120,7 +120,6 @@ x-hierarchy:
   - fedora-cpp:
     - fedora-python
   - ubuntu-cpp:
-    - ubuntu-cpp-skyhook
     - ubuntu-c-glib:
       - ubuntu-ruby
     - ubuntu-lint
@@ -222,6 +221,7 @@ services:
         repo: ${REPO}
         arch: ${ARCH}
     shm_size: &shm-size 2G
+    privileged: true
     ulimits: &ulimits
       core: ${ULIMIT_CORE}
     environment:
@@ -232,11 +232,13 @@ services:
       ARROW_MIMALLOC: "ON"
       ARROW_USE_LD_GOLD: "ON"
       ARROW_USE_PRECOMPILED_HEADERS: "ON"
+      ARROW_SKYHOOK: "ON"
     volumes: &conda-volumes
       - .:/arrow:delegated
       - ${DOCKER_VOLUME_PREFIX}conda-ccache:/ccache:delegated
     command: &cpp-conda-command
       ["/arrow/ci/scripts/cpp_build.sh /arrow /build true &&
+        /arrow/ci/scripts/integration_skyhook.sh /build &&
         /arrow/ci/scripts/cpp_test.sh /arrow /build"]
 
   conda-cpp-valgrind:
@@ -331,40 +333,6 @@ services:
       - .:/arrow:delegated
       - ${DOCKER_VOLUME_PREFIX}ubuntu-ccache:/ccache:delegated
     command: *cpp-command
-
-  ubuntu-cpp-skyhook:
-    # Usage:
-    #   docker-compose build ubuntu-cpp-skyhook
-    #   docker-compose run --rm ubuntu-cpp-skyhook
-    # Parameters:
-    #   ARCH: amd64, arm64v8, s390x, ...
-    #   UBUNTU: 18.04, 20.04
-    image: ${REPO}:${ARCH}-ubuntu-${UBUNTU}-cpp
-    build:
-      context: .
-      dockerfile: ci/docker/ubuntu-${UBUNTU}-cpp.dockerfile
-      cache_from:
-        - ${REPO}:${ARCH}-ubuntu-${UBUNTU}-cpp
-      args:
-        arch: ${ARCH}
-        base: "${ARCH}/ubuntu:${UBUNTU}"
-        clang_tools: ${CLANG_TOOLS}
-        llvm: ${LLVM}
-        gcc_version: ${GCC_VERSION}
-    shm_size: *shm-size
-    ulimits: *ulimits
-    privileged: true
-    environment:
-      <<: *ccache
-      ARROW_ENABLE_TIMING_TESTS:  # inherit
-      ARROW_MIMALLOC: "ON"
-      ARROW_SKYHOOK: "ON"
-    volumes: *ubuntu-volumes
-    command: &cpp-command-skyhook >
-      /bin/bash -c "
-        /arrow/ci/scripts/cpp_build.sh /arrow /build &&
-        /arrow/ci/scripts/integration_skyhook.sh /build &&
-        /arrow/ci/scripts/cpp_test.sh /arrow /build"
 
   ubuntu-cuda-cpp:
     # Usage:
