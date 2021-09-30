@@ -22,6 +22,6 @@ includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 Name: Skyhook
 Description: Skyhook is a plugin for offloading computations into Ceph.
 Version: @SKYHOOK_VERSION@
-Requires: arrow arrow_dataset parquet
+Requires: arrow_dataset
 Libs: -L${libdir} -larrow -larrow_dataset -lparquet
 Cflags: -I${includedir}
