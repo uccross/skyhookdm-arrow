@@ -20,7 +20,7 @@
 set -ex
 
 ARCH=$(uname -m)
-if [ "$ARCH" = "aarch64" ]; then
+if [ "$ARCH" != "x86_64" ]; then
   exit 0
 fi
 
