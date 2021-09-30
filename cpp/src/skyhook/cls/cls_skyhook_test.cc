@@ -32,6 +32,9 @@
 #include "parquet/arrow/writer.h"
 
 std::shared_ptr<skyhook::SkyhookFileFormat> GetSkyhookFormat() {
+  // The constants below should match the parameters with
+  // which the Ceph cluster is configured in integration_skyhook.sh.
+  // Currently, all the default values have been used.
   std::string ceph_config_path = "/etc/ceph/ceph.conf";
   std::string ceph_data_pool = "cephfs_data";
   std::string ceph_user_name = "client.admin";

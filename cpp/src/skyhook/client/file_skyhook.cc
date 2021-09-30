@@ -162,7 +162,7 @@ arrow::Result<std::shared_ptr<arrow::Schema>> SkyhookFileFormat::Inspect(
 arrow::Result<arrow::dataset::ScanTaskIterator> SkyhookFileFormat::ScanFile(
     const std::shared_ptr<arrow::dataset::ScanOptions>& options,
     const std::shared_ptr<arrow::dataset::FileFragment>& file) const {
-  return impl_->ScanFile(std::move(options), std::move(file));
+  return impl_->ScanFile(options, file);
 }
 
 }  // namespace skyhook
