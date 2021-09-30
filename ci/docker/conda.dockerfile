@@ -25,7 +25,7 @@ ARG prefix=/opt/conda
 # install build essentials
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update -y -q && \
-    apt-get install -y -q wget tzdata libc6-dbg librados-dev gdb python3-rados rados-objclass-dev \
+    apt-get install -y -q wget tzdata libc6-dbg libradospp-dev gdb python3-rados rados-objclass-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
