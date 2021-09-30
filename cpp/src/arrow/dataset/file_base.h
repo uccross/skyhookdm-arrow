@@ -165,14 +165,14 @@ class ARROW_DS_EXPORT FileFormat : public std::enable_shared_from_this<FileForma
       FileSource source, compute::Expression partition_expression,
       std::shared_ptr<Schema> physical_schema);
 
-  /// \brief Create a FileFragment for a FileSource.
+  /// \brief Create a FileFragment for a FileSource.x
   Result<std::shared_ptr<FileFragment>> MakeFragment(
       FileSource source, compute::Expression partition_expression);
 
   /// \brief Create a FileFragment for a FileSource.
   Result<std::shared_ptr<FileFragment>> MakeFragment(
       FileSource source, std::shared_ptr<Schema> physical_schema = NULLPTR);
-
+x
   /// \brief Create a writer for this format.
   virtual Result<std::shared_ptr<FileWriter>> MakeWriter(
       std::shared_ptr<io::OutputStream> destination, std::shared_ptr<Schema> schema,
