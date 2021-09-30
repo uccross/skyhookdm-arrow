@@ -16,7 +16,7 @@
 # under the License.
 
 ARG arch=amd64
-FROM ${arch}/ubuntu:18.04
+FROM ${arch}/ubuntu:20.04
 
 # arch is unset after the FROM statement, so need to define it again
 ARG arch=amd64
