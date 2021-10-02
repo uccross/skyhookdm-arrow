@@ -106,14 +106,14 @@ TEST(TestSkyhookCLS, SelectEntireDataset) {
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns;
 
-  auto format = GetParquetFormat();
-  auto dataset = GetDatasetFromPath(fs, format, path);
+  auto parquet_format = GetParquetFormat();
+  auto dataset = GetDatasetFromPath(fs, parquet_format, path);
   auto scanner =
       GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
-  format = GetSkyhookFormat();
-  dataset = GetDatasetFromPath(fs, format, path);
+  auto skyhook_format = GetSkyhookFormat();
+  dataset = GetDatasetFromPath(fs, skyhook_format, path);
   scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
@@ -127,13 +127,13 @@ TEST(TestSkyhookCLS, SelectFewRows) {
   std::vector<std::string> columns;
   auto filter = arrow::compute::greater(arrow::compute::field_ref("payment_type"),
                                         arrow::compute::literal(2));
-  auto format = GetParquetFormat();
-  auto dataset = GetDatasetFromPath(fs, format, path);
+  auto parquet_format = GetParquetFormat();
+  auto dataset = GetDatasetFromPath(fs, parquet_format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
   EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
-  format = GetSkyhookFormat();
-  dataset = GetDatasetFromPath(fs, format, path);
+  auto skyhook_format = GetSkyhookFormat();
+  dataset = GetDatasetFromPath(fs, skyhook_format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
   EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
@@ -146,14 +146,14 @@ TEST(TestSkyhookCLS, SelectFewColumns) {
   auto fs = GetFileSystemFromUri("file:///mnt/cephfs/nyc", &path);
   std::vector<std::string> columns = {"fare_amount", "total_amount"};
 
-  auto format = GetParquetFormat();
-  auto dataset = GetDatasetFromPath(fs, format, path);
+  auto parquet_format = GetParquetFormat();
+  auto dataset = GetDatasetFromPath(fs, parquet_format, path);
   auto scanner =
       GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
-  format = GetSkyhookFormat();
-  dataset = GetDatasetFromPath(fs, format, path);
+  auto skyhook_format = GetSkyhookFormat();
+  dataset = GetDatasetFromPath(fs, skyhook_format, path);
   scanner = GetScannerFromDataset(dataset, columns, arrow::compute::literal(true), true);
   EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
@@ -168,13 +168,13 @@ TEST(TestSkyhookCLS, SelectRowsAndColumnsOnPartitionKey) {
   auto filter = arrow::compute::greater(arrow::compute::field_ref("payment_type"),
                                         arrow::compute::literal(2));
 
-  auto format = GetParquetFormat();
-  auto dataset = GetDatasetFromPath(fs, format, path);
+  auto parquet_format = GetParquetFormat();
+  auto dataset = GetDatasetFromPath(fs, parquet_format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
   EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
-  format = GetSkyhookFormat();
-  dataset = GetDatasetFromPath(fs, format, path);
+  auto skyhook_format = GetSkyhookFormat();
+  dataset = GetDatasetFromPath(fs, skyhook_format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
   EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 
@@ -192,13 +192,13 @@ TEST(TestSkyhookCLS, SelectRowsAndColumnsOnlyOnPartitionKey) {
       arrow::compute::greater(arrow::compute::field_ref("VendorID"),
                               arrow::compute::literal(1)));
 
-  auto format = GetParquetFormat();
-  auto dataset = GetDatasetFromPath(fs, format, path);
+  auto parquet_format = GetParquetFormat();
+  auto dataset = GetDatasetFromPath(fs, parquet_format, path);
   auto scanner = GetScannerFromDataset(dataset, columns, filter, true);
   EXPECT_OK_AND_ASSIGN(auto table_parquet, scanner->ToTable());
 
-  format = GetSkyhookFormat();
-  dataset = GetDatasetFromPath(fs, format, path);
+  auto skyhook_format = GetSkyhookFormat();
+  dataset = GetDatasetFromPath(fs, skyhook_format, path);
   scanner = GetScannerFromDataset(dataset, columns, filter, true);
   EXPECT_OK_AND_ASSIGN(auto table_skyhook_parquet, scanner->ToTable());
 

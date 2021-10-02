@@ -142,6 +142,7 @@ class SkyhookFileFormat::Impl {
 arrow::Result<std::shared_ptr<SkyhookFileFormat>> SkyhookFileFormat::Make(
     std::shared_ptr<RadosConnCtx> ctx, std::string file_format) {
   auto format = std::make_shared<SkyhookFileFormat>(std::move(ctx), file_format);
+  /// Establish connection to the Ceph cluster.
   RETURN_NOT_OK(format->Init());
   return format;
 }
@@ -163,6 +164,17 @@ arrow::Result<arrow::dataset::ScanTaskIterator> SkyhookFileFormat::ScanFile(
     const std::shared_ptr<arrow::dataset::ScanOptions>& options,
     const std::shared_ptr<arrow::dataset::FileFragment>& file) const {
   return impl_->ScanFile(options, file);
+}
+
+std::shared_ptr<arrow::dataset::FileWriteOptions> SkyhookFileFormat::DefaultWriteOptions() {
+  return nullptr;
+}
+
+arrow::Result<std::shared_ptr<arrow::dataset::FileWriter>> SkyhookFileFormat::MakeWriter(
+    std::shared_ptr<arrow::io::OutputStream> destination, std::shared_ptr<arrow::Schema> schema,
+    std::shared_ptr<arrow::dataset::FileWriteOptions> options,
+    arrow::fs::FileLocator destination_locator) const {
+  return arrow::Status::NotImplemented("Skyhook writer not yet implemented.");
 }
 
 }  // namespace skyhook
