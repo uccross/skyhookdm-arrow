@@ -166,4 +166,15 @@ arrow::Result<arrow::dataset::ScanTaskIterator> SkyhookFileFormat::ScanFile(
   return impl_->ScanFile(options, file);
 }
 
+std::shared_ptr<arrow::dataset::FileWriteOptions> SkyhookFileFormat::DefaultWriteOptions() {
+  return nullptr;
+}
+
+Result<std::shared_ptr<arrow::dataset::FileWriter>> SkyhookFileFormat::MakeWriter(
+    std::shared_ptr<arrow::io::OutputStream> destination, std::shared_ptr<arrow::Schema> schema,
+    std::shared_ptr<arrow::dataset::FileWriteOptions> options,
+    arrow::fs::FileLocator destination_locator) const {
+  return Status::NotImplemented("Skyhook writer not yet implemented.");
+}
+
 }  // namespace skyhook
