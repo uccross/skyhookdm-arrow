@@ -24,7 +24,6 @@
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/io/interfaces.h"
 #include "arrow/result.h"
-#include "arrow/util/compression.h"
 
 #include "skyhook/protocol/skyhook_protocol.h"
 

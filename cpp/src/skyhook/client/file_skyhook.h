@@ -38,14 +38,14 @@ struct RadosConnCtx {
   std::string ceph_cluster_name;
   std::string ceph_cls_name;
 
-  RadosConnCtx(const std::string& ceph_config_path, const std::string& ceph_data_pool,
-               const std::string& ceph_user_name, const std::string& ceph_cluster_name,
-               const std::string& ceph_cls_name)
-      : ceph_config_path(ceph_config_path),
-        ceph_data_pool(ceph_data_pool),
-        ceph_user_name(ceph_user_name),
-        ceph_cluster_name(ceph_cluster_name),
-        ceph_cls_name(ceph_cls_name) {}
+  RadosConnCtx(std::string& ceph_config_path, std::string& ceph_data_pool,
+               std::string& ceph_user_name, std::string& ceph_cluster_name,
+               std::string& ceph_cls_name)
+      : ceph_config_path(std::move(ceph_config_path)),
+        ceph_data_pool(std::move(ceph_data_pool)),
+        ceph_user_name(std::move(ceph_user_name)),
+        ceph_cluster_name(std::move(ceph_cluster_name)),
+        ceph_cls_name(std::move(ceph_cls_name)) {}
 };
 
 /// \class SkyhookFileFormat
@@ -58,11 +58,9 @@ class SkyhookFileFormat : public arrow::dataset::FileFormat {
       std::shared_ptr<RadosConnCtx> ctx, std::string file_format);
   SkyhookFileFormat(std::shared_ptr<RadosConnCtx> ctx, std::string file_format);
 
-  ~SkyhookFileFormat();
+  ~SkyhookFileFormat() override;
 
   std::string type_name() const override { return "skyhook"; }
-
-  bool splittable() const { return true; }
 
   bool Equals(const arrow::dataset::FileFormat& other) const override {
     return type_name() == other.type_name();

@@ -75,7 +75,7 @@ class SkyhookDirectObjectAccess {
   explicit SkyhookDirectObjectAccess(const std::shared_ptr<rados::RadosConn>& connection)
       : connection_(connection) {}
 
-  ~SkyhookDirectObjectAccess() {}
+  ~SkyhookDirectObjectAccess() = default;
 
   /// Execute a POSIX stat on a file.
   arrow::Status Stat(const std::string& path, struct stat& st) {

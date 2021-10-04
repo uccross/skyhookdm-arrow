@@ -149,9 +149,9 @@ arrow::Result<std::shared_ptr<SkyhookFileFormat>> SkyhookFileFormat::Make(
 
 SkyhookFileFormat::SkyhookFileFormat(std::shared_ptr<RadosConnCtx> ctx,
                                      std::string file_format)
-    : impl_(new Impl(std::move(ctx), file_format)) {}
+    : impl_(new Impl(std::move(ctx), std::move(file_format))) {}
 
-SkyhookFileFormat::~SkyhookFileFormat() {}
+SkyhookFileFormat::~SkyhookFileFormat() = default;
 
 arrow::Status SkyhookFileFormat::Init() { return impl_->Init(); }
 
