@@ -85,7 +85,7 @@ std::shared_ptr<arrow::dataset::Dataset> GetDatasetFromPath(
 }
 
 std::shared_ptr<arrow::dataset::Scanner> GetScannerFromDataset(
-    std::shared_ptr<arrow::dataset::Dataset> dataset, std::vector<std::string> columns,
+    const std::shared_ptr<arrow::dataset::Dataset>& dataset, std::vector<std::string> columns,
     arrow::compute::Expression filter, bool use_threads) {
   EXPECT_OK_AND_ASSIGN(auto scanner_builder, dataset->NewScan());
 

@@ -112,7 +112,7 @@ class SkyhookFileFormat::Impl {
     }
 
     arrow::dataset::ScanTaskVector v{std::make_shared<SkyhookScanTask>(
-        std::move(options), std::move(file), file->source(), doa_, file_format,
+        options, file, file->source(), doa_, file_format,
         file->partition_expression())};
     return arrow::MakeVectorIterator(v);
   }

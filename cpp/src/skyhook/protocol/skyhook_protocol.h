@@ -72,8 +72,8 @@ arrow::Status ExecuteObjectClassFn(const std::shared_ptr<rados::RadosConn>& conn
 /// and it's underlying object.
 class SkyhookDirectObjectAccess {
  public:
-  explicit SkyhookDirectObjectAccess(const std::shared_ptr<rados::RadosConn>& connection)
-      : connection_(connection) {}
+  explicit SkyhookDirectObjectAccess(std::shared_ptr<rados::RadosConn> connection)
+      : connection_(std::move(connection)) {}
 
   ~SkyhookDirectObjectAccess() = default;
 

@@ -24,6 +24,7 @@
 #include "arrow/dataset/file_parquet.h"
 #include "arrow/io/interfaces.h"
 #include "arrow/result.h"
+#include "arrow/util/logging.h"
 
 #include "skyhook/protocol/skyhook_protocol.h"
 
@@ -46,7 +47,7 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
     chunks_ = std::vector<std::shared_ptr<ceph::bufferlist>>();
   }
 
-  ~RandomAccessObject() { Close(); }
+  ~RandomAccessObject() override { DCHECK_OK(Close()); }
 
   /// Check if the file stream is closed.
   arrow::Status CheckClosed() const {
@@ -150,9 +151,9 @@ class RandomAccessObject : public arrow::io::RandomAccessFile {
 /// scan.
 /// \return Table.
 arrow::Result<std::shared_ptr<arrow::Table>> DoScan(
-    cls_method_context_t hctx, skyhook::ScanRequest req,
-    std::shared_ptr<arrow::dataset::FileFormat> format,
-    std::shared_ptr<arrow::dataset::FragmentScanOptions> fragment_scan_options) {
+    cls_method_context_t hctx, const skyhook::ScanRequest& req,
+    const std::shared_ptr<arrow::dataset::FileFormat>& format,
+    const std::shared_ptr<arrow::dataset::FragmentScanOptions>& fragment_scan_options) {
   auto file = std::make_shared<RandomAccessObject>(hctx, req.file_size);
   arrow::dataset::FileSource source(file);
   ARROW_ASSIGN_OR_RAISE(
