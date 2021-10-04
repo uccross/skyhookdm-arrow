@@ -212,10 +212,10 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
                    ceph::bufferlist* out) {
   // Components required to construct a File fragment.
   arrow::Status s;
-  skyhook::ScanRequest* req = new skyhook::ScanRequest();
+  skyhook::ScanRequest req;
 
   // Deserialize the scan request.
-  if (!(s = skyhook::DeserializeScanRequest(*in, req)).ok()) {
+  if (!(s = skyhook::DeserializeScanRequest(*in, &req)).ok()) {
     LogSkyhookError(s.message());
     return SCAN_REQ_DESER_ERR_CODE;
   }
@@ -250,13 +250,13 @@ static int scan_op(cls_method_context_t hctx, ceph::bufferlist* in,
   }
 
   // Serialize the resultant table to send back to the client.
-  ceph::bufferlist* bl = new ceph::bufferlist();
-  if (!(s = skyhook::SerializeTable(table, bl)).ok()) {
+  ceph::bufferlist bl;
+  if (!(s = skyhook::SerializeTable(table, &bl)).ok()) {
     LogSkyhookError(s.message());
     return SCAN_RES_SER_ERR_CODE;
   }
 
-  *out = *bl;
+  *out = bl;
   return 0;
 }
 
