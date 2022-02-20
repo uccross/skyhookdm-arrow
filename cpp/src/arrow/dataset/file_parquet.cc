@@ -80,27 +80,11 @@ class ParquetScanTask : public ScanTask {
     //
     // The memory and IO incurred by the RecordBatchReader is allocated only
     // when Execute is called.
-    struct {
-      Result<std::shared_ptr<RecordBatch>> operator()() const {
-        return record_batch_reader->Next();
-      }
-
-      // The RecordBatchIterator must hold a reference to the FileReader;
-      // since it must outlive the wrapped RecordBatchReader
-      std::shared_ptr<parquet::arrow::FileReader> file_reader;
-      std::unique_ptr<RecordBatchReader> record_batch_reader;
-    } NextBatch;
-
+    std::unique_ptr<RecordBatchReader> record_batch_reader;
     RETURN_NOT_OK(EnsurePreBuffered());
-    NextBatch.file_reader = reader_;
-    RETURN_NOT_OK(reader_->GetRecordBatchReader({row_group_}, column_projection_,
-                                                &NextBatch.record_batch_reader));
+    RETURN_NOT_OK(reader_->GetRecordBatchReader({row_group_}, column_projection_, record_batch_reader));
     RecordBatchVector batches;
-    ARROW_ASSIGN_OR_RAISE(auto batch, NextBatch.record_batch_reader->Next());
-    while (batch) {
-      batches.push_back(batch);
-      ARROW_ASSIGN_OR_RAISE(auto batch, NextBatch.record_batch_reader->Next());
-    }
+    RETURN_NOT_OK(record_batch_reader->ReadAll(&batches));
     return MakeVectorIterator(batches);
   }
 
