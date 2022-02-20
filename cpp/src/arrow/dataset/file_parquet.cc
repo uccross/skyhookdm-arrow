@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <iostream>
 #include <vector>
 
 #include "arrow/compute/exec.h"
@@ -80,6 +81,7 @@ class ParquetScanTask : public ScanTask {
     //
     // The memory and IO incurred by the RecordBatchReader is allocated only
     // when Execute is called.
+    std::cerr << "Execute called inside ParquetScanTask" << std::endl;
     std::unique_ptr<RecordBatchReader> record_batch_reader;
     RETURN_NOT_OK(EnsurePreBuffered());
     RETURN_NOT_OK(reader_->GetRecordBatchReader({row_group_}, column_projection_, &record_batch_reader));
