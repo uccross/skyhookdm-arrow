@@ -82,7 +82,7 @@ class ParquetScanTask : public ScanTask {
     // when Execute is called.
     std::unique_ptr<RecordBatchReader> record_batch_reader;
     RETURN_NOT_OK(EnsurePreBuffered());
-    RETURN_NOT_OK(reader_->GetRecordBatchReader({row_group_}, column_projection_, record_batch_reader));
+    RETURN_NOT_OK(reader_->GetRecordBatchReader({row_group_}, column_projection_, &record_batch_reader));
     RecordBatchVector batches;
     RETURN_NOT_OK(record_batch_reader->ReadAll(&batches));
     return MakeVectorIterator(batches);
