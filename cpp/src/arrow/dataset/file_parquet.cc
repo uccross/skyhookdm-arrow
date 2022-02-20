@@ -95,7 +95,13 @@ class ParquetScanTask : public ScanTask {
     NextBatch.file_reader = reader_;
     RETURN_NOT_OK(reader_->GetRecordBatchReader({row_group_}, column_projection_,
                                                 &NextBatch.record_batch_reader));
-    return MakeFunctionIterator(std::move(NextBatch));
+    RecordBatchVector batches;
+    auto batch = NextBatch.record_batch_reader->Next();
+    while (batch) {
+      batches.push_back(std::move(*batch));
+      batch = NextBatch.record_batch_reader->Next();
+    }
+    return MakeVectorIterator(batches);
   }
 
   // Ensure that pre-buffering has been applied to the underlying Parquet reader
