@@ -98,7 +98,7 @@ class ParquetScanTask : public ScanTask {
     RecordBatchVector batches;
     ARROW_ASSIGN_OR_RAISE(auto batch, NextBatch.record_batch_reader->Next());
     while (batch) {
-      batches.push_back(std::move(*batch));
+      batches.push_back(batch);
       ARROW_ASSIGN_OR_RAISE(auto batch, NextBatch.record_batch_reader->Next());
     }
     return MakeVectorIterator(batches);
