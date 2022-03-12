@@ -72,6 +72,7 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
   option(PYARROW_BUILD_DATASET "Build the PyArrow Dataset integration" OFF)
   option(PYARROW_BUILD_GANDIVA "Build the PyArrow Gandiva integration" OFF)
   option(PYARROW_BUILD_PARQUET "Build the PyArrow Parquet integration" OFF)
+  option(PYARROW_BUILD_SKYHOOK "Build the PyArrow Skyhook integration" OFF)
   option(PYARROW_PARQUET_USE_SHARED "Rely on parquet shared libraries where relevant" ON)
   option(PYARROW_BUILD_PARQUET_ENCRYPTION
          "Build the PyArrow Parquet encryption integration" OFF)
@@ -508,6 +509,13 @@ if(PYARROW_BUILD_ORC)
   set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _orc)
   if(PYARROW_BUILD_DATASET)
     set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _dataset_orc)
+  endif()
+endif()
+
+if (PYARROW_BUILD_SKYHOOK)
+  # Skyhook
+  if(PYARROW_BUILD_DATASET)
+    set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _dataset_skyhook)
   endif()
 endif()
 
