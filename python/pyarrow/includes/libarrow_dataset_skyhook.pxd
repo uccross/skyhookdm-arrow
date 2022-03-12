@@ -17,7 +17,6 @@
 
 # cython: language_level = 3
 
-from pyarrow._dataset cimport Dataset
 from pyarrow.lib cimport *
 from pyarrow.lib import frombytes, tobytes
 from pyarrow.includes.common cimport *
