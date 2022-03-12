@@ -26,9 +26,9 @@ from pyarrow.includes.libarrow_dataset cimport *
 from pyarrow.lib cimport _Weakrefable
 
 cdef extern from "skyhook/client/file_skyhook.h" \
-        namespace "arrow::dataset" nogil:
+        namespace "skyhook" nogil:
     cdef cppclass CSkyhookFileFormat \
-        "arrow::dataset::SkyhookFileFormat"(
+        "skyhook::SkyhookFileFormat"(
             CFileFormat):
         CSkyhookFileFormat(
             c_string file_format,
