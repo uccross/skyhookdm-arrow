@@ -25,7 +25,6 @@ from pyarrow.lib import frombytes, tobytes
 from pyarrow.includes.common cimport *
 from pyarrow.includes.libarrow cimport *
 from pyarrow.includes.libarrow_dataset cimport *
-from pyarrow.includes.libarrow_dataset_skyhook cimport *
 
 from pyarrow.lib cimport _Weakrefable
 

@@ -20,6 +20,7 @@
 from pyarrow._dataset cimport FileFormat
 from pyarrow.lib cimport *
 from pyarrow.lib import frombytes, tobytes
+from pyarrow.includes.libarrow_dataset_skyhook cimport *
 
 cdef class SkyhookFileFormat(FileFormat):
     """
