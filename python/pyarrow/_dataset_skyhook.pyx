@@ -57,7 +57,7 @@ cdef class SkyhookFileFormat(FileFormat):
 
         self.init(shared_ptr[CFileFormat](
             new CSkyhookFileFormat(
-                ctx,
+                &ctx,
                 tobytes(file_format)
             )
         ))
