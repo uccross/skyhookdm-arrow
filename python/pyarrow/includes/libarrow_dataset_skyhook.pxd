@@ -26,7 +26,7 @@ from pyarrow.includes.libarrow_dataset cimport *
 from pyarrow.lib cimport _Weakrefable
 
 cdef extern from "skyhook/client/file_skyhook.h" \
-        namespace "skyhook":
+        namespace "skyhook" nogil:
     cdef struct CRadosConnCtx "skyhook::RadosConnCtx":
         c_string ceph_config_path;
         c_string ceph_data_pool;
