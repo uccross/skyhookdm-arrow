@@ -28,13 +28,6 @@ from pyarrow.lib cimport _Weakrefable
 cdef extern from "skyhook/client/file_skyhook.h" \
         namespace "skyhook":
     cdef struct CRadosConnCtx "skyhook::RadosConnCtx":
-        CRadosConnCtx(
-            c_string ceph_config_path,
-            c_string ceph_data_pool,
-            c_string ceph_user_name,
-            c_string ceph_cluster_name,
-            c_string ceph_cls_name
-        )
         c_string ceph_config_path;
         c_string ceph_data_pool;
         c_string ceph_user_name;

@@ -46,9 +46,14 @@ cdef class SkyhookFileFormat(FileFormat):
         ceph_cluster_name="ceph",
         ceph_cls_name="arrow"
     ):  
-        cdef CRadosConnCtx ctx = CRadosConnCtx(
-            ceph_config_path, ceph_data_pool, ceph_user_name, ceph_cluster_name, ceph_cls_name
-        )
+        cdef:
+            CRadosConnCtx ctx
+        
+        ctx.ceph_config_path = ceph_config_path
+        ctx.ceph_data_pool = ceph_data_pool
+        ctx.ceph_user_name = ceph_user_name
+        ctx.ceph_cluster_name = ceph_cluster_name
+        ctx.ceph_cls_name = ceph_cls_name
 
         self.init(shared_ptr[CFileFormat](
             new CSkyhookFileFormat(
