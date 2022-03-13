@@ -401,7 +401,7 @@ class build_ext(_build_ext):
         if self.with_gandiva:
             move_shared_libs(build_prefix, build_lib, "gandiva")
         if self.with_skyhook:
-            move_shared_libs(build_prefix, build_lib, "arrow_skyhook_client")
+            move_shared_libs(build_prefix, build_lib, "arrow_skyhook")
         if self.with_parquet and not self.with_static_parquet:
             move_shared_libs(build_prefix, build_lib, "parquet")
         if not self.with_static_boost and self.bundle_boost:
