@@ -28,7 +28,7 @@ set(ARROW_SKYHOOK_LINK_STATIC arrow_dataset_static librados::rados)
 set(ARROW_SKYHOOK_LINK_SHARED arrow_dataset_shared librados::rados)
 
 # define the client and cls sources
-set(ARROW_SKYHOOK_CLIENT_SOURCES client/file_skyhook.cc protocol/rados_protocol.cc
+set(ARROW_SKYHOOK_SOURCES client/file_skyhook.cc protocol/rados_protocol.cc
                                  protocol/skyhook_protocol.cc)
 set(ARROW_SKYHOOK_CLS_SOURCES cls/cls_skyhook.cc protocol/rados_protocol.cc
                               protocol/skyhook_protocol.cc)
@@ -42,9 +42,9 @@ add_arrow_lib(arrow_skyhook
               # PKG_CONFIG_NAME
               # skyhook
               SOURCES
-              ${ARROW_SKYHOOK_CLIENT_SOURCES}
+              ${ARROW_SKYHOOK_SOURCES}
               OUTPUTS
-              ARROW_SKYHOOK_CLIENT_LIBRARIES
+              ARROW_SKYHOOK_LIBRARIES
               SHARED_LINK_LIBS
               ${ARROW_SKYHOOK_LINK_SHARED}
               STATIC_LINK_LIBS
@@ -62,15 +62,15 @@ add_arrow_lib(cls_skyhook
               ${ARROW_SKYHOOK_LINK_STATIC})
 
 # finish building the project
-add_dependencies(arrow_skyhook ${ARROW_SKYHOOK_CLIENT_LIBRARIES})
+add_dependencies(arrow_skyhook ${ARROW_SKYHOOK_LIBRARIES})
 add_dependencies(cls_skyhook ${ARROW_SKYHOOK_CLS_LIBRARIES})
 
 # define the test builds
 if(ARROW_TEST_LINKAGE STREQUAL "static")
-  set(ARROW_SKYHOOK_TEST_LINK_LIBS arrow_skyhook_client_static arrow_dataset_static
+  set(ARROW_SKYHOOK_TEST_LINK_LIBS arrow_skyhook_static arrow_dataset_static
                                    ${ARROW_TEST_STATIC_LINK_LIBS})
 else()
-  set(ARROW_SKYHOOK_TEST_LINK_LIBS arrow_skyhook_client_shared arrow_dataset_shared
+  set(ARROW_SKYHOOK_TEST_LINK_LIBS arrow_skyhook_shared arrow_dataset_shared
                                    ${ARROW_TEST_SHARED_LINK_LIBS})
 endif()
 
