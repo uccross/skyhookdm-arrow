@@ -514,6 +514,7 @@ endif()
 
 if (PYARROW_BUILD_SKYHOOK)
   # Skyhook
+  find_package(ArrowSkyhook required)
   if(PYARROW_BUILD_DATASET)
     if(PYARROW_BUNDLE_ARROW_CPP)
       bundle_arrow_lib(ARROW_SKYHOOK_SHARED_LIB SO_VERSION ${ARROW_SO_VERSION})
