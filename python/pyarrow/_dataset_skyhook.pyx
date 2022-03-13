@@ -41,13 +41,13 @@ cdef class SkyhookFileFormat(FileFormat):
         self,
         file_format="parquet",
         ceph_config_path="/etc/ceph/ceph.conf",
-        data_pool="cephfs_data",
-        user_name="client.admin",
-        cluster_name="ceph",
-        cls_name="arrow"
+        ceph_data_pool="cephfs_data",
+        ceph_user_name="client.admin",
+        ceph_cluster_name="ceph",
+        ceph_cls_name="arrow"
     ):  
         cdef CRadosConnCtx ctx = CRadosConnCtx(
-            ceph_config_path, data_pool, user_name, cluster_name, cls_name
+            ceph_config_path, ceph_data_pool, ceph_user_name, ceph_cluster_name, ceph_cls_name
         )
 
         self.init(shared_ptr[CFileFormat](
