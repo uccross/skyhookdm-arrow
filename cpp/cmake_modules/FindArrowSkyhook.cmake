@@ -48,7 +48,7 @@ find_package(Arrow ${find_package_arguments})
 if(ARROW_FOUND)
   arrow_find_package(ARROW_SKYHOOK
                      "${ARROW_HOME}"
-                     arrow_skyhook_client
+                     arrow_skyhook
                      skyhook/client/file_skyhook.h
                      ArrowSkyhook
                      arrow-skyhook)
