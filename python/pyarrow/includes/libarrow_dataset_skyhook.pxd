@@ -29,11 +29,11 @@ cdef extern from "skyhook/client/file_skyhook.h" \
         namespace "skyhook" nogil:
     cdef struct CRadosConnCtx "skyhook::RadosConnCtx":
         CRadosConnCtx()
-        c_string ceph_config_path;
-        c_string ceph_data_pool;
-        c_string ceph_user_name;
-        c_string ceph_cluster_name;
-        c_string ceph_cls_name;
+        c_string ceph_config_path
+        c_string ceph_data_pool
+        c_string ceph_user_name
+        c_string ceph_cluster_name
+        c_string ceph_cls_name
 
 cdef extern from "skyhook/client/file_skyhook.h" \
         namespace "skyhook" nogil:
@@ -42,5 +42,5 @@ cdef extern from "skyhook/client/file_skyhook.h" \
             CFileFormat):
         CSkyhookFileFormat(
             shared_ptr[CRadosConnCtx] ctx,
-            c_string file_format,
+            c_string file_format
         )
