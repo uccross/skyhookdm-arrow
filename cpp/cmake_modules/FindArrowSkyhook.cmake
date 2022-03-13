@@ -15,17 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# - Find Arrow Dataset (arrow/dataset/api.h, libarrow_dataset.a, libarrow_dataset.so)
+# - Find Arrow Skyhook (arrow/dataset/api.h, libarrow_dataset.a, libarrow_dataset.so)
 #
 # This module requires Arrow from which it uses
 #  arrow_find_package()
 #
 # This module defines
-#  ARROW_SKYHOOK_FOUND, whether Arrow Dataset has been found
+#  ARROW_SKYHOOK_FOUND, whether Arrow Skyhook has been found
 #  ARROW_SKYHOOK_IMPORT_LIB,
 #    path to libarrow_dataset's import library (Windows only)
 #  ARROW_SKYHOOK_INCLUDE_DIR, directory containing headers
-#  ARROW_SKYHOOK_LIB_DIR, directory containing Arrow Dataset libraries
+#  ARROW_SKYHOOK_LIB_DIR, directory containing Arrow Skyhook libraries
 #  ARROW_SKYHOOK_SHARED_LIB, path to libarrow_dataset's shared library
 #  ARROW_SKYHOOK_STATIC_LIB, path to libarrow_dataset.a
 
@@ -78,11 +78,11 @@ find_package_handle_standard_args(
   REQUIRED_VARS ARROW_SKYHOOK_INCLUDE_DIR ARROW_SKYHOOK_LIB_DIR
                 ARROW_SKYHOOK_VERSION_MATCH
   VERSION_VAR ARROW_SKYHOOK_VERSION)
-set(ARROW_SKYHOOK_FOUND ${ArrowDataset_FOUND})
+set(ARROW_SKYHOOK_FOUND ${ArrowSkyhook_FOUND})
 
-if(ArrowDataset_FOUND AND NOT ArrowDataset_FIND_QUIETLY)
-  message(STATUS "Found the Arrow Dataset by ${ARROW_SKYHOOK_FIND_APPROACH}")
-  message(STATUS "Found the Arrow Dataset shared library: ${ARROW_SKYHOOK_SHARED_LIB}")
-  message(STATUS "Found the Arrow Dataset import library: ${ARROW_SKYHOOK_IMPORT_LIB}")
-  message(STATUS "Found the Arrow Dataset static library: ${ARROW_SKYHOOK_STATIC_LIB}")
+if(ArrowSkyhook_FOUND AND NOT ArrowSkyhook_FIND_QUIETLY)
+  message(STATUS "Found the Arrow Skyhook by ${ARROW_SKYHOOK_FIND_APPROACH}")
+  message(STATUS "Found the Arrow Skyhook shared library: ${ARROW_SKYHOOK_SHARED_LIB}")
+  message(STATUS "Found the Arrow Skyhook import library: ${ARROW_SKYHOOK_IMPORT_LIB}")
+  message(STATUS "Found the Arrow Skyhook static library: ${ARROW_SKYHOOK_STATIC_LIB}")
 endif()
