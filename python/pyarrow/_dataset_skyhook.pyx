@@ -22,6 +22,7 @@ from pyarrow.lib cimport *
 from pyarrow.lib import frombytes, tobytes
 from pyarrow.includes.libarrow_dataset_skyhook cimport *
 
+
 cdef class SkyhookFileFormat(FileFormat):
     """
     A FileFormat implementation that offloads the fragment
@@ -57,7 +58,7 @@ cdef class SkyhookFileFormat(FileFormat):
 
         self.init(shared_ptr[CFileFormat](
             new CSkyhookFileFormat(
-                &ctx,
+                make_shared[CRadosCtx](ctx),
                 tobytes(file_format)
             )
         ))
