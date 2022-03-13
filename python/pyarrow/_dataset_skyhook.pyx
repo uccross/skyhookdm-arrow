@@ -47,7 +47,7 @@ cdef class SkyhookFileFormat(FileFormat):
         cls_name="arrow"
     ):  
         cdef shared_ptr[CRadosConnCtx] ctx
-        ctx.ceph_config_path = ceph_config_path
+        ctx->ceph_config_path = ceph_config_path
         ctx.data_pool = data_pool
         ctx.user_name = user_name
         ctx.cluster_name = cluster_name
