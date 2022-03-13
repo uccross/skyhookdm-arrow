@@ -47,7 +47,7 @@ cdef class SkyhookFileFormat(FileFormat):
         ceph_cls_name="arrow"
     ):  
         cdef:
-            CRadosConnCtx* ctx
+            CRadosConnCtx ctx
         
         ctx.ceph_config_path = ceph_config_path
         ctx.ceph_data_pool = ceph_data_pool
