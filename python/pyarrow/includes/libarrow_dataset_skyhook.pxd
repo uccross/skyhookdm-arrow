@@ -40,6 +40,6 @@ cdef extern from "skyhook/client/file_skyhook.h" \
         "skyhook::SkyhookFileFormat"(
             CFileFormat):
         CSkyhookFileFormat(
-            shared_ptr[CRadosConnCtx] rados_ctx,
+            shared_ptr[CRadosConnCtx] ctx,
             c_string file_format,
         )
