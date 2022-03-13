@@ -58,7 +58,7 @@ cdef class SkyhookFileFormat(FileFormat):
 
         self.init(shared_ptr[CFileFormat](
             new CSkyhookFileFormat(
-                make_shared[CRadosCtx](ctx),
+                make_shared[CRadosConnCtx](ctx),
                 tobytes(file_format)
             )
         ))
