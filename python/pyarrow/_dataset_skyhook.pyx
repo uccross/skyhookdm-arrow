@@ -48,12 +48,14 @@ cdef class SkyhookFileFormat(FileFormat):
     ):
         self.init(shared_ptr[CFileFormat](
             new CSkyhookFileFormat(
-                tobytes(file_format),
-                tobytes(ceph_config_path),
-                tobytes(data_pool),
-                tobytes(user_name),
-                tobytes(cluster_name),
-                tobytes(cls_name)
+                new CRadosConnCtx(
+                    tobytes(ceph_config_path),
+                    tobytes(data_pool),
+                    tobytes(user_name),
+                    tobytes(cluster_name),
+                    tobytes(cls_name)
+                ),
+                tobytes(file_format)
             )
         ))
 
