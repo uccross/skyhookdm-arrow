@@ -515,8 +515,11 @@ endif()
 if (PYARROW_BUILD_SKYHOOK)
   # Skyhook
   find_package(ArrowSkyhook REQUIRED)
+  include_directories(SYSTEM ${ARROW_SKYHOOK_INCLUDE_DIR})    
   if(PYARROW_BUILD_DATASET)
     if(PYARROW_BUNDLE_ARROW_CPP)
+      file(COPY ${ARROW_SKYHOOK_INCLUDE_DIR}/skyhook
+          DESTINATION ${BUILD_OUTPUT_ROOT_DIRECTORY}/include)
       bundle_arrow_lib(ARROW_SKYHOOK_SHARED_LIB SO_VERSION ${ARROW_SO_VERSION})
       if(MSVC)
         bundle_arrow_import_lib(ARROW_SKYHOOK_IMPORT_LIB)
