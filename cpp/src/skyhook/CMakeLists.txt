@@ -35,8 +35,12 @@ set(ARROW_SKYHOOK_CLS_SOURCES cls/cls_skyhook.cc protocol/rados_protocol.cc
 
 # define the client library
 add_arrow_lib(arrow_skyhook_client
+              CMAKE_PACKAGE_NAME
+              ArrowSkyhook
               PKG_CONFIG_NAME
-              skyhook
+              arrow-skyhook
+              # PKG_CONFIG_NAME
+              # skyhook
               SOURCES
               ${ARROW_SKYHOOK_CLIENT_SOURCES}
               OUTPUTS
