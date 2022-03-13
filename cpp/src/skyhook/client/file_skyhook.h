@@ -41,6 +41,8 @@ struct RadosConnCtx {
   std::string ceph_cluster_name;
   std::string ceph_cls_name;
 
+  RadosConnCtx() = default;
+
   RadosConnCtx(std::string ceph_config_path, std::string ceph_data_pool,
                std::string ceph_user_name, std::string ceph_cluster_name,
                std::string ceph_cls_name)
