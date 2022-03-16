@@ -59,7 +59,9 @@ int RadosWrapper::init2(const char* const name, const char* const clustername,
 int RadosWrapper::ioctx_create(const char* name, IoCtxInterface* pioctx) {
   librados::IoCtx ioCtx;
   int ret = this->cluster->ioctx_create(name, ioCtx);
-  pioctx->setIoCtx(&ioCtx);
+  if (!ret) {
+    pioctx->setIoCtx(&ioCtx);
+  }
   return ret;
 }
 

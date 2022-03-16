@@ -132,7 +132,8 @@ SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
 
 SkyhookFileFormat::SkyhookFileFormat(
     const std::shared_ptr<connection::RadosConnection>& connection) {
-  connection->Connect();
+  Status s = connection->Connect();
+  if (!s.ok()) throw std::runtime_error(s.message());
   auto doa = std::make_shared<arrow::dataset::SkyhookDirectObjectAccess>(connection);
   doa_ = doa;
 }
@@ -145,7 +146,7 @@ Result<std::shared_ptr<Schema>> SkyhookFileFormat::Inspect(
   } else if (fragment_format_ == "ipc") {
     format = std::make_shared<IpcFileFormat>();
   } else {
-    return Status::Invalid("invalid file format");
+    return Status::Invalid("Invalid file format");
   }
   std::shared_ptr<Schema> schema;
   ARROW_ASSIGN_OR_RAISE(schema, format->Inspect(source));
