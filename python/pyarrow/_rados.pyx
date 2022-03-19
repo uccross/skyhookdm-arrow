@@ -46,15 +46,17 @@ cdef class SkyhookFileFormat(FileFormat):
         cluster_name="ceph",
         cls_name="arrow"
     ):
-        self.init(GetResultValue(CSkyhookFileFormat.Make(
+        self.init(shared_ptr[CFileFormat](
+            GetResultValue(CSkyhookFileFormat.Make(
                 tobytes(file_format),
                 tobytes(ceph_config_path),
                 tobytes(data_pool),
                 tobytes(user_name),
                 tobytes(cluster_name),
                 tobytes(cls_name)
-            )))
+            )).get()
+        ))
 
-    cdef void init(self, const shared_ptr[CSkyhookFileFormat]& sp):
+    cdef void init(self, const shared_ptr[CFileFormat]& sp):
         FileFormat.init(self, sp)
-        self.skyhook_format = sp.get()
+        self.skyhook_format = <CSkyhookFileFormat*> sp.get()
