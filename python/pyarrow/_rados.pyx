@@ -47,14 +47,14 @@ cdef class SkyhookFileFormat(FileFormat):
         cls_name="arrow"
     ):
         self.init(shared_ptr[CFileFormat](
-            new CSkyhookFileFormat(
+            GetResultValue(CSkyhookFileFormat.Make(
                 tobytes(file_format),
                 tobytes(ceph_config_path),
                 tobytes(data_pool),
                 tobytes(user_name),
                 tobytes(cluster_name),
                 tobytes(cls_name)
-            )
+            ))
         ))
 
     cdef void init(self, const shared_ptr[CFileFormat]& sp):

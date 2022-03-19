@@ -30,11 +30,11 @@ cdef extern from "arrow/dataset/file_skyhook.h" \
     cdef cppclass CSkyhookFileFormat \
         "arrow::dataset::SkyhookFileFormat"(
             CFileFormat):
-        CSkyhookFileFormat(
+        @staticmethod
+        CResult[shared_ptr[CSkyhookFileFormat]] Make "Make"(
             c_string file_format,
             c_string ceph_config_path,
             c_string data_pool,
             c_string user_name,
             c_string cluster_name,
-            c_string cls_name
-        )
+            c_string cls_name)
