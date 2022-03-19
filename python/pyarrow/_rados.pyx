@@ -53,8 +53,7 @@ cdef class SkyhookFileFormat(FileFormat):
                 tobytes(user_name),
                 tobytes(cluster_name),
                 tobytes(cls_name)
-            ))
-        ))
+            )))
 
     cdef void init(self, const shared_ptr[CSkyhookFileFormat]& sp):
         FileFormat.init(self, sp)
