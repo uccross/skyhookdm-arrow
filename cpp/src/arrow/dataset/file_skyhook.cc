@@ -118,22 +118,25 @@ class SkyhookScanTask : public ScanTask {
   int fragment_format_;
 };
 
-SkyhookFileFormat::SkyhookFileFormat(const std::string& fragment_format,
-                                     const std::string& ceph_config_path,
-                                     const std::string& data_pool,
-                                     const std::string& user_name,
-                                     const std::string& cluster_name,
-                                     const std::string& cls_name)
-    : SkyhookFileFormat(std::make_shared<connection::RadosConnection>(
-          connection::RadosConnection::RadosConnectionCtx(
-              ceph_config_path, data_pool, user_name, cluster_name, cls_name))) {
-  fragment_format_ = fragment_format;
+Result<std::shared_ptr<SkyhookFileFormat>> SkyhookFileFormat::Make(
+                                 const std::string& format,
+                                 const std::string& ceph_config_path,
+                                 const std::string& data_pool,
+                                 const std::string& user_name,
+                                 const std::string& cluster_name,
+                                 const std::string& cls_name) {
+
+  auto connection = std::make_shared<connection::RadosConnection>(
+    connection::RadosConnection::RadosConnectionCtx(
+      ceph_config_path, data_pool, user_name, cluster_name, cls_name));
+  RETURN_NOT_OK(connection->Connect());
+  auto skyhook_format = std::make_shared<SkyhookFileFormat>(format, std::move(connection));
+  return skyhook_format;
 }
 
-SkyhookFileFormat::SkyhookFileFormat(
+SkyhookFileFormat::SkyhookFileFormat(const std::string& format,
     const std::shared_ptr<connection::RadosConnection>& connection) {
-  Status s = connection->Connect();
-  if (!s.ok()) throw std::runtime_error(s.message());
+  fragment_format_ = format;
   auto doa = std::make_shared<arrow::dataset::SkyhookDirectObjectAccess>(connection);
   doa_ = doa;
 }

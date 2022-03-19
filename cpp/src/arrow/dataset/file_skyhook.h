@@ -182,14 +182,17 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
 /// scan operations to the Ceph OSDs
 class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
  public:
-  SkyhookFileFormat(const std::string& format, const std::string& ceph_config_path,
-                    const std::string& data_pool, const std::string& user_name,
-                    const std::string& cluster_name, const std::string& cls_name);
-
   explicit SkyhookFileFormat(const std::shared_ptr<connection::RadosConnection>& conn);
 
   explicit SkyhookFileFormat(std::shared_ptr<SkyhookDirectObjectAccess>& doa)
       : doa_(std::move(doa)) {}
+
+  static Result<std::shared_ptr<SkyhookFileFormat>> Make(const std::string& format,
+                                 const std::string& ceph_config_path,
+                                 const std::string& data_pool,
+                                 const std::string& user_name,
+                                 const std::string& cluster_name,
+                                 const std::string& cls_name) override;
 
   std::string type_name() const override { return "skyhook"; }
 
