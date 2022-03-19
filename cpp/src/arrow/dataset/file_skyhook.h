@@ -182,7 +182,7 @@ class ARROW_DS_EXPORT SkyhookDirectObjectAccess {
 /// scan operations to the Ceph OSDs
 class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
  public:
-  explicit SkyhookFileFormat(const std::shared_ptr<connection::RadosConnection>& conn);
+  explicit SkyhookFileFormat(const std::string& format, const std::shared_ptr<connection::RadosConnection>& conn);
 
   explicit SkyhookFileFormat(std::shared_ptr<SkyhookDirectObjectAccess>& doa)
       : doa_(std::move(doa)) {}
