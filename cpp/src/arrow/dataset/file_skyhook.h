@@ -192,7 +192,7 @@ class ARROW_DS_EXPORT SkyhookFileFormat : public ParquetFileFormat {
                                  const std::string& data_pool,
                                  const std::string& user_name,
                                  const std::string& cluster_name,
-                                 const std::string& cls_name) override;
+                                 const std::string& cls_name);
 
   std::string type_name() const override { return "skyhook"; }
 
