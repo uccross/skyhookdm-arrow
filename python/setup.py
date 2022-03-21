@@ -26,6 +26,7 @@ import re
 import shlex
 import shutil
 import sys
+from numpy import append
 
 if sys.version_info >= (3, 10):
     import sysconfig
@@ -120,6 +121,7 @@ class build_ext(_build_ext):
                       'build pyarrow with TensorFlow support'),
                      ('with-orc', None, 'build the ORC extension'),
                      ('with-gandiva', None, 'build the Gandiva extension'),
+                     ('with-skyhook', None, 'build the Skyhook bindings'),
                      ('generate-coverage', None,
                       'enable Cython code coverage'),
                      ('bundle-boost', None,
@@ -166,6 +168,8 @@ class build_ext(_build_ext):
             os.environ.get('PYARROW_WITH_DATASET', '0'))
         self.with_parquet = strtobool(
             os.environ.get('PYARROW_WITH_PARQUET', '0'))
+        self.with_skyhook = strtobool(
+            os.environ.get('PYARROW_WITH_SKYHOOK', '0'))
         self.with_static_parquet = strtobool(
             os.environ.get('PYARROW_WITH_STATIC_PARQUET', '0'))
         self.with_parquet_encryption = strtobool(
@@ -204,6 +208,7 @@ class build_ext(_build_ext):
         '_dataset',
         '_dataset_orc',
         '_dataset_parquet',
+        '_dataset_skyhook',
         '_feather',
         '_parquet',
         '_parquet_encryption',
@@ -261,6 +266,7 @@ class build_ext(_build_ext):
             append_cmake_bool(self.with_cuda, 'PYARROW_BUILD_CUDA')
             append_cmake_bool(self.with_flight, 'PYARROW_BUILD_FLIGHT')
             append_cmake_bool(self.with_gandiva, 'PYARROW_BUILD_GANDIVA')
+            append_cmake_bool(self.with_skyhook, 'PYARROW_BUILD_SKYHOOK')
             append_cmake_bool(self.with_dataset, 'PYARROW_BUILD_DATASET')
             append_cmake_bool(self.with_orc, 'PYARROW_BUILD_ORC')
             append_cmake_bool(self.with_parquet, 'PYARROW_BUILD_PARQUET')
@@ -394,6 +400,8 @@ class build_ext(_build_ext):
             move_shared_libs(build_prefix, build_lib, "plasma")
         if self.with_gandiva:
             move_shared_libs(build_prefix, build_lib, "gandiva")
+        if self.with_skyhook:
+            move_shared_libs(build_prefix, build_lib, "arrow_skyhook")
         if self.with_parquet and not self.with_static_parquet:
             move_shared_libs(build_prefix, build_lib, "parquet")
         if not self.with_static_boost and self.bundle_boost:
@@ -441,6 +449,10 @@ class build_ext(_build_ext):
             return True
         if name == '_dataset_parquet' and not (
                 self.with_parquet and self.with_dataset
+        ):
+            return True
+        if name == '_dataset_skyhook' and not (
+                self.with_skyhook and self.with_dataset
         ):
             return True
         if name == '_cuda' and not self.with_cuda:

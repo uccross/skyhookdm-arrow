@@ -86,6 +86,24 @@ def _get_parquet_classes():
             _dataset_pq = None
 
 
+def _get_skyhook_fileformat():
+    """
+    Import SkyhookFileFormat on first usage (to avoid circular import issue
+    when `pyarrow._dataset_skyhook` would be imported first)
+    """
+    global _skyhook_fileformat
+    global _skyhook_imported
+    if not _skyhook_imported:
+        try:
+            from pyarrow._dataset_skyhook import SkyhookFileFormat
+            _skyhook_fileformat = SkyhookFileFormat
+        except ImportError as e:
+            _skyhook_fileformat = None
+        finally:
+            _skyhook_imported = True
+    return _skyhook_fileformat
+
+
 def _get_parquet_symbol(name):
     """
     Get a symbol from pyarrow.parquet if the latter is importable, otherwise
@@ -681,6 +699,7 @@ cdef class FileFormat(_Weakrefable):
             'csv': CsvFileFormat,
             'parquet': _get_parquet_symbol('ParquetFileFormat'),
             'orc': _get_orc_fileformat(),
+            'skyhook': _get_skyhook_fileformat(),
         }
 
         class_ = classes.get(type_name, None)

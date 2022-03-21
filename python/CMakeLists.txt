@@ -72,6 +72,7 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
   option(PYARROW_BUILD_DATASET "Build the PyArrow Dataset integration" OFF)
   option(PYARROW_BUILD_GANDIVA "Build the PyArrow Gandiva integration" OFF)
   option(PYARROW_BUILD_PARQUET "Build the PyArrow Parquet integration" OFF)
+  option(PYARROW_BUILD_SKYHOOK "Build the PyArrow Skyhook integration" OFF)
   option(PYARROW_PARQUET_USE_SHARED "Rely on parquet shared libraries where relevant" ON)
   option(PYARROW_BUILD_PARQUET_ENCRYPTION
          "Build the PyArrow Parquet encryption integration" OFF)
@@ -511,6 +512,23 @@ if(PYARROW_BUILD_ORC)
   endif()
 endif()
 
+if (PYARROW_BUILD_SKYHOOK)
+  # Skyhook
+  find_package(ArrowSkyhook REQUIRED)
+  include_directories(SYSTEM ${ARROW_SKYHOOK_INCLUDE_DIR})    
+  if(PYARROW_BUILD_DATASET)
+    if(PYARROW_BUNDLE_ARROW_CPP)
+      file(COPY ${ARROW_SKYHOOK_INCLUDE_DIR}/skyhook
+          DESTINATION ${BUILD_OUTPUT_ROOT_DIRECTORY}/include)
+      bundle_arrow_lib(ARROW_SKYHOOK_SHARED_LIB SO_VERSION ${ARROW_SO_VERSION})
+      if(MSVC)
+        bundle_arrow_import_lib(ARROW_SKYHOOK_IMPORT_LIB)
+      endif()
+    endif()
+    set(CYTHON_EXTENSIONS ${CYTHON_EXTENSIONS} _dataset_skyhook)
+  endif()
+endif()
+
 # Flight
 if(PYARROW_BUILD_FLIGHT)
   # Arrow Flight
@@ -631,6 +649,9 @@ if(PYARROW_BUILD_DATASET)
   endif()
   if(PYARROW_BUILD_PARQUET)
     target_link_libraries(_dataset_parquet PRIVATE ${DATASET_LINK_LIBS})
+  endif()
+  if (PYARROW_BUILD_SKYHOOK)
+    target_link_libraries(_dataset_skyhook PRIVATE ${DATASET_LINK_LIBS})
   endif()
 endif()
 

@@ -51,6 +51,18 @@ from pyarrow._dataset import (  # noqa
 from pyarrow.compute import Expression, scalar, field  # noqa
 
 
+_skyhook_available = False
+_skyhook_msg = (
+    "The pyarrow installation is not built with support for the Skyhook file "
+    "format."
+)
+
+try:
+    from pyarrow._dataset_skyhook import SkyhookFileFormat
+    _skyhook_available = True
+except ImportError:
+    pass
+
 _orc_available = False
 _orc_msg = (
     "The pyarrow installation is not built with support for the ORC file "
@@ -91,6 +103,9 @@ def __getattr__(name):
 
     if name == "ParquetFileFormat" and not _parquet_available:
         raise ImportError(_parquet_msg)
+
+    if name == "SkyhookFileFormat" and not _skyhook_available:
+        raise ImportError(_skyhook_msg)
 
     raise AttributeError(
         "module 'pyarrow.dataset' has no attribute '{0}'".format(name)
@@ -263,6 +278,10 @@ def _ensure_format(obj):
         if not _orc_available:
             raise ValueError(_orc_msg)
         return OrcFileFormat()
+    elif obj == "skyhook":
+        if not _skyhook_available:
+            raise ValueError(_skyhook_msg)
+        return SkyhookFileFormat()
     else:
         raise ValueError("format '{}' is not supported".format(obj))
 
